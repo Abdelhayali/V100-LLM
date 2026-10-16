@@ -8,6 +8,7 @@ then rebuild the leaderboard (results/leaderboard.html + .png + .md).
   python eval/run_all.py --redo                   re-run models that already have results
 """
 import json
+import re
 import subprocess
 import sys
 import time
@@ -41,19 +42,23 @@ def wait_ready(limit=3600):
 
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    only = [a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--only=")]   # e.g. --only=longctx
     redo = "--redo" in sys.argv
+    hard = "--basic" not in sys.argv          # v2 (hard) is the default suite; --basic runs the old v1
+    runner, resdir = ("run_eval_hard.py", "results_hard") if hard else ("run_eval.py", "results")
     try:
         cat = api("/api/catalog")
     except Exception:
         sys.exit("Start the launcher first: double-click START-GUI.bat")
     todo = []
-    for m in cat["catalog"]["models"]:
-        if not m["presets"]:
+    models = {m["id"]: m for m in cat["catalog"]["models"] if m["presets"]}
+    for spec in (args or list(models)):           # in the order given on the command line
+        mid, _, pid = spec.partition(":")
+        m = models.get(mid)
+        if m is None:
+            print(f"unknown model {mid}")
             continue
-        for spec in (args or [m["id"]]):
-            mid, _, pid = spec.partition(":")
-            if mid != m["id"]:
-                continue
+        if True:
             p = next((x for x in m["presets"] if x["id"] == pid), m["presets"][0])
             installed = all(f["have"] for f in cat["status"][m["id"]]["files"])
             if not installed:
@@ -62,7 +67,7 @@ def main():
             todo.append((m, p))
     for m, p in todo:
         label = f"{m['id']}" + (f"@{p['id']}" if len(m["presets"]) > 1 else "")
-        if (HERE / "results" / f"{label}.json").exists() and not redo:
+        if (HERE / resdir / f"{label}.json").exists() and not redo and not only:
             print(f"have {label} (use --redo to re-run)")
             continue
         print(f"== {label}  [{p['kernel']}]  {p['name']}", flush=True)
@@ -75,21 +80,20 @@ def main():
             print("    did not become ready, skipped")
             continue
         skip = [] if m.get("mmproj") or "--vision" in [x[0] for x in p["params"]] else ["vision"]
-        subprocess.run([sys.executable, str(HERE / "run_eval.py"), "--label", label] + (["--skip"] + skip if skip else []), cwd=HERE)
-        meta = HERE / "results" / f"{label}.json"
+        subprocess.run([sys.executable, str(HERE / runner), "--label", label] + (["--skip"] + skip if skip else []) + (["--only"] + only if only else []), cwd=HERE)
+        meta = HERE / resdir / f"{label}.json"
         if meta.exists():
             d = json.loads(meta.read_text(encoding="utf-8-sig"))
             # size = the files this preset loads: the main model plus any draft model it names (not the vision projector)
             used = {m["model"]} | {Path(str(x[1]).replace("{model:", "").rstrip("}")).as_posix() for x in p["params"] if "{model:" in str(x[1])}
-            size = sum((f.get("size") or 0) for f in m["files"] if Path(f["name"]).as_posix() in used)
-            if not size:   # setup-managed files (Strata): measure on disk
-                size = sum((ROOT / "models" / m["id"] / "model" / u).stat().st_size for u in used
-                           if (ROOT / "models" / m["id"] / "model" / u).is_file())
-                size += sum(f.stat().st_size for f in (ROOT / "models" / m["id"] / "model" / "models").rglob("*00002-of-*.gguf")) if m.get("strata") else 0
+            # a split GGUF (...-00001-of-00011.gguf) loads all of its shards, so count every sibling shard
+            used = {re.sub(r"-00001-of-(\d+)\.gguf$", r"-*-of-\1.gguf", u) for u in used}
+            mdir = ROOT / "models" / m["id"] / "model"
+            size = sum(f.stat().st_size for u in used for f in mdir.glob(u) if f.is_file())
             d.update(model=m["name"], model_id=m["id"], preset=p["name"], kernel=p["kernel"], size_gb=round(size / 1e9, 1) if size else None)
             meta.write_text(json.dumps(d, indent=1), encoding="utf-8")
     api("/api/stop", {})
-    subprocess.run([sys.executable, str(HERE / "make_chart.py")], cwd=HERE)
+    subprocess.run([sys.executable, str(HERE / "make_chart.py")] + ([] if hard else ["--basic"]), cwd=HERE)
 
 
 if __name__ == "__main__":

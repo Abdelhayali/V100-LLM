@@ -54,6 +54,13 @@
      "url": "https://github.com/Abdelhayali/V100-LLM/releases/download/kernels-v1/kernel-strata.zip"
     }
    ]
+  },
+  "exllamav3": {
+   "name": "ExLlamaV3 1.6.0 Volta fork (PR #404) + TabbyAPI (experimental)",
+   "type": "tabby",
+   "desc": "EXL3 models via TabbyAPI. Built locally for sm_70 with PyTorch 2.14.1+cu126; two Volta graph-capture fixes applied.",
+   "exe": "tabbyAPI\\main.py",
+   "download": []
   }
  },
  "models": [
@@ -1116,6 +1123,13 @@
      "sha256": "30f4daac0f61c2ca28d68b5f901c0501cb7a269a1357a9e380d2c376c6ed6518",
      "size": 910491648,
      "url": "https://huggingface.co/openbmb/MiniCPM-V-4.7-35B-A3B-gguf/resolve/main/mmproj-model-f16-4x.gguf"
+    },
+    {
+     "name": "lora/MiniCPM-V-4.7-35B-A3B-Uncensored-LoRA.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "035cd9c02925a0782afb3575b8135f6ae41e4317f564e2a501b22472baa19cce",
+     "size": 106269248,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/lora/MiniCPM-V-4.7-35B-A3B-Uncensored-LoRA.gguf"
     }
    ],
    "model": "MiniCPM-V-4_7-35B-A3B-IQ3_XS.gguf",
@@ -1357,6 +1371,614 @@
       [
        "--vram-reserve-mib",
        "700",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "qwen3.8-27b-exl3",
+   "name": "Qwen3.8-27B EXL3 3.0bpw (SC, ExLlamaV3)",
+   "desc": "turboderp's self-calibrated 3.0 bpw EXL3 with quantized vision tower. ~11.5 tok/s on V100 (EXL3 trellis decode is compute-bound on Volta).",
+   "model": "config.json",
+   "mmproj": "",
+   "files": [
+    {
+     "name": "LICENSE",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 11544,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/LICENSE"
+    },
+    {
+     "name": "README.md",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 65012,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/README.md"
+    },
+    {
+     "name": "chat_template.jinja",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 8952,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/chat_template.jinja"
+    },
+    {
+     "name": "config.json",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 4647,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/config.json"
+    },
+    {
+     "name": "crc32.txt",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 238,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/crc32.txt"
+    },
+    {
+     "name": "generation_config.json",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 202,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/generation_config.json"
+    },
+    {
+     "name": "merges.txt",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 3353259,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/merges.txt"
+    },
+    {
+     "name": "model-00001-of-00002.safetensors",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 8583890388,
+     "sha256": "411e5fd3d5630326b10fde35707f2d5930be81e7eb872409c30cdaaf74e127da",
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/model-00001-of-00002.safetensors"
+    },
+    {
+     "name": "model-00002-of-00002.safetensors",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 4398478904,
+     "sha256": "13a04fcee61a232d0fc3b5675df0b678529820f58942da69484439e3321605e1",
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/model-00002-of-00002.safetensors"
+    },
+    {
+     "name": "model.safetensors.index.json",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 295620,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/model.safetensors.index.json"
+    },
+    {
+     "name": "preprocessor_config.json",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 390,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/preprocessor_config.json"
+    },
+    {
+     "name": "quantization_config.json",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 629042,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/quantization_config.json"
+    },
+    {
+     "name": "tokenizer.json",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 12809320,
+     "sha256": "0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3",
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/tokenizer.json"
+    },
+    {
+     "name": "tokenizer_config.json",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 17928,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/tokenizer_config.json"
+    },
+    {
+     "name": "video_preprocessor_config.json",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 385,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/video_preprocessor_config.json"
+    },
+    {
+     "name": "vocab.json",
+     "repo": "turboderp/Qwen3.8-27B-exl3",
+     "size": 6722759,
+     "sha256": null,
+     "url": "https://huggingface.co/turboderp/Qwen3.8-27B-exl3/resolve/SC_3.00bpw_H4_V4/vocab.json"
+    }
+   ],
+   "presets": [
+    {
+     "id": "64k",
+     "name": "64k context, Q4 cache, vision",
+     "kernel": "exllamav3",
+     "kernels": [
+      "exllamav3"
+     ],
+     "bench": "~11.5 tok/s gen, 13.8 GB VRAM at 64k (Q4 cache); text + image OK",
+     "params": [
+      [
+       "max_seq_len",
+       "65536",
+       "context tokens"
+      ],
+      [
+       "cache_size",
+       "65536",
+       ""
+      ],
+      [
+       "cache_mode",
+       "Q4",
+       "FP16 / Q8 / Q6 / Q4"
+      ],
+      [
+       "vision",
+       "true",
+       "quantized vision tower"
+      ],
+      [
+       "reasoning",
+       "true",
+       ""
+      ],
+      [
+       "chunk_size",
+       "2048",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "hauhau-qwen3.8-27b-q2kp",
+   "name": "Qwen3.8-27B HauhauCS Aggressive Q2_K_P (long context)",
+   "desc": "Smaller HauhauCS quant (10.7 GB) so the context can grow to 163840 tokens on 16 GB. Uncensored (aggressive).",
+   "files": [
+    {
+     "name": "Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf",
+     "repo": "HauhauCS/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-MTP-GGUF",
+     "sha256": "f778a15fa0393b38e473b954b39a793543fc424838e7af8c0f6bd27b6cc11ca7",
+     "size": 10676422784,
+     "url": "https://huggingface.co/HauhauCS/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-MTP-GGUF/resolve/main/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf"
+    },
+    {
+     "name": "mmproj-Qwen3.8-27B-Q8_0.gguf",
+     "repo": "ggml-org/Qwen3.8-27B-GGUF",
+     "sha256": "2e968a6af97ce35d8971890b257b9b7edabf20ad91450501fa53162a19ee33eb",
+     "size": 629247008,
+     "url": "https://huggingface.co/ggml-org/Qwen3.8-27B-GGUF/resolve/main/mmproj-Qwen3.8-27B-Q8_0.gguf"
+    }
+   ],
+   "model": "Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf",
+   "mmproj": "mmproj-Qwen3.8-27B-Q8_0.gguf",
+   "presets": [
+    {
+     "id": "long",
+     "name": "160k context, built-in MTP, vision on CPU",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp",
+      "fastmtp"
+     ],
+     "bench": "tested: needle at 90% of 163840 tokens passed",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "built-in MTP head"
+      ],
+      [
+       "--spec-draft-n-max",
+       "2",
+       ""
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "--spec-draft-type-k",
+       "q4_0",
+       ""
+      ],
+      [
+       "--spec-draft-type-v",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "163840",
+       "largest tested context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--reasoning",
+       "off",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "minicpm-v4.7-35b-uncensored",
+   "name": "MiniCPM-V 4.7 35B-A3B Uncensored Q4_K-IQ4_XS (AtomicChat)",
+   "desc": "Abliterated MiniCPM-V 4.7 (one refusal direction removed), 20.1 GB Q4_K/IQ4_XS build. Part of the experts in RAM.",
+   "files": [
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00001-of-00011.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "ededfbd2709bab4d48bebb7cf73429a8fd0567f1fb17f8be1d3522775184fdcf",
+     "size": 1893148192,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00001-of-00011.gguf"
+    },
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00002-of-00011.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "b268130b6592959b532a5b751b0150ba8d4468cce142ae79bc447cdb091c897e",
+     "size": 1903428416,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00002-of-00011.gguf"
+    },
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00003-of-00011.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "c8567d2ed77e60bc25d27111c9a2a83fc1d0b2154b39e2ddd1bcde682a05f561",
+     "size": 1903428416,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00003-of-00011.gguf"
+    },
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00004-of-00011.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "a617dc76e210203a20925f287337625a89c908dff49199959f39af383804e76a",
+     "size": 1903428480,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00004-of-00011.gguf"
+    },
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00005-of-00011.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "a38b6295a283ace463a5d013814baeaf4e452e89a2aa54a02964977598c9d870",
+     "size": 1903428480,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00005-of-00011.gguf"
+    },
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00006-of-00011.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "51e2bf54868f0595ce0de650cfffe68bf227cd88ce994cf80cca9af8f83212af",
+     "size": 1903428480,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00006-of-00011.gguf"
+    },
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00007-of-00011.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "95b6ac36a9eb16e40ec1cc7b54687a82a3f8cf9ae33fdb0dd83afb8df6e3584b",
+     "size": 1903428480,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00007-of-00011.gguf"
+    },
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00008-of-00011.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "9dcdbac30a269116b7181922c15a2c8fdaf83228f7f0cab38c2b53d332570e41",
+     "size": 1903428480,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00008-of-00011.gguf"
+    },
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00009-of-00011.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "9198cbf4df908dc96981736fdbd2e9b0f8fd35ace49521f0dd07a4a6c335a4f7",
+     "size": 1903428480,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00009-of-00011.gguf"
+    },
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00010-of-00011.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "6bd1b0efaa4f9e7a7cafc905fd00b7eadfff043fb3b740ec84cc35d28ce7cdbf",
+     "size": 1903428480,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00010-of-00011.gguf"
+    },
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00011-of-00011.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "c52f2d97fd09b1e6ba07b38ab3edc9b7730443f390c18f0115f02007ec3e4dad",
+     "size": 1101150592,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00011-of-00011.gguf"
+    },
+    {
+     "name": "mmproj-MiniCPM-V-4.7-35B-A3B-Uncensored-F16.gguf",
+     "repo": "AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF",
+     "sha256": "d7ccc65bd9fbd13ad7e3b5773a530d875fe364d7b387e683f981918716139479",
+     "size": 1118221216,
+     "url": "https://huggingface.co/AtomicChat/MiniCPM-V-4.7-35B-A3B-Uncensored-GGUF/resolve/main/mmproj-MiniCPM-V-4.7-35B-A3B-Uncensored-F16.gguf"
+    }
+   ],
+   "model": "MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS/MiniCPM-V-4.7-35B-A3B-Uncensored-AD-Q4_K-IQ4_XS-00001-of-00011.gguf",
+   "mmproj": "mmproj-MiniCPM-V-4.7-35B-A3B-Uncensored-F16.gguf",
+   "presets": [
+    {
+     "id": "262k",
+     "name": "262k context, vision on GPU",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "33.3 tok/s gen (n-cpu-moe 18); 250k needle passed: not tested",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "18",
+       "experts of 18 layers in RAM (tuned)"
+      ],
+      [
+       "-t",
+       "14",
+       "CPU threads"
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       "full native context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "minicpm-v4.7-35b-q3mix",
+   "name": "MiniCPM-V 4.7 35B-A3B Q3 mix (official mix_q3gud_im)",
+   "desc": "OpenBMB official mix: Q4_K_M with Q3_K routed experts + imatrix (15.5 GB). Within 1-2 points of Q4_K_M on vision benches (Blackwellboy RTX 5090 study).",
+   "files": [
+    {
+     "name": "MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf",
+     "repo": "openbmb/MiniCPM-V-4.7-35B-A3B-gguf",
+     "sha256": "51e32201f0ddaf87dbb9689ceef9e3aa1a1543a1366706aa2abbf3aabb34df6b",
+     "size": 15503944896,
+     "url": "https://huggingface.co/openbmb/MiniCPM-V-4.7-35B-A3B-gguf/resolve/main/MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf"
+    },
+    {
+     "name": "mmproj-model-f16-4x.gguf",
+     "repo": "openbmb/MiniCPM-V-4.7-35B-A3B-gguf",
+     "sha256": "30f4daac0f61c2ca28d68b5f901c0501cb7a269a1357a9e380d2c376c6ed6518",
+     "size": 910491648,
+     "url": "https://huggingface.co/openbmb/MiniCPM-V-4.7-35B-A3B-gguf/resolve/main/mmproj-model-f16-4x.gguf"
+    }
+   ],
+   "model": "MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf",
+   "mmproj": "mmproj-model-f16-4x.gguf",
+   "presets": [
+    {
+     "id": "262k",
+     "name": "262k context, vision on GPU",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "54.3 tok/s gen (n-cpu-moe 8); 250k needle passed: not tested",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "8",
+       "experts of 8 layers in RAM (tuned)"
+      ],
+      [
+       "-t",
+       "14",
+       ""
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       ""
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
        ""
       ]
      ]

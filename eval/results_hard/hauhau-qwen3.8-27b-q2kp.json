@@ -1,0 +1,520 @@
+{
+ "label": "hauhau-qwen3.8-27b-q2kp",
+ "suite": "hard",
+ "scores": {
+  "coding": 75.0,
+  "reasoning": 95.0,
+  "ifeval": 41.7,
+  "search": 100.0,
+  "agent": 100.0,
+  "vision": 87.5,
+  "longctx": 50.0
+ },
+ "speed": {
+  "gen_tps": 41.6,
+  "prompt_tps": 326.0
+ },
+ "log": [
+  {
+   "cat": "coding",
+   "task": "calc",
+   "ok": true,
+   "err": ""
+  },
+  {
+   "cat": "coding",
+   "task": "regex",
+   "ok": true,
+   "err": ""
+  },
+  {
+   "cat": "coding",
+   "task": "dijkstra_path",
+   "ok": true,
+   "err": ""
+  },
+  {
+   "cat": "coding",
+   "task": "intervals",
+   "ok": true,
+   "err": ""
+  },
+  {
+   "cat": "coding",
+   "task": "bigmul",
+   "ok": false,
+   "err": "AssertionError: ('6397006085149185685711433496433962092104120058852230820690646722809287787962030517987759044310228742676724517433937290102713699549394776929371"
+  },
+  {
+   "cat": "coding",
+   "task": "lru_ttl",
+   "ok": true,
+   "err": ""
+  },
+  {
+   "cat": "coding",
+   "task": "topo",
+   "ok": true,
+   "err": ""
+  },
+  {
+   "cat": "coding",
+   "task": "edit",
+   "ok": false,
+   "err": "AssertionError"
+  },
+  {
+   "cat": "coding",
+   "task": "roman_parse",
+   "ok": false,
+   "err": "ValueError: Invalid subtractive pair 'MX'"
+  },
+  {
+   "cat": "coding",
+   "task": "days",
+   "ok": false,
+   "err": "AssertionError"
+  },
+  {
+   "cat": "coding",
+   "task": "sudoku",
+   "ok": true,
+   "err": ""
+  },
+  {
+   "cat": "coding",
+   "task": "trie",
+   "ok": true,
+   "err": ""
+  },
+  {
+   "cat": "coding",
+   "task": "knapsack",
+   "ok": true,
+   "err": ""
+  },
+  {
+   "cat": "coding",
+   "task": "rle",
+   "ok": true,
+   "err": ""
+  },
+  {
+   "cat": "coding",
+   "task": "spiral_gen",
+   "ok": true,
+   "err": ""
+  },
+  {
+   "cat": "coding",
+   "task": "json_min",
+   "ok": true,
+   "err": ""
+  },
+  {
+   "cat": "reasoning",
+   "task": "A store raises a price by 20% and then lowers the new price ",
+   "ok": true,
+   "final": "50"
+  },
+  {
+   "cat": "reasoning",
+   "task": "Tom is twice as old as Ann. In 6 years Tom will be 1.5 times",
+   "ok": true,
+   "final": "6"
+  },
+  {
+   "cat": "reasoning",
+   "task": "A tank fills in 6 hours with pipe A and in 4 hours with pipe",
+   "ok": true,
+   "final": "3"
+  },
+  {
+   "cat": "reasoning",
+   "task": "How many integers from 1 to 1000 are divisible by 3 or 5 but",
+   "ok": true,
+   "final": "401"
+  },
+  {
+   "cat": "reasoning",
+   "task": "What is the remainder when 7^2026 is divided by 10? Number o",
+   "ok": true,
+   "final": "9"
+  },
+  {
+   "cat": "reasoning",
+   "task": "A clock shows 3:40. What is the smaller angle between the ho",
+   "ok": true,
+   "final": "130"
+  },
+  {
+   "cat": "reasoning",
+   "task": "If 5 machines make 5 widgets in 5 minutes, how many minutes ",
+   "ok": true,
+   "final": "5"
+  },
+  {
+   "cat": "reasoning",
+   "task": "A bag has 3 red and 5 blue balls. Two are drawn without repl",
+   "ok": true,
+   "final": "3/28"
+  },
+  {
+   "cat": "reasoning",
+   "task": "The sum of three consecutive odd integers is 159. What is th",
+   "ok": true,
+   "final": "55"
+  },
+  {
+   "cat": "reasoning",
+   "task": "A car travels 120 km at 60 km/h and returns the same 120 km ",
+   "ok": true,
+   "final": "48"
+  },
+  {
+   "cat": "reasoning",
+   "task": "What day of the week was 1 January 2000? One word.",
+   "ok": false,
+   "final": "sunday"
+  },
+  {
+   "cat": "reasoning",
+   "task": "How many days are there from 15 March 2026 to 9 November 202",
+   "ok": true,
+   "final": "238"
+  },
+  {
+   "cat": "reasoning",
+   "task": "Five people A, B, C, D, E sit in a row. A is not at either e",
+   "ok": true,
+   "final": "a"
+  },
+  {
+   "cat": "reasoning",
+   "task": "I am a three-digit number. My digits sum to 13, my hundreds ",
+   "ok": true,
+   "final": "643"
+  },
+  {
+   "cat": "reasoning",
+   "task": "A rectangle's length is 3 more than twice its width, and its",
+   "ok": true,
+   "final": "36"
+  },
+  {
+   "cat": "reasoning",
+   "task": "Each year a population grows by 10%. Starting from 10000, wh",
+   "ok": true,
+   "final": "13310"
+  },
+  {
+   "cat": "reasoning",
+   "task": "In a race, Ana finished ahead of Ben, Cara finished behind D",
+   "ok": true,
+   "final": "ben"
+  },
+  {
+   "cat": "reasoning",
+   "task": "A sequence starts 2, 6, 12, 20, 30, ... What is the 10th ter",
+   "ok": true,
+   "final": "110"
+  },
+  {
+   "cat": "reasoning",
+   "task": "How many ways can the letters of the word LEVEL be arranged?",
+   "ok": true,
+   "final": "30"
+  },
+  {
+   "cat": "reasoning",
+   "task": "A shirt costs $40 after a 20% discount. Sales tax of 10% is ",
+   "ok": true,
+   "final": "final answer: 6"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Write exactly 3 sentences about the ocean. Every sentence mu",
+   "ok": false,
+   "rules": {
+    "sentences": true,
+    "all_sentences_end": true,
+    "word_count_exact": false
+   },
+   "reply": "The vast expanse of water stretches endlessly toward the horizon! Its deep blue depths hold countless mysteries for explorers to discover! The waves crash against the shore with a powerful, rhythmic f"
+  },
+  {
+   "cat": "ifeval",
+   "task": "List 5 programming languages as a JSON object whose keys are",
+   "ok": true,
+   "rules": {
+    "json_obj_len": true,
+    "json_values_int": true
+   },
+   "reply": "{\n  \"C\": 1972,\n  \"Python\": 1991,\n  \"Java\": 1995,\n  \"JavaScript\": 1995,\n  \"C++\": 1985\n}"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Write a haiku-like poem of exactly 3 lines about autumn, all",
+   "ok": false,
+   "rules": {
+    "lines": true,
+    "lowercase": true,
+    "no_char": false
+   },
+   "reply": "gold leaves drift\ncold wind blows\nautumn's end"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Answer with exactly two paragraphs separated by a line conta",
+   "ok": true,
+   "rules": {
+    "paragraphs_sep": true,
+    "para_starts": true
+   },
+   "reply": "First, sleep is a fundamental biological necessity that allows the brain to consolidate memories, process emotional experiences, and clear out metabolic waste products that accumulate during waking ho"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Give 4 tips for studying as a numbered list (1. 2. 3. 4.), e",
+   "ok": true,
+   "rules": {
+    "numbered": true,
+    "max_words_per_item": true,
+    "endswith": true
+   },
+   "reply": "1. Take regular breaks to rest.\n2. Focus on one subject at a time.\n3. Sleep well before exams.\n4. Review notes daily.\nGood luck!"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Write a title for an article about solar energy. It must be ",
+   "ok": true,
+   "rules": {
+    "regex_full": true,
+    "bracket_words": true,
+    "title_case": true
+   },
+   "reply": "[[Harnessing The Power Of Sun]]"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Describe a cat in exactly 25 words. Do not use any commas.",
+   "ok": false,
+   "rules": {
+    "word_count": false,
+    "no_char": true
+   },
+   "reply": "The cat sits on the windowsill watching birds fly by while its tail twitches softly in the warm afternoon sunlight."
+  },
+  {
+   "cat": "ifeval",
+   "task": "Reply with a valid Python list of exactly 6 distinct prime n",
+   "ok": true,
+   "rules": {
+    "pylist_primes": true
+   },
+   "reply": "[53, 59, 61, 67, 71, 73]"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Write three bullet points ('- ') about rain. The first must ",
+   "ok": false,
+   "rules": {
+    "bullet_word_counts": false
+   },
+   "reply": "- Rain falls softly down.\n- Heavy clouds bring sudden downpours.\n- The steady rain washes away the dust."
+  },
+  {
+   "cat": "ifeval",
+   "task": "Spell the word 'strawberry' backwards in uppercase letters, ",
+   "ok": false,
+   "rules": {
+    "exact_lines": false
+   },
+   "reply": "YRREWBARTS\n3"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Write a sentence that contains the words 'river', 'silver' a",
+   "ok": false,
+   "rules": {
+    "ordered_words": false,
+    "word_range": true,
+    "endswith": true
+   },
+   "reply": "The quiet river reflects the silver moon, do you see it?"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Output the numbers from 1 to 20, separated by commas without",
+   "ok": false,
+   "rules": {
+    "exact": false
+   },
+   "reply": "1,2,X,4,5,X,7,8,X,10,11,X,13,14,X,16,17,X,19,20"
+  },
+  {
+   "cat": "search",
+   "task": "Who won the 2026 Tour de Volta, and in which city was the wi",
+   "ok": true,
+   "searches": 2,
+   "reply": "Marta Kessler was born in Freiburg.\n\n**Marta Kessler, Freiburg**"
+  },
+  {
+   "cat": "search",
+   "task": "Which company makes the Aurora X9 drone, and in which countr",
+   "ok": true,
+   "searches": 2,
+   "reply": "The Aurora X9 drone is made by **SkyForge Robotics**, which is headquartered in **Estonia** (Tallinn)."
+  },
+  {
+   "cat": "search",
+   "task": "In which city is the band that released the album 'Glass Riv",
+   "ok": true,
+   "searches": 2,
+   "reply": "The band **Echo Harbor** released the album *Glass Rivers* (2019). They are an indie band from **Galway, Ireland**."
+  },
+  {
+   "cat": "search",
+   "task": "By how many people did Norvale's population grow between 201",
+   "ok": true,
+   "searches": 1,
+   "reply": "27300"
+  },
+  {
+   "cat": "search",
+   "task": "What is the boiling point of Zentrolite? Use the most reliab",
+   "ok": true,
+   "searches": 1,
+   "reply": "The boiling point of **Zentrolite** is **213 \u00b0C at 1 atm**.\n\n**Source:** Zentrolite manufacturer datasheet (the most reliable source available, as it is the primary/official product specification)."
+  },
+  {
+   "cat": "search",
+   "task": "How many more seats does the Riverton Owls' stadium have now",
+   "ok": true,
+   "searches": 2,
+   "reply": "The stadium had 15,200 seats before the 2021 expansion and 18,400 after.\n\n18,400 \u2212 15,200 = 3,200\n\n**3200**"
+  },
+  {
+   "cat": "search",
+   "task": "Who is the directeur sportif of the team the 2026 Tour de Vo",
+   "ok": true,
+   "searches": 3,
+   "reply": "The 2026 Tour de Volta was won by **Marta Kessler** (GER), who rides for **Velo Nord**. The directeur sportif of Velo Nord is **Lena Fuchs**."
+  },
+  {
+   "cat": "search",
+   "task": "How many minutes can the Aurora X9 fly, and what does it cos",
+   "ok": true,
+   "searches": 1,
+   "reply": "41, 31.68"
+  },
+  {
+   "cat": "agent",
+   "task": "The tests fail. Find and fix the bug(s) in the project so th",
+   "ok": true,
+   "steps": 4,
+   "reply": "Fixed two bugs in `stats.py`:\n\n1. **`mean`**: Removed the erroneous `- 1` from the result.\n2. **`median`**: For even-length lists, it now averages the two middl"
+  },
+  {
+   "cat": "agent",
+   "task": "Add a function `slugify(title)` to text.py that lowercases, ",
+   "ok": true,
+   "steps": 4,
+   "reply": "The tests pass. I added a `slugify` function to text.py that lowercases the input, replaces runs of non-alphanumeric characters with a single '-', and strips le"
+  },
+  {
+   "cat": "agent",
+   "task": "Read sales.csv and write report.txt containing one line per ",
+   "ok": true,
+   "steps": 3,
+   "reply": "DONE"
+  },
+  {
+   "cat": "agent",
+   "task": "The function in parser.py is used by app.py. Rename it from ",
+   "ok": true,
+   "steps": 4,
+   "reply": "Renamed `parse_cfg` to `parse_config` in both `parser.py` and `app.py`. Tests pass.\n\nDONE"
+  },
+  {
+   "cat": "agent",
+   "task": "config.json has a bug: the 'timeout' must be the sum of all ",
+   "ok": true,
+   "steps": 4,
+   "reply": "Fixed config.json:\n- `enabled` set to `true`\n- `timeout` set to `2250` (sum of retries_ms: 150 + 300 + 600 + 1200)\n\nThe file remains valid JSON with the same ke"
+  },
+  {
+   "cat": "agent",
+   "task": "Implement the missing function `merge_sorted(a, b)` in lists",
+   "ok": true,
+   "steps": 4,
+   "reply": "The tests pass. The implementation uses the classic two-pointer merge algorithm:\n\n- Two indices `i` and `j` track positions in `a` and `b` respectively.\n- At ea"
+  },
+  {
+   "cat": "vision",
+   "task": "h_table_sum",
+   "ok": true,
+   "final": "1167"
+  },
+  {
+   "cat": "vision",
+   "task": "h_table_lookup",
+   "ok": true,
+   "final": "Delta"
+  },
+  {
+   "cat": "vision",
+   "task": "h_chart_value",
+   "ok": true,
+   "final": "37"
+  },
+  {
+   "cat": "vision",
+   "task": "h_count_dots",
+   "ok": false,
+   "final": "6. Middle left (approx x=38"
+  },
+  {
+   "cat": "vision",
+   "task": "h_small_text",
+   "ok": true,
+   "final": "SN-4471-XQ"
+  },
+  {
+   "cat": "vision",
+   "task": "h_spatial",
+   "ok": true,
+   "final": "Yellow"
+  },
+  {
+   "cat": "vision",
+   "task": "h_clock",
+   "ok": true,
+   "final": "4:50"
+  },
+  {
+   "cat": "vision",
+   "task": "h_receipt",
+   "ok": true,
+   "final": "38.70"
+  },
+  {
+   "cat": "longctx",
+   "task": "What is the full six-digit vault code? Digits only.",
+   "ok": true,
+   "final": "478219"
+  },
+  {
+   "cat": "longctx",
+   "task": "In which year was Teo's daughter born? Number only.",
+   "ok": false,
+   "final": "2013"
+  }
+ ],
+ "overall": 78.5,
+ "model": "Qwen3.8-27B HauhauCS Aggressive Q2_K_P (long context)",
+ "model_id": "hauhau-qwen3.8-27b-q2kp",
+ "preset": "160k context, built-in MTP, vision on CPU",
+ "kernel": "llamacpp",
+ "size_gb": 10.7
+}

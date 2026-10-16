@@ -11,13 +11,22 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import sys
+
 HERE = Path(__file__).resolve().parent
-RES = HERE / "results"
-CATS = [("coding", "Coding"), ("chat", "Chat & reasoning"), ("ifeval", "Instructions"), ("search", "Web search"),
-        ("agent", "Agent"), ("vision", "Vision")]
+BASIC = "--basic" in sys.argv            # v1 suite; the default is v2 (hard)
+RES = HERE / ("results" if BASIC else "results_hard")
+TITLE = "V100-LLM Intelligence Index (basic v1)" if BASIC else "V100-LLM Hard Index (v2)"
+SUBTITLE = ("Single Tesla V100 16 GB · coding, chat &amp; reasoning, instruction following, web search (tools), agent tasks, vision"
+            if BASIC else "Single Tesla V100 16 GB · hard coding, multi-step reasoning, multi-rule instructions, multi-hop search, "
+                          "agent tasks with tests, vision, long context")
+CATS = ([("coding", "Coding"), ("chat", "Chat & reasoning"), ("ifeval", "Instructions"), ("search", "Web search"),
+         ("agent", "Agent"), ("vision", "Vision")] if BASIC else
+        [("coding", "Coding"), ("reasoning", "Reasoning"), ("ifeval", "Instructions"), ("search", "Web search"),
+         ("agent", "Agent"), ("vision", "Vision"), ("longctx", "Long context")])
 # soft pastel per kernel family, like the reference chart
-COLORS = {"pxa": "#f6c7b6", "fastmtp": "#b9d3f5", "llamacpp": "#bfe3c4", "prism": "#d9c8f2", "strata": "#f7d9a8"}
-DARK = {"pxa": "#c9785c", "fastmtp": "#4f86d1", "llamacpp": "#3f9a52", "prism": "#8a63c9", "strata": "#c98a1f"}
+COLORS = {"pxa": "#f6c7b6", "fastmtp": "#b9d3f5", "llamacpp": "#bfe3c4", "prism": "#d9c8f2", "strata": "#f7d9a8", "exllamav3": "#f4c2d7"}
+DARK = {"pxa": "#c9785c", "fastmtp": "#4f86d1", "llamacpp": "#3f9a52", "prism": "#8a63c9", "strata": "#c98a1f", "exllamav3": "#c24f80"}
 
 
 def load():
@@ -29,9 +38,12 @@ def load():
     return sorted(rows, key=lambda d: d["overall"], reverse=True)
 
 
-SHORT = {"minicpm-v4.7-35b": "MiniCPM-V 4.7 35B-A3B", "qwen3.8-27b-pxq3": "Qwen3.8-27B PXQ3", "saluki-27b": "Saluki 27B (MTP)",
+SHORT = {"minicpm-v4.7-35b": "MiniCPM-V 4.7 IQ3_XS", "qwen3.8-27b-pxq3": "Qwen3.8-27B PXQ3", "saluki-27b": "Saluki 27B (MTP)",
          "bonsai-heretic-27b": "Bonsai-2 27B Heretic", "nemotron-bolt-74b": "Nemotron-3.5 Bolt 74B", "fusion4-35b-pxq2": "PXA-Fusion4 35B",
-         "ornith-35b-pxq2": "Ornith-1.5 35B", "strata-flash-next": "Strata Flash-Next 125B", "hauhau-qwen3.8-27b": "Qwen3.8-27B HauhauCS"}
+         "ornith-35b-pxq2": "Ornith-1.5 35B", "strata-flash-next": "Strata Flash-Next 125B", "hauhau-qwen3.8-27b": "HauhauCS IQ3_XS",
+         "qwen3.8-27b-exl3": "Qwen3.8-27B EXL3 3.0bpw", "hauhau-qwen3.8-27b-q2kp": "HauhauCS Q2_K_P",
+         "minicpm-v4.7-35b-q3mix": "MiniCPM-V 4.7 Q3 mix", "minicpm-v4.7-35b-uncensored": "MiniCPM-V 4.7 Uncensored",
+         "minicpm-v4.7-35b-crack": "MiniCPM-V 4.7 CRACK"}
 
 
 def short(d):
@@ -45,8 +57,8 @@ def svg_chart(rows, w=1180, h=520):
     bw = pw / n * 0.72
     out = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" font-family="Segoe UI, Arial, sans-serif">',
            f'<rect width="{w}" height="{h}" fill="#ffffff"/>',
-           '<text x="20" y="32" font-size="22" font-family="Georgia, serif" fill="#111">V100-LLM Intelligence Index</text>',
-           '<text x="20" y="54" font-size="12" fill="#666">Single Tesla V100 16 GB · coding, chat &amp; reasoning, instruction following, web search (tools), agent tasks, vision · temperature 0, thinking off</text>']
+           f'<text x="20" y="32" font-size="22" font-family="Georgia, serif" fill="#111">{TITLE}</text>',
+           f'<text x="20" y="54" font-size="12" fill="#666">{SUBTITLE} · temperature 0, thinking off</text>']
     for g in (25, 50, 75, 100):
         y = top + ph * (1 - g / 100)
         out.append(f'<line x1="{left}" x2="{w - right}" y1="{y:.1f}" y2="{y:.1f}" stroke="#e5e7eb" stroke-dasharray="3 3"/>')

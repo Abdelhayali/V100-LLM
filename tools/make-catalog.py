@@ -9,7 +9,7 @@ trees = {}
 
 def tree(repo):
     if repo not in trees:
-        with urllib.request.urlopen(f"https://huggingface.co/api/models/{repo}/tree/main", timeout=60) as r:
+        with urllib.request.urlopen(f"https://huggingface.co/api/models/{repo}/tree/main?recursive=true", timeout=120) as r:
             trees[repo] = {f["path"]: f for f in json.loads(r.read())}
     return trees[repo]
 

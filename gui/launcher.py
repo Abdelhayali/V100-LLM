@@ -121,6 +121,26 @@ def strata_config(mid, k, params, port):
     return [sys.executable, str(kd / "serve" / "server.py"), "--engine", "strata", "--config", str(out)]
 
 
+def is_tabby(k):
+    return catalog()["kernels"][k].get("type") == "tabby"
+
+
+def tabby_config(mid, k, params, port):
+    """ExLlamaV3 runs behind TabbyAPI: write its config.yml from the editable parameters (key -> value)."""
+    kd = kernel_dir(mid, k)
+    sample = (kd / "tabbyAPI" / "config_sample.yml").read_text(encoding="utf-8")
+    sets = {"host": HOST, "port": str(port), "disable_auth": "true", "backend": "exllamav3",
+            "model_dir": str(model_dir(mid)).replace("\\", "/"), "model_name": "model"}
+    for p in params:
+        if p.get("on", True) and p.get("flag"):
+            sets[p["flag"].lstrip("-").replace("-", "_")] = str(p.get("value", "")).strip() or "true"
+    import re as _re
+    for key, val in sets.items():
+        sample, _n = _re.subn(rf"(?m)^(\s*){_re.escape(key)}:.*$", rf"\g<1>{key}: {val}", sample, count=1)
+    (kd / "tabbyAPI" / "config.yml").write_text(sample, encoding="utf-8")
+    return [str(kd / "venv" / "Scripts" / "python.exe"), str(kd / "tabbyAPI" / "main.py")]
+
+
 def build_cmd(mid, k, params):
     m = model_entry(mid)
     cmd = [str(kernel_exe(mid, k)), "-m", str(file_path(mid, m["model"]))]
@@ -278,13 +298,15 @@ def start_server(mid, preset, k, params):
     port = catalog().get("server_port", 8899)
     if is_strata(k):
         cmd = strata_config(mid, k, params, port) + ["--port", str(port)]
+    elif is_tabby(k):
+        cmd = tabby_config(mid, k, params, port)
     else:
         cmd = build_cmd(mid, k, params) + ["--host", HOST, "--port", str(port)]
     env = dict(os.environ)
-    env["PATH"] = str(kernel_dir(mid, k)) + os.pathsep + env.get("PATH", "")
+    env["PATH"] = str(kernel_dir(mid, k)) + os.pathsep + str(kernel_dir(mid, k) / "cuda") + os.pathsep + env.get("PATH", "")
     log.clear()
     log.append("[launcher] " + subprocess.list2cmdline(cmd))
-    proc = subprocess.Popen(cmd, cwd=kernel_dir(mid, k), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    proc = subprocess.Popen(cmd, cwd=kernel_dir(mid, k) / "tabbyAPI" if is_tabby(k) else kernel_dir(mid, k), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                             encoding="utf-8", errors="replace", env=env,
                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     threading.Thread(target=reader, args=(proc,), daemon=True).start()
@@ -341,7 +363,7 @@ def server_health():
         return "stopped"
     try:
         with urllib.request.urlopen(f"http://{HOST}:{state['port']}/health", timeout=2) as r:
-            return "ready" if json.loads(r.read()).get("status") == "ok" else "loading"
+            return "ready" if json.loads(r.read()).get("status") in ("ok", "healthy") else "loading"
     except urllib.error.HTTPError as e:
         return "loading" if e.code == 503 else "error"
     except Exception:

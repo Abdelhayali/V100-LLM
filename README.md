@@ -6,26 +6,32 @@ mode, and ships a test suite that scores models in a leaderboard.
 
 You don't need WSL, Docker, CUDA, Visual Studio or Python: the folder brings its own engines, CUDA runtime and Python.
 
-![leaderboard](eval/results/leaderboard.png)
-
 <!-- LEADERBOARD -->
-## Leaderboard
+## Leaderboard (hard suite v2)
 
-Scores are 0-100 per category (pass rates), and Overall is their mean. Gen tok/s is the mean over replies of 64+ tokens. Prompt tok/s is measured on short prompts; see the model table for long-context prompt speed. Rebuild this table with `EVALUATE.bat`.
+![leaderboard](eval/results_hard/leaderboard.png)
 
-| # | Model | Kernel | Size (GB) | Gen tok/s | Prompt tok/s (short) | Coding | Chat & reasoning | Instructions | Web search | Agent | Vision | Overall |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | MiniCPM-V 4.7 35B-A3B IQ3_XS | llamacpp | 14.5 | 42.7 | 115 | 100 | 83 | 100 | 100 | 100 | 100 | **97.2** |
-| 2 | Qwen3.8-27B PXQ3 | pxa | 12.4 | 22.8 | 97 | 100 | 83 | 100 | 100 | 100 | 100 | **97.2** |
-| 3 | Underdog Saluki 27B (Qwen3.8 2-bit, MTP) | llamacpp | 8.3 | 52.9 | 84 | 100 | 83 | 100 | 100 | 100 | 100 | **97.2** |
-| 4 | Ternary-Bonsai-2-27B Uncensored Heretic | prism | 7.2 | 44.1 | 133 | 100 | 75 | 100 | 100 | 100 | 100 | **95.8** |
-| 5 | NVIDIA Nemotron-3.5-Bolt-74B-A9B (2-bit) | llamacpp | 22.0 | 17.8 | 29 | 100 | 92 | 100 | 100 | 100 | 75 | **94.5** |
-| 6 | PXA-Fusion4-35B-A3B PXQ2 | pxa | 11.2 | 69.8 | 478 | 83 | 75 | 100 | 100 | 100 | 100 | **93.0** |
-| 7 | Ornith-1.5-35B-A3B PXQ2 | pxa | 11.2 | 65.9 | 362 | 83 | 75 | 100 | 100 | 100 | 100 | **93.0** |
-| 8 | Strata: Qwen3.8-Flash-Next 125B IQ2_XS | strata | 63.3 | 27.4 | 44 | 100 | 75 | 100 | 83 | 100 | 100 | **93.0** |
-| 9 | Qwen3.8-27B HauhauCS Aggressive IQ3_XS | fastmtp | 13.1 | 47.1 | 101 | 100 | 67 | 88 | 100 | 100 | 100 | **92.4** |
+72 tasks in 7 categories, every one graded by code (see [Evaluating models](#evaluating-models)). Scores are 0-100 per category, and Overall is the mean of the categories. Gen tok/s is the mean generation speed over replies of 64+ tokens; prompt tok/s is measured on short prompts. Every model runs with its recommended preset from `catalog.json`. Rebuild this table with `EVALUATE.bat`.
 
-> Fusion4 and Ornith: with the model card's repetition penalties they scored **45** and **74**, because the penalties corrupt numbers, code and tool calls (8080 became 80). Their default preset leaves the penalties off, and the penalties are still available as the `creative` preset.
+| # | Model | Kernel | Size (GB) | Gen tok/s | Prompt tok/s (short) | Coding | Reasoning | Instructions | Web search | Agent | Vision | Long context | Overall |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Qwen3.8-27B HauhauCS Aggressive IQ3_XS | fastmtp | 13.1 | 42.2 | 387 | 88 | 95 | 50 | 100 | 100 | 88 | 100 | **88.6** |
+| 2 | MiniCPM-V 4.7 35B-A3B Q3 mix (official mix_q3gud_im) | llamacpp | 15.5 | 56.2 | 467 | 88 | 100 | 50 | 88 | 100 | 88 | 100 | **87.5** |
+| 3 | MiniCPM-V 4.7 35B-A3B IQ3_XS | llamacpp | 14.5 | 41.4 | 476 | 94 | 100 | 42 | 88 | 100 | 88 | 100 | **87.2** |
+| 4 | MiniCPM-V 4.7 35B-A3B Uncensored Q4_K-IQ4_XS (AtomicChat) | llamacpp | 20.1 | 38.3 | 376 | 88 | 100 | 33 | 100 | 100 | 88 | 100 | **86.9** |
+| 5 | Strata: Qwen3.8-Flash-Next 125B IQ2_XS | strata | 68.0 | 34.1 | 1163 | 88 | 100 | 50 | 88 | 100 | 75 | 100 | **85.7** |
+| 6 | Qwen3.8-27B HauhauCS Aggressive Q2_K_P (long context) | llamacpp | 10.7 | 41.6 | 326 | 75 | 95 | 42 | 100 | 100 | 88 | 50 | **78.5** |
+| 7 | Ternary-Bonsai-2-27B Uncensored Heretic | prism | 7.2 | 39.5 | 363 | 56 | 100 | 42 | 100 | 100 | 88 | 50 | **76.5** |
+| 8 | Underdog Saluki 27B (Qwen3.8 2-bit, MTP) | llamacpp | 8.3 | 46.8 | 351 | 62 | 95 | 42 | 88 | 100 | 88 | 50 | **74.9** |
+| 9 | PXA-Fusion4-35B-A3B PXQ2 | pxa | 11.2 | 70.0 | 2384 | 38 | 90 | 25 | 88 | 100 | 75 | 100 | **73.6** |
+| 10 | Qwen3.8-27B PXQ3 | pxa | 12.4 | 19.8 | 573 | 75 | 95 | 42 | 100 | 100 | 88 | 0 | **71.3** |
+| 11 | Ornith-1.5-35B-A3B PXQ2 | pxa | 11.2 | 64.1 | 2333 | 50 | 85 | 33 | 100 | 83 | 75 | 0 | **60.9** |
+
+Notes:
+- Long context is a ~14k-token text with three facts hidden in different places that have to be combined. Qwen3.8-27B PXQ3 runs with an 8k context preset, so the text does not fit; Ornith runs with 16k and still answered wrong.
+- Fusion4 and Ornith run without the model card's repetition penalties. With them they scored much lower, because the penalties corrupt numbers, code and tool calls (8080 became 80). The penalties are still available as the `creative` preset.
+- ExLlamaV3 (Qwen3.8-27B EXL3) runs on the V100 but at ~11 tok/s, so it is not scored.
+- The older, easier suite (v1) is still in `eval/results/`; most models scored 90-100 there, which is why v2 exists.
 <!-- /LEADERBOARD -->
 
 ## Quick start
@@ -44,17 +50,26 @@ launcher for your own settings.
 
 ## Models (tested on one Tesla V100-SXM2-16GB, Xeon E5-2660 v4, 64 GB DDR4)
 
-| Model | Engine | Size | Context | Speed (gen) | Full-context test | Vision |
-|---|---|---|---|---|---|---|
-| PXA-Fusion4-35B-A3B PXQ2 | PXA | 11.2 GB | 16k | 64-76 tok/s | – | GPU |
-| Ornith-1.5-35B-A3B PXQ2 | PXA | 11.2 GB | 16k | ~60 tok/s | – | GPU |
-| Qwen3.8-27B PXQ3 | PXA | 12.4 GB | 8k | ~27 tok/s | – | GPU |
-| Qwen3.8-27B HauhauCS IQ3_XS + FastMTP | FastMTP | 12.2 GB | 24k / 80k / 120k | 40-53 tok/s | 118k ✓ | GPU (80k) / CPU (120k) |
-| **Underdog Saluki 27B** (2-bit + MTP) | llama.cpp | 8.4 GB | **262k** | 36-52 tok/s | 252k ✓ | CPU |
-| **Ternary-Bonsai-2-27B Heretic** PQ2_0 | Prism | 7.2 GB | **262k** | 47-50 tok/s | 252k ✓ | GPU |
-| **MiniCPM-V 4.7 35B-A3B** IQ3_XS | llama.cpp | 14.5 GB | **262k** | 39-41 tok/s | 252k ✓ | GPU |
-| **NVIDIA Nemotron-3.5-Bolt-74B-A9B** (2-bit) | llama.cpp | 22.0 GB | **262k** | ~20 tok/s | 250k ✓ | CPU |
-| **Strata: Qwen3.8-Flash-Next 125B** IQ2_XS | Strata | ~63 GB | **262k** | 12-18 tok/s | – | CPU |
+| Model | Engine | Size | Context | Speed (gen) | Full-context test | Vision | System RAM used | Best for |
+|---|---|---|---|---|---|---|---|---|
+| **MiniCPM-V 4.7 35B-A3B Q3 mix** (official mix_q3gud_im) | llama.cpp | 15.5 GB | **262k** | **54-56 tok/s** | not run yet | GPU | ~4 GB (2.8 GB experts) | **best all-rounder** |
+| **Qwen3.8-27B HauhauCS IQ3_XS** + FastMTP | FastMTP | 12.2 GB | 24k / 80k / 120k | 40-53 tok/s | 118k ✓ | GPU (80k) / CPU (120k) | ~2 GB | top score, uncensored |
+| **MiniCPM-V 4.7 35B-A3B** IQ3_XS | llama.cpp | 14.5 GB | **262k** | 39-41 tok/s | 252k ✓ | GPU | ~3.5 GB (2.1 GB experts) | coding |
+| MiniCPM-V 4.7 35B-A3B Uncensored Q4_K-IQ4_XS (AtomicChat) | llama.cpp | 20.1 GB | **262k** | 33-38 tok/s | not run yet | GPU | ~9.5 GB (7.9 GB experts) | uncensored + long context |
+| MiniCPM-V 4.7 35B-A3B CRACK Q4_K_M (dealignai) + DSpark | llama.cpp | 22.5 GB | **262k** | being tuned | not run yet | GPU | ~9 GB | uncensored |
+| Qwen3.8-27B HauhauCS Q2_K_P | llama.cpp | 10.7 GB | **160k** | ~42 tok/s | not run yet | CPU | ~3 GB | long context on the 27B |
+| **Ternary-Bonsai-2-27B Heretic** PQ2_0 | Prism | 7.2 GB | **262k** | 40-50 tok/s | 252k ✓ | GPU | ~2 GB | smallest |
+| **Underdog Saluki 27B** (2-bit + MTP) | llama.cpp | 8.4 GB | **262k** | 36-52 tok/s | 252k ✓ | CPU | ~3 GB | |
+| PXA-Fusion4-35B-A3B PXQ2 | PXA | 11.2 GB | 16k | 64-76 tok/s | – | GPU | ~2 GB | speed |
+| Ornith-1.5-35B-A3B PXQ2 | PXA | 11.2 GB | 16k | ~60 tok/s | – | GPU | ~2 GB | |
+| Qwen3.8-27B PXQ3 | PXA | 12.4 GB | 8k | 20-27 tok/s | – | GPU | ~2 GB | |
+| **NVIDIA Nemotron-3.5-Bolt-74B-A9B** (2-bit) | llama.cpp | 22.0 GB | **262k** | ~20 tok/s | 250k ✓ | CPU | ~9 GB | |
+| **Strata: Qwen3.8-Flash-Next 125B** IQ2_XS | Strata | 68 GB | **262k** | ~34 tok/s | – | CPU | most of 64 GB | |
+
+Every preset is tuned to fill the 16 GB of VRAM (about 15-15.5 GB used). "System RAM used" is the MoE expert weights kept in
+RAM (`--n-cpu-moe`, measured from the GGUF tensors) plus ~1.5 GB for the engine itself; the vision encoder adds ~1 GB when it
+runs on the CPU. CPU threads: the MiniCPM-V presets use `-t 14`, the others the engine default (one per physical core). The
+CPU only does real work for models that keep experts or the vision encoder in RAM.
 
 "Full-context test": a prompt of about 250,000 tokens with one secret code hidden in the middle. The model has to return it
 exactly. Models bigger than 16 GB (Nemotron, Strata, part of MiniCPM-V) keep some experts in system RAM; they need 32-64 GB of
@@ -97,30 +112,56 @@ CUDA 13 dropped Volta, so every engine here is built with CUDA 12.x for `sm_70`.
 
 ## Evaluating models
 
-`EVALUATE.bat` starts each installed model with its recommended preset, runs the test suite and rebuilds
-`eval/results/leaderboard.html`, `.png` and `.md`.
+`EVALUATE.bat` starts each installed model with its recommended preset (it starts the GUI launcher in the background if it is not running), runs the hard test suite (v2) and rebuilds `eval/results_hard/leaderboard.html`, `.png` and `.md`.
 
 ```
-EVALUATE.bat                     every installed model that has no score yet
-EVALUATE.bat saluki-27b          one model
-EVALUATE.bat saluki-27b --redo   score it again
+EVALUATE.bat                              every installed model that has no score yet
+EVALUATE.bat saluki-27b                   one model
+EVALUATE.bat saluki-27b:262k              one model, a specific preset
+EVALUATE.bat saluki-27b --redo            score it again
+EVALUATE.bat saluki-27b --redo --only=coding   re-run one category and merge it into the old result
+EVALUATE.bat --basic                      the older, easier suite (v1, eval/results/)
 ```
 
-Six categories, all graded by code with no LLM judge, offline and deterministic (temperature 0, thinking off):
+Then `runtime\python\python.exe tools\readme-leaderboard.py` copies the new table into this README.
 
-| Category | Tasks | Graded by |
-|---|---|---|
-| Coding | 12 Python functions | hidden unit tests run on the generated code |
-| Chat & reasoning | 12 math / logic / knowledge questions | exact answer |
-| Instruction following | 8 IFEval-style rules | rule checkers |
-| Web search | 6 questions needing a `web_search` tool (fixed results) | right tool + query (½), answer uses the results (½) |
-| Agent | 5 multi-step tool loops (files, calculator, calendar) | final state of the simulated environment |
-| Vision | 4 generated images (shapes, text, chart, table) | exact answer |
+### How the hard suite works
+
+The first suite (v1) was too easy: most models scored 90-100, so it could not tell them apart. The hard suite (v2) is built
+so that no 16 GB-class model gets everything right. It has 72 tasks in 7 categories:
+
+| Category | Tasks | What the model has to do | Graded by |
+|---|---|---|---|
+| Coding | 16 | Write Python functions with traps: an expression parser without `eval`, regex matching, Dijkstra with tie-breaking, LRU cache with TTL, topological sort, edit distance, Roman numerals, sudoku, knapsack, spiral matrix, JSON minifier... | hidden edge-case unit tests run on the generated code (sandboxed, with a timeout) |
+| Reasoning | 20 | Multi-step math, logic, dates, combinatorics and word problems | exact answer on the last line |
+| Instructions | 12 | Follow 3-5 rules at once (word counts, forbidden letters, exact formats, ordering, JSON shape...) | rule checkers; all rules of a task must hold |
+| Web search | 8 | Multi-hop questions: search, read the result, search again with what was found, sometimes compute with a `calculator` tool | right answer, and the minimum number of distinct searches; the "web" is a fixed offline index of 13 pages |
+| Agent | 6 | Work on a small simulated project with file tools and `run_tests`: fix a bug, add a function, rename across files, fix a config, build a CSV report | the final state of the files and the project's own tests |
+| Vision | 8 | Generated images: sum a table column, look up a row, read a bar chart, count dots, read small text, spatial relations, an analog clock, a receipt | exact answer |
+| Long context | 2 | A ~14k-token text with three facts hidden far apart that have to be combined (a vault code split in 3 parts, a chain of ages) | exact answer |
+
+Rules that keep the results fair and repeatable:
+- **No LLM judge.** Everything is checked by code, so the same answer always gets the same score.
+- **Deterministic and offline:** temperature 0, thinking off, no internet access (web search uses the fixed index).
+- **Same preset as users get:** each model runs with its recommended GUI preset, so the speed and score match what you see.
+- **Every task is proven solvable:** `eval/reference_solutions.py` holds a correct solution for every coding and agent task, and
+  `selftest_hard.py` / `selftest_agent.py` check that they pass the graders. Computed answers (dates, sums,
+  codes) are asserted in `tasks_hard.py`.
+- **Answer extraction:** the model may think out loud; the grader takes the final line. Tool calls are accepted in the OpenAI
+  format and in the Qwen XML / `<tool_call>` text formats.
+- **Score:** each category is the percentage of passed tasks; Overall is the mean of the 7 categories (each category weighs
+  the same). Speed (gen tok/s) is the mean over replies of 64+ tokens during the run.
+
+Every run is saved in `eval/results_hard/<model>.json` with each task's answer and pass/fail, so you can see why a model lost
+points.
 
 **Adding a new model:**
 1. Add an entry to `tools/catalog-src.json`: files (Hugging Face repo + file name) and a preset (kernel + parameters).
 2. Run `runtime\python\python.exe tools\make-catalog.py`. It fills in sizes and SHA-256 sums.
-3. Restart the GUI, download the model, press Start to tune it, then run `EVALUATE.bat <id>`.
+3. Restart the GUI, download the model, press Start to check it works, then run `EVALUATE.bat <id>`.
+
+**Adding new tasks:** add them to `eval/tasks_hard.py` (and a reference solution for coding/agent tasks), run
+`selftest_hard.py`, then re-score with `EVALUATE.bat --redo --only=<category>`.
 
 ## Credits and licences
 
