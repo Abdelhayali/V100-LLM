@@ -1,0 +1,12 @@
+models/*/model/
+models/*/kernel/
+models/*/*.log
+models/*/setup.log
+_kernels/
+_release/
+_build/
+runtime/
+user-params.json
+*.log
+__pycache__/
+

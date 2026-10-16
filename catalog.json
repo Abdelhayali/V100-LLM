@@ -1,0 +1,1367 @@
+{
+ "server_port": 8899,
+ "kernels": {
+  "pxa": {
+   "name": "PXA (Windows port, sm_70)",
+   "desc": "PXA engine: PXQ models + standard GGUF. Not PXQN.",
+   "exe": "llama-server.exe",
+   "download": [
+    {
+     "url": "https://github.com/Abdelhayali/V100-LLM/releases/download/kernels-v1/kernel-pxa.zip"
+    }
+   ]
+  },
+  "fastmtp": {
+   "name": "llama.cpp 4df29be + HauhauCS FastMTP (sm_70)",
+   "desc": "FastMTP draft sidecar, draft-mtp speculation.",
+   "exe": "llama-server.exe",
+   "download": [
+    {
+     "url": "https://github.com/Abdelhayali/V100-LLM/releases/download/kernels-v1/kernel-fastmtp.zip"
+    }
+   ]
+  },
+  "llamacpp": {
+   "name": "llama.cpp latest f336359 (sm_70)",
+   "desc": "Upstream llama.cpp (Oct 2026): Nemotron-H, MiniCPM-V 4.7, draft-mtp, DFlash.",
+   "exe": "llama-server.exe",
+   "download": [
+    {
+     "url": "https://github.com/Abdelhayali/V100-LLM/releases/download/kernels-v1/kernel-llamacpp.zip"
+    }
+   ]
+  },
+  "prism": {
+   "name": "Prism ML llama.cpp b10777 (CUDA 12.4)",
+   "desc": "Ternary PQ2_0 / PTQ1_0 kernels for Bonsai models. Official Prism release.",
+   "exe": "llama-server.exe",
+   "download": [
+    {
+     "url": "https://github.com/PrismML-Eng/llama.cpp/releases/download/prism-b10777-e3de715/llama-prism-b10777-e3de715-bin-win-cuda-12.4-x64.zip"
+    },
+    {
+     "url": "https://github.com/PrismML-Eng/llama.cpp/releases/download/prism-b10777-e3de715/cudart-llama-bin-win-cuda-12.4-x64.zip"
+    }
+   ]
+  },
+  "strata": {
+   "name": "Strata 0.1.44.1 (experimental CUDA 12 engine, sm_70)",
+   "type": "strata",
+   "desc": "Strata engine + its Python server: Qwen3.8-Flash-Next (125B MoE) from a GPU + 64 GB RAM.",
+   "exe": "engine-cuda12\\strata.exe",
+   "download": [
+    {
+     "url": "https://github.com/Abdelhayali/V100-LLM/releases/download/kernels-v1/kernel-strata.zip"
+    }
+   ]
+  }
+ },
+ "models": [
+  {
+   "id": "fusion4-35b-pxq2",
+   "name": "PXA-Fusion4-35B-A3B PXQ2",
+   "desc": "MoE ~3B active, fastest (64-76 tok/s). Abliterated.",
+   "files": [
+    {
+     "name": "PXA-Fusion4-35B-PXQ2.gguf",
+     "repo": "poisonxa/PXA-Fusion4-35B-GGUF",
+     "sha256": "92d7c2533f034fc5548254d8f5a427456aec44c1160d95791e5221e985039fc5",
+     "size": 11243296832,
+     "url": "https://huggingface.co/poisonxa/PXA-Fusion4-35B-GGUF/resolve/main/PXA-Fusion4-35B-PXQ2.gguf"
+    },
+    {
+     "name": "mmproj-fusion2-f16.gguf",
+     "repo": "poisonxa/PXA-bench-files-GGUF",
+     "sha256": "556ff9a8a0ffa3ff924e8c1b8aefb6e16a3551abc8c9b38643233f69592df14d",
+     "size": 902823040,
+     "url": "https://huggingface.co/poisonxa/PXA-bench-files-GGUF/resolve/main/mmproj-fusion2-f16.gguf"
+    }
+   ],
+   "model": "PXA-Fusion4-35B-PXQ2.gguf",
+   "mmproj": "mmproj-fusion2-f16.gguf",
+   "presets": [
+    {
+     "id": "default",
+     "name": "16k context, vision on GPU (no penalties: best for code/tools)",
+     "kernel": "pxa",
+     "kernels": [
+      "pxa"
+     ],
+     "bench": "64-76 tok/s gen, 2014 tok/s prompt",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       "all layers on GPU (PXQ needs it)"
+      ],
+      [
+       "-c",
+       "16384",
+       "context"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--reasoning",
+       "off",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "creative",
+     "name": "16k context, vision on GPU (model-card repetition penalties)",
+     "kernel": "pxa",
+     "kernels": [
+      "pxa"
+     ],
+     "bench": "model-card penalties: fewer loops in long prose, but they corrupt numbers, code and tool calls",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       "all layers on GPU (PXQ needs it)"
+      ],
+      [
+       "-c",
+       "16384",
+       "context"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--reasoning",
+       "off",
+       ""
+      ],
+      [
+       "--presence-penalty",
+       "1.5",
+       "model card"
+      ],
+      [
+       "--repeat-penalty",
+       "1.15",
+       "model card"
+      ],
+      [
+       "--repeat-last-n",
+       "256",
+       ""
+      ],
+      [
+       "--dry-multiplier",
+       "0.8",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ornith-35b-pxq2",
+   "name": "Ornith-1.5-35B-A3B PXQ2",
+   "desc": "MoE coding/agentic model, ~60 tok/s.",
+   "files": [
+    {
+     "name": "Ornith-1.5-35B-A3B-PXQ2-GGUF.gguf",
+     "repo": "mistrjirka/Ornith-1.5-35B-A3B-PXQ-GGUF",
+     "sha256": "5beafd47f6344238f4dadcbbb6c4aeb68550c99d16dd0985cd7452a049371dc4",
+     "size": 11202367360,
+     "url": "https://huggingface.co/mistrjirka/Ornith-1.5-35B-A3B-PXQ-GGUF/resolve/main/Ornith-1.5-35B-A3B-PXQ2-GGUF.gguf"
+    },
+    {
+     "name": "mmproj-Ornith-1.5-35B-BF16.gguf",
+     "repo": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+     "sha256": "1921a36a85aee56cd2abd27f46701802c9d85a33474792e600df6c3b282a135d",
+     "size": 902822240,
+     "url": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF/resolve/main/mmproj-Ornith-1.5-35B-BF16.gguf"
+    }
+   ],
+   "model": "Ornith-1.5-35B-A3B-PXQ2-GGUF.gguf",
+   "mmproj": "mmproj-Ornith-1.5-35B-BF16.gguf",
+   "presets": [
+    {
+     "id": "default",
+     "name": "16k context, vision on GPU (no penalties: best for code/tools)",
+     "kernel": "pxa",
+     "kernels": [
+      "pxa"
+     ],
+     "bench": "~60 tok/s gen",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "-c",
+       "16384",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--reasoning",
+       "off",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "creative",
+     "name": "16k context, vision on GPU (model-card repetition penalties)",
+     "kernel": "pxa",
+     "kernels": [
+      "pxa"
+     ],
+     "bench": "model-card penalties: fewer loops in long prose, but they corrupt numbers, code and tool calls",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "-c",
+       "16384",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--reasoning",
+       "off",
+       ""
+      ],
+      [
+       "--presence-penalty",
+       "1.5",
+       ""
+      ],
+      [
+       "--repeat-penalty",
+       "1.15",
+       ""
+      ],
+      [
+       "--repeat-last-n",
+       "256",
+       ""
+      ],
+      [
+       "--dry-multiplier",
+       "0.8",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "qwen3.8-27b-pxq3",
+   "name": "Qwen3.8-27B PXQ3",
+   "desc": "Dense 27B in PXA's PXQ3 format.",
+   "files": [
+    {
+     "name": "Qwen3.8-27B-PXQ3-GGUF.gguf",
+     "repo": "mistrjirka/Qwen3.8-27B-PXQ-GGUF",
+     "sha256": "db2b7d905c5a278f40a16cbc1c69bd1bf5fb7711b112a6ed894d9a78336b8428",
+     "size": 12441111328,
+     "url": "https://huggingface.co/mistrjirka/Qwen3.8-27B-PXQ-GGUF/resolve/main/Qwen3.8-27B-PXQ3-GGUF.gguf"
+    },
+    {
+     "name": "mmproj-Qwen3.8-27B-Q8_0.gguf",
+     "repo": "ggml-org/Qwen3.8-27B-GGUF",
+     "sha256": "2e968a6af97ce35d8971890b257b9b7edabf20ad91450501fa53162a19ee33eb",
+     "size": 629247008,
+     "url": "https://huggingface.co/ggml-org/Qwen3.8-27B-GGUF/resolve/main/mmproj-Qwen3.8-27B-Q8_0.gguf"
+    }
+   ],
+   "model": "Qwen3.8-27B-PXQ3-GGUF.gguf",
+   "mmproj": "mmproj-Qwen3.8-27B-Q8_0.gguf",
+   "presets": [
+    {
+     "id": "default",
+     "name": "8k context, vision on GPU",
+     "kernel": "pxa",
+     "kernels": [
+      "pxa"
+     ],
+     "bench": "~27 tok/s gen",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "-c",
+       "8192",
+       "16 GB limit with vision"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--reasoning",
+       "off",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "hauhau-qwen3.8-27b",
+   "name": "Qwen3.8-27B HauhauCS Aggressive IQ3_XS",
+   "desc": "Dense 27B, uncensored (aggressive), FastMTP sidecar.",
+   "files": [
+    {
+     "name": "Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-IQ3_XS.gguf",
+     "repo": "HauhauCS/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-MTP-GGUF",
+     "sha256": "e22208325e05d8561b51829048e52512da57c2bf8d54866199c4126c45bd3504",
+     "size": 12175558784,
+     "url": "https://huggingface.co/HauhauCS/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-MTP-GGUF/resolve/main/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-IQ3_XS.gguf"
+    },
+    {
+     "name": "Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-FastMTP-32K.gguf",
+     "repo": "HauhauCS/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-MTP-GGUF",
+     "sha256": "115e618e1f73cb50817ed5856f0551c6bf9c3d94df96f440eaca78dc63b8968b",
+     "size": 903453952,
+     "url": "https://huggingface.co/HauhauCS/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-MTP-GGUF/resolve/main/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-FastMTP-32K.gguf"
+    },
+    {
+     "name": "mmproj-Qwen3.8-27B-Q8_0.gguf",
+     "repo": "ggml-org/Qwen3.8-27B-GGUF",
+     "sha256": "2e968a6af97ce35d8971890b257b9b7edabf20ad91450501fa53162a19ee33eb",
+     "size": 629247008,
+     "url": "https://huggingface.co/ggml-org/Qwen3.8-27B-GGUF/resolve/main/mmproj-Qwen3.8-27B-Q8_0.gguf"
+    }
+   ],
+   "model": "Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-IQ3_XS.gguf",
+   "mmproj": "mmproj-Qwen3.8-27B-Q8_0.gguf",
+   "presets": [
+    {
+     "id": "fast",
+     "name": "FastMTP, 24k context",
+     "kernel": "fastmtp",
+     "kernels": [
+      "fastmtp"
+     ],
+     "bench": "40-53 tok/s gen",
+     "params": [
+      [
+       "--spec-type",
+       "draft-mtp",
+       ""
+      ],
+      [
+       "--spec-draft-model",
+       "{model:Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-FastMTP-32K.gguf}",
+       "FastMTP sidecar"
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "2",
+       "4 = faster for code"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "24576",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--no-mmap",
+       "",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--reasoning",
+       "off",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "80k",
+     "name": "FastMTP, 80k context, vision on GPU",
+     "kernel": "fastmtp",
+     "kernels": [
+      "fastmtp"
+     ],
+     "bench": "~46 tok/s short, ~22 tok/s at 77k (tested)",
+     "params": [
+      [
+       "--spec-type",
+       "draft-mtp",
+       ""
+      ],
+      [
+       "--spec-draft-model",
+       "{model:Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-FastMTP-32K.gguf}",
+       ""
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "2",
+       ""
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "81920",
+       "90k ran out of memory"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--no-mmap",
+       "",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       "128 crashes, 512 OOM"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--reasoning",
+       "off",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "120k",
+     "name": "120k context, vision on CPU",
+     "kernel": "fastmtp",
+     "kernels": [
+      "fastmtp"
+     ],
+     "bench": "~46 tok/s short, ~14 tok/s at 118k (tested)",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "built-in MTP head"
+      ],
+      [
+       "--spec-draft-n-max",
+       "2",
+       ""
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "--spec-draft-type-k",
+       "q4_0",
+       ""
+      ],
+      [
+       "--spec-draft-type-v",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "122880",
+       ""
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--no-mmap",
+       "",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--reasoning",
+       "off",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "nemotron-bolt-74b",
+   "name": "NVIDIA Nemotron-3.5-Bolt-74B-A9B (2-bit)",
+   "desc": "74B Mamba-2/MoE hybrid VLM. Experts split GPU/RAM (needs 32+ GB RAM).",
+   "files": [
+    {
+     "name": "NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB.gguf",
+     "repo": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-GGUF",
+     "sha256": "91d63363e782c8a3d5f4be42816eba8e0d42dd2530bd07a7d0d2dc440599af75",
+     "size": 22018326528,
+     "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-GGUF/resolve/main/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB.gguf"
+    },
+    {
+     "name": "mmproj-NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB.gguf",
+     "repo": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-GGUF",
+     "sha256": "0ee891eadc7bf0cae6289b249c74eb1ef420534351f6ef8b64d49f0ca6a926b0",
+     "size": 1733692736,
+     "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-GGUF/resolve/main/mmproj-NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB.gguf"
+    }
+   ],
+   "model": "NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB.gguf",
+   "mmproj": "mmproj-NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB.gguf",
+   "presets": [
+    {
+     "id": "262k",
+     "name": "262k context, vision on CPU",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "~20 tok/s gen, ~275 tok/s prompt; 250k-token prompt OK (231 tok/s prompt, 12.8 tok/s gen at 250k); image OK",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder needs 1.7 GB GPU otherwise"
+      ],
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "44",
+       "experts of 44 layers in RAM (tuned)"
+      ],
+      [
+       "-t",
+       "14",
+       "CPU threads (tuned)"
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       ""
+      ],
+      [
+       "-ctk",
+       "q8_0",
+       ""
+      ],
+      [
+       "-ctv",
+       "q8_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "1.0",
+       "model card"
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "0",
+       ""
+      ],
+      [
+       "--min-p",
+       "0.0",
+       ""
+      ],
+      [
+       "--repeat-penalty",
+       "1.0",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "saluki-27b",
+   "name": "Underdog Saluki 27B (Qwen3.8 2-bit, MTP)",
+   "desc": "7.9 GB 2-bit Qwen3.8-27B tuned for tool calling; MTP head for speed.",
+   "files": [
+    {
+     "name": "Underdog-Saluki-27B-1.0-IQ2-mix-MTP.gguf",
+     "repo": "Kujira/Underdog-Saluki-27B-1.0-MTP-GGUF",
+     "sha256": "98f6ebb527917a2541df8e667d51c3ec8a8bb135b44c606d40cc6ed924e89e52",
+     "size": 8349689920,
+     "url": "https://huggingface.co/Kujira/Underdog-Saluki-27B-1.0-MTP-GGUF/resolve/main/Underdog-Saluki-27B-1.0-IQ2-mix-MTP.gguf"
+    },
+    {
+     "name": "mmproj-Underdog-Saluki-27B-1.0-Q8_0.gguf",
+     "repo": "ConwayResearch/Underdog-Saluki-27B-1.0",
+     "sha256": "2e0b88b680a45a58eea666b9776a89601b16f4ef575b871a686d82ee65938756",
+     "size": 629246976,
+     "url": "https://huggingface.co/ConwayResearch/Underdog-Saluki-27B-1.0/resolve/main/mmproj-Underdog-Saluki-27B-1.0-Q8_0.gguf"
+    }
+   ],
+   "model": "Underdog-Saluki-27B-1.0-IQ2-mix-MTP.gguf",
+   "mmproj": "mmproj-Underdog-Saluki-27B-1.0-Q8_0.gguf",
+   "presets": [
+    {
+     "id": "262k",
+     "name": "262k context, MTP, vision on CPU",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp",
+      "fastmtp"
+     ],
+     "bench": "36-52 tok/s gen (MTP); 252k-token prompt OK (149 tok/s prompt, 13 tok/s gen at 252k); image OK",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "needed to fit 262k"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "3",
+       ""
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       ""
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.6",
+       "model card"
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "bonsai-heretic-27b",
+   "name": "Ternary-Bonsai-2-27B Uncensored Heretic",
+   "desc": "Ternary (1.58-bit) Qwen3.8-27B with a Heretic LoRA baked in. Needs the Prism kernel.",
+   "files": [
+    {
+     "name": "Ternary-Bonsai-2-27B-Uncensored-Heretic-PQ2_0.gguf",
+     "repo": "OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF",
+     "sha256": "c0959544f1422c569d07ccef8911dc0d016034bc1285d91010a6630fdf4c4dda",
+     "size": 7206168928,
+     "url": "https://huggingface.co/OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF/resolve/main/Ternary-Bonsai-2-27B-Uncensored-Heretic-PQ2_0.gguf"
+    },
+    {
+     "name": "Ternary-Bonsai-2-27B-Uncensored-Heretic-PTQ1_0.gguf",
+     "repo": "OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF",
+     "sha256": "a18c3e17da397838305522b3ee877f9d2cbf4facd04ba01a394b22f3f3a477be",
+     "size": 5946648928,
+     "url": "https://huggingface.co/OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF/resolve/main/Ternary-Bonsai-2-27B-Uncensored-Heretic-PTQ1_0.gguf"
+    },
+    {
+     "name": "mmproj-Q8_0.gguf",
+     "repo": "OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF",
+     "sha256": "6807ede61d570bb86ba34b756a0fa109edc33668604de867c6ea6d8f1d631903",
+     "size": 629246976,
+     "url": "https://huggingface.co/OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF/resolve/main/mmproj-Q8_0.gguf"
+    }
+   ],
+   "model": "Ternary-Bonsai-2-27B-Uncensored-Heretic-PQ2_0.gguf",
+   "mmproj": "mmproj-Q8_0.gguf",
+   "presets": [
+    {
+     "id": "262k",
+     "name": "262k context, vision on GPU (PQ2_0)",
+     "kernel": "prism",
+     "kernels": [
+      "prism"
+     ],
+     "bench": "47-50 tok/s gen, 13.2 GB VRAM; 252k-token prompt OK (148 tok/s prompt, 6 tok/s gen at 252k); image on GPU 2.3 s",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       "full native context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--no-mmap",
+       "",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "1.0",
+       "model card"
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "minicpm-v4.7-35b",
+   "name": "MiniCPM-V 4.7 35B-A3B IQ3_XS",
+   "desc": "OpenBMB vision MoE (Qwen3.5/3.6 backbone, ~3B active): images + video frames. 6 layers' experts in RAM.",
+   "files": [
+    {
+     "name": "MiniCPM-V-4_7-35B-A3B-IQ3_XS.gguf",
+     "repo": "openbmb/MiniCPM-V-4.7-35B-A3B-gguf",
+     "sha256": "f14888b2a0c279e92d6c488fd194419c45cd142871398a7f70b100a1d63fb129",
+     "size": 14483689408,
+     "url": "https://huggingface.co/openbmb/MiniCPM-V-4.7-35B-A3B-gguf/resolve/main/MiniCPM-V-4_7-35B-A3B-IQ3_XS.gguf"
+    },
+    {
+     "name": "mmproj-model-f16-4x.gguf",
+     "repo": "openbmb/MiniCPM-V-4.7-35B-A3B-gguf",
+     "sha256": "30f4daac0f61c2ca28d68b5f901c0501cb7a269a1357a9e380d2c376c6ed6518",
+     "size": 910491648,
+     "url": "https://huggingface.co/openbmb/MiniCPM-V-4.7-35B-A3B-gguf/resolve/main/mmproj-model-f16-4x.gguf"
+    }
+   ],
+   "model": "MiniCPM-V-4_7-35B-A3B-IQ3_XS.gguf",
+   "mmproj": "mmproj-model-f16-4x.gguf",
+   "presets": [
+    {
+     "id": "262k",
+     "name": "262k context, vision on GPU",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "39-41 tok/s gen; 252k-token prompt OK (296 tok/s prompt, 17 tok/s gen at 252k); image on GPU 3.8 s",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "6",
+       "experts of 6 layers in RAM (tuned)"
+      ],
+      [
+       "-t",
+       "14",
+       "CPU threads"
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       "full native context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "strata-flash-next",
+   "name": "Strata: Qwen3.8-Flash-Next 125B IQ2_XS",
+   "desc": "125B MoE run by the Strata engine: experts in RAM (needs 64 GB RAM, ~110 GB disk). Prepared by Strata's own setup.",
+   "model": "models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf",
+   "mmproj": "",
+   "files": [
+    {
+     "name": "models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf",
+     "size": null
+    },
+    {
+     "name": "models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf",
+     "size": null
+    },
+    {
+     "name": "models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
+     "size": null
+    },
+    {
+     "name": "packs/iq2_xs/dense.bin",
+     "size": null
+    },
+    {
+     "name": "mtp/rt/experts.bin",
+     "size": null
+    }
+   ],
+   "setup": {
+    "env": {
+     "STRATA_EXPERIMENTAL_SM60": "1"
+    },
+    "cmd": [
+     "{python}",
+     "setup.py",
+     "--yes",
+     "--no-start",
+     "--no-browser",
+     "--family",
+     "qwen",
+     "--model",
+     "IQ2_XS",
+     "--cuda",
+     "12",
+     "--skip-build",
+     "--context",
+     "262144",
+     "--vision",
+     "cpu",
+     "--data-dir",
+     "{model}"
+    ]
+   },
+   "strata": {
+    "tokenizer": "packs/iq2_xs/tokenizer",
+    "model_name": "qwen3.8-flash-next-iq2_xs",
+    "vision": {
+     "exe": "strata-vision.exe",
+     "mmproj": "models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
+     "model": "models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf",
+     "gpu": false,
+     "max_tokens": 300,
+     "threads": 14
+    }
+   },
+   "presets": [
+    {
+     "id": "262k",
+     "name": "262k context, vision on CPU",
+     "kernel": "strata",
+     "kernels": [
+      "strata"
+     ],
+     "bench": "12-18 tok/s gen (expert cache 75% hit on 16 GB + PCIe 3.0); loads in ~6 min; image OK",
+     "params": [
+      [
+       "--pack",
+       "{model:packs/iq2_xs}",
+       ""
+      ],
+      [
+       "--native",
+       "{model:models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf}",
+       "experts (RAM)"
+      ],
+      [
+       "--ple-gguf",
+       "{model:models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf}",
+       "29 GB lookup table (SSD)"
+      ],
+      [
+       "--expert-profile",
+       "{kernel}\\data\\expert-profile.bin",
+       ""
+      ],
+      [
+       "--expert-cache",
+       "auto",
+       ""
+      ],
+      [
+       "--prefill",
+       "auto",
+       ""
+      ],
+      [
+       "--spec",
+       "4",
+       "MTP draft tokens"
+      ],
+      [
+       "--spec-min-p",
+       "0.5",
+       ""
+      ],
+      [
+       "--mtp",
+       "{model:mtp/rt}",
+       ""
+      ],
+      [
+       "--max-context",
+       "262144",
+       ""
+      ],
+      [
+       "--kv",
+       "int8",
+       ""
+      ],
+      [
+       "--kv-resident",
+       "32768",
+       "KV tokens kept in VRAM; rest streamed from RAM"
+      ],
+      [
+       "--vision",
+       "",
+       "image encoder (CPU)"
+      ],
+      [
+       "--vram-reserve-mib",
+       "700",
+       ""
+      ]
+     ]
+    }
+   ]
+  }
+ ]
+}

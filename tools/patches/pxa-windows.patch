@@ -1,0 +1,414 @@
+diff --git a/examples/mtmd/CMakeLists.txt b/examples/mtmd/CMakeLists.txt
+index 2381012..035fa60 100644
+--- a/examples/mtmd/CMakeLists.txt
++++ b/examples/mtmd/CMakeLists.txt
+@@ -16,7 +16,9 @@ add_library(mtmd
+ target_link_libraries     (mtmd PUBLIC ggml llama)
+ target_link_libraries     (mtmd PRIVATE Threads::Threads)
+ target_include_directories(mtmd PUBLIC  .)
+-target_include_directories(mtmd PRIVATE ../..)
++if (NOT WIN32) # on Windows the root VERSION file would shadow the <version> header
++    target_include_directories(mtmd PRIVATE ../..)
++endif()
+ target_include_directories(mtmd PRIVATE ../../vendor)
+ target_compile_features   (mtmd PRIVATE cxx_std_17)
+ 
+diff --git a/examples/server/CMakeLists.txt b/examples/server/CMakeLists.txt
+index e71e34d..60d43c1 100644
+--- a/examples/server/CMakeLists.txt
++++ b/examples/server/CMakeLists.txt
+@@ -97,7 +97,12 @@ if (MSVC)
+       )
+ endif()
+ # target_link_libraries(${TARGET} PRIVATE "/STACK:104857600")
+-target_include_directories(${TARGET} PRIVATE ${CMAKE_SOURCE_DIR})
++if (NOT WIN32) # on Windows the root VERSION file would shadow the <version> header
++    target_include_directories(${TARGET} PRIVATE ${CMAKE_SOURCE_DIR})
++endif()
++if (MSVC) # POSIX stand-ins (setenv, mkdir, access, gmtime_r)
++    target_compile_options(${TARGET} PRIVATE /FI${CMAKE_SOURCE_DIR}/src/pxa-win-compat.h)
++endif()
+ #target_link_libraries(${TARGET} PRIVATE common ${CMAKE_THREAD_LIBS_INIT})
+ 
+ target_include_directories(${TARGET} PRIVATE ../mtmd)
+diff --git a/examples/server/server-common.h b/examples/server/server-common.h
+index 41ca406..af373df 100644
+--- a/examples/server/server-common.h
++++ b/examples/server/server-common.h
+@@ -3,7 +3,7 @@
+ #include "common.h"
+ #include "log.h"
+ #include "llama.h"
+-#include <src/llama-impl.h>
++#include "../../src/llama-impl.h"
+ #include "chat.h"
+ #include "mtmd.h"
+ #include "mtmd-helper.h"
+diff --git a/examples/server/server-context.cpp b/examples/server/server-context.cpp
+index fc86a1a..c3cea7a 100644
+--- a/examples/server/server-context.cpp
++++ b/examples/server/server-context.cpp
+@@ -26,7 +26,9 @@
+ 
+ #include <algorithm> // PXA_KV_UNIFIED_v1: std::sort over reclaim victims
+ #include <cstring>
++#if !defined(_WIN32)
+ #include <unistd.h>
++#endif
+ #include <sys/stat.h> // PXA_CACHE_DISK_v1: the weight file's size and mtime go into the fingerprint
+ #include <fstream>
+ #include <iostream>
+diff --git a/examples/server/server-task.cpp b/examples/server/server-task.cpp
+index 06f3c6d..995f25f 100644
+--- a/examples/server/server-task.cpp
++++ b/examples/server/server-task.cpp
+@@ -5,8 +5,14 @@
+ #include <cstdio>
+ 
+ // PXA_CACHE_DISK_v1: fsync of the temporary file and of its directory before/after the rename.
++#include <filesystem>
++#if defined(_WIN32)
++#include <io.h>
++#endif
+ #include <fcntl.h>
++#if !defined(_WIN32)
+ #include <unistd.h>
++#endif
+ 
+ json result_timings::to_json() const {
+     json base = {
+@@ -1497,22 +1503,39 @@ size_t server_prompt_cache::save_file(const std::string& filepath) const {
+ 
+     // Get the bytes onto the medium BEFORE the rename, otherwise a power loss just after it leaves
+     // a short file under the real name and the next start reads a prefix of the entries.
++#if defined(_WIN32)
++    if (int fd = ::_open(tmppath.c_str(), _O_WRONLY); fd >= 0) {
++        if (::_commit(fd) != 0) {
++            LLAMA_LOG_ERROR("%s: could not flush %s to disk\n", __func__, tmppath.c_str());
++        }
++        ::_close(fd);
++    }
++#else
+     if (int fd = ::open(tmppath.c_str(), O_WRONLY); fd >= 0) {
+         if (::fsync(fd) != 0) {
+             LLAMA_LOG_ERROR("%s: could not flush %s to disk\n", __func__, tmppath.c_str());
+         }
+         ::close(fd);
+     }
++#endif
+ 
+     // rename() over an existing path is itself atomic: a reader sees either the previous file or
+     // the new one. Removing the old one first would only open a window in which neither exists.
++#if defined(_WIN32)
++    // CRT rename() refuses an existing target on Windows; filesystem::rename replaces it (MoveFileEx)
++    std::error_code rename_ec;
++    std::filesystem::rename(tmppath, filepath, rename_ec);
++    if (rename_ec) {
++#else
+     if (::rename(tmppath.c_str(), filepath.c_str()) != 0) {
++#endif
+         LLAMA_LOG_ERROR("%s: failed to move %s into place\n", __func__, tmppath.c_str());
+         ::remove(tmppath.c_str());
+         return 0;
+     }
+ 
+-    // And make the rename itself durable.
++    // And make the rename itself durable (POSIX only; NTFS journals the rename).
++#if !defined(_WIN32)
+     {
+         const size_t slash = filepath.find_last_of('/');
+         const std::string dir = slash == std::string::npos ? std::string(".") : filepath.substr(0, slash == 0 ? 1 : slash);
+@@ -1521,6 +1544,7 @@ size_t server_prompt_cache::save_file(const std::string& filepath) const {
+             ::close(dfd);
+         }
+     }
++#endif
+ 
+     LLAMA_LOG_INFO("%s: wrote %zu parked prompt(s), %.3f MiB of state, %.3f MiB total to %s\n",
+         __func__, keep.size(), n_written / (1024.0 * 1024.0), total / (1024.0 * 1024.0), filepath.c_str());
+diff --git a/examples/server/server.cpp b/examples/server/server.cpp
+index c6e6c84..b75446e 100644
+--- a/examples/server/server.cpp
++++ b/examples/server/server.cpp
+@@ -47,7 +47,7 @@
+ #include <algorithm>
+ #include <climits>
+ #include <filesystem>
+-#include <src/llama-impl.h>
++#include "../../src/llama-impl.h"
+ #include "ggml-pxqn-spec.h"   // PXA_SPEC_DEFAULTS: the per-model speculation table (closed library, absent = static rows)
+ #ifdef SQLITE3_MODERN_CPP_SUPPORT
+ #include <sqlite_modern_cpp.h>
+@@ -655,9 +655,9 @@ static std::string pxa_find_gemma4_assistant(const std::string & target) {
+         const auto sz = e.file_size(ec);
+         if (ec || sz == 0 || sz > (4ull << 30)) continue;
+         ++n_scanned;
+-        if (!llama_is_gemma4_mtp_file(e.path().c_str())) continue;
++        if (!llama_is_gemma4_mtp_file(e.path().string().c_str())) continue;
+         struct gguf_init_params ip = { /*no_alloc =*/ true, /*ctx =*/ nullptr };
+-        struct gguf_context * g = gguf_init_from_file(e.path().c_str(), ip);
++        struct gguf_context * g = gguf_init_from_file(e.path().string().c_str(), ip);
+         if (!g) continue;
+         const int k = gguf_find_key(g, "gemma4-assistant.embedding_length_out");
+         const bool ok = k >= 0 && (int64_t) gguf_get_val_u32(g, k) == want;
+diff --git a/ggml/src/ggml-backend.cpp b/ggml/src/ggml-backend.cpp
+index 327d8f0..102e84e 100644
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -4,6 +4,12 @@
+ #include "ggml-rpc.h"
+ #include "ggml-moe-prefetch.h"
+ 
++#if defined(_MSC_VER)
++#include <intrin.h>
++static inline int pxa_ctz32(unsigned int x) { unsigned long i; _BitScanForward(&i, x); return (int) i; }
++#define __builtin_ctz pxa_ctz32
++#endif
++
+ #include <atomic>
+ #include <memory>
+ #include <cassert>
+@@ -2334,7 +2340,9 @@ static bool ggml_backend_sched_alloc_splits(ggml_backend_sched_t sched) {
+ // The CUDA backend (ggml-cuda.cu) supplies the strong definition; when it is not linked in this
+ // weak one answers 0, which keeps every arch-defaulted house lever below at its historical OFF.
+ // Both definitions live in the same shared object, so the strong one wins at link time.
++#if !defined(_WIN32) // MSVC has no weak symbols; the Windows build is static and always links the CUDA definition
+ extern "C" __attribute__((weak)) int ggml_pxa_cuda_is_volta_only(void) { return 0; }
++#endif
+ 
+ // pxa_house_lever(name): the shared shape of a LEVEL-defaulted house lever. An explicit
+ // environment setting ALWAYS wins in both directions (so every A/B in the campaign log still
+diff --git a/ggml/src/ggml-cuda.cu b/ggml/src/ggml-cuda.cu
+index be29959..1472248 100644
+--- a/ggml/src/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda.cu
+@@ -8,14 +8,21 @@
+ #ifdef __GNUC__
+ __attribute__((used))
+ #endif
+-__attribute__((used, visibility("default"))) const char pxa_provenance[] =
++#if defined(__GNUC__)
++__attribute__((used, visibility("default")))
++#endif
++extern "C" const char pxa_provenance[];
++extern "C" const char pxa_provenance[] =
+     "PXA :: authored by PXA Network (pxanetwork.com) :: "
+     "creator=PXANetwork :: origin-canary=PXA-7Q6LM32E16-ORIGIN :: forensic-watermark";
+ namespace {
+ // Keep the authorship canary in the linked binary (forensic provenance) --
+ // referenced at load so --gc-sections cannot drop it.
+ struct pxa_prov_keeper_t { pxa_prov_keeper_t() { volatile const char * volatile s = pxa_provenance; (void)s; } };
+-__attribute__((used)) static pxa_prov_keeper_t pxa_prov_keeper_instance;
++#if defined(__GNUC__)
++__attribute__((used))
++#endif
++static pxa_prov_keeper_t pxa_prov_keeper_instance;
+ } // namespace
+ // SPDX-License-Identifier: MIT
+ //
+diff --git a/ggml/src/ggml-cuda/mmvq-templates.cuh b/ggml/src/ggml-cuda/mmvq-templates.cuh
+index 5265717..a81bab5 100644
+--- a/ggml/src/ggml-cuda/mmvq-templates.cuh
++++ b/ggml/src/ggml-cuda/mmvq-templates.cuh
+@@ -277,7 +277,7 @@ static __device__ void k_mul_mat_vec_q(
+                 for (int i = 0; i < rows_per_cuda_block; ++i) tmp[j][i] *= rb.anch[i];
+             }
+         }
+-    } else
++    } else {
+     for (int kbx = tid / (qi/vdr); kbx < blocks_per_row_x; kbx += blocks_per_iter) {
+         const int kby = kbx * (qk/QK8_1); // y block index that aligns with kbx
+ 
+@@ -292,6 +292,7 @@ static __device__ void k_mul_mat_vec_q(
+             }
+         }
+     }
++    }
+ 
+     // one scalar per thread: every thread only ever wrote and read element threadIdx.x of the
+     // old array, and the runtime index was enough to put it in local memory (see pxa_lane_pick).
+@@ -421,7 +422,7 @@ static __device__ void k_fused_mul_mat_vec_q(
+                 }
+             }
+         }
+-    } else
++    } else {
+     for (int kbx = tid / (qi/vdr); kbx < blocks_per_row_x; kbx += blocks_per_iter) {
+         const int kby = kbx * (qk/QK8_1); // y block index that aligns with kbx
+ 
+@@ -437,6 +438,7 @@ static __device__ void k_fused_mul_mat_vec_q(
+             }
+         }
+     }
++    }
+ 
+     __shared__ float tmp_shared_u[nwarps-1 > 0 ? nwarps-1 : 1][ncols_y][rows_per_cuda_block][WARP_SIZE];
+     __shared__ float tmp_shared_g[nwarps-1 > 0 ? nwarps-1 : 1][ncols_y][rows_per_cuda_block][WARP_SIZE];
+diff --git a/ggml/src/ggml-cuda/pxa/kq-mmv.cuh b/ggml/src/ggml-cuda/pxa/kq-mmv.cuh
+index 8b763e2..b06db12 100644
+--- a/ggml/src/ggml-cuda/pxa/kq-mmv.cuh
++++ b/ggml/src/ggml-cuda/pxa/kq-mmv.cuh
+@@ -36,6 +36,9 @@
+ // Header-only kernels (no ggml includes) so tests/test-kq-mmv.cu can instantiate them directly.
+ #pragma once
+ 
++#if defined(_MSC_VER)
++#include <intrin.h>
++#endif
+ #include <cuda_fp16.h>
+ #include <stdint.h>
+ #include <stdlib.h>
+@@ -750,7 +753,11 @@ static int kqmmv_occupancy(int nwarps, int smem) {
+     static uint64_t cache[8] = {0};
+     const uint64_t key = ((uint64_t)smem << 12) | ((uint64_t)nwarps << 6);
+     for (int i = 0; i < 8; ++i) {
++#if defined(_MSC_VER)
++        const uint64_t c = (uint64_t) _InterlockedCompareExchange64((volatile long long *) &cache[i], 0, 0);
++#else
+         const uint64_t c = __atomic_load_n(&cache[i], __ATOMIC_ACQUIRE);
++#endif
+         if (c && (c & ~(uint64_t)63) == key) return (int)(c & 63);
+     }
+     int occ = 1;
+@@ -761,7 +768,12 @@ static int kqmmv_occupancy(int nwarps, int smem) {
+     if (occ > 63) occ = 63;
+     for (int i = 0; i < 8; ++i) {
+         uint64_t z = 0;
++#if defined(_MSC_VER)
++        (void) z;
++        if (_InterlockedCompareExchange64((volatile long long *) &cache[i], (long long)(key | (uint64_t)occ), 0) == 0) break;
++#else
+         if (__atomic_compare_exchange_n(&cache[i], &z, key | (uint64_t)occ, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) break;
++#endif
+     }
+     return occ;
+ }
+diff --git a/src/llama-load-tensors.cpp b/src/llama-load-tensors.cpp
+index 7e597b7..bba43df 100644
+--- a/src/llama-load-tensors.cpp
++++ b/src/llama-load-tensors.cpp
+@@ -1,3 +1,4 @@
++#include "pxa-win-compat.h"
+ #include "llama-model-loader.h"
+ #include "llama-impl.h"
+ #include "llama-mmap.h"
+diff --git a/src/llama-pxa-xcache.cpp b/src/llama-pxa-xcache.cpp
+index 631cc76..2a60070 100644
+--- a/src/llama-pxa-xcache.cpp
++++ b/src/llama-pxa-xcache.cpp
+@@ -1,6 +1,7 @@
+ // pxa / PXA expert-cache online adaptation -- authored by PXA Network (https://pxanetwork.com).
+ // llama-pxa-xcache.cpp -- see llama-pxa-xcache.h for the design. The policy (what to swap, how many per step) is the closed
+ // library's (ggml_pxqn_xcache_policy); this file is the mechanism: counter read-back, the two-phase slot copy, the map flips.
++#include "pxa-win-compat.h"
+ #include "ggml-pxqn-tune.h"
+ #include "llama-pxa-tokmiss.h"
+ #include "llama-pxa-xcache.h"
+@@ -20,7 +21,9 @@
+ #include <algorithm>
+ #include <cstdio>
+ #include <sys/stat.h>
++#if !defined(_WIN32)
+ #include <unistd.h>
++#endif
+ #include <cstdlib>
+ #include <cstring>
+ #include <mutex>
+@@ -96,6 +99,10 @@ static double pxa_xc_probe_cpu_gbs(const void * base, size_t bytes, int threads)
+ 
+ // The directory we will write. A container whose cache is on its own disk loses the file on remove.
+ static void pxa_warn_learned_cache(const std::string & path) {
++#if defined(_WIN32) // POSIX access()/st_dev check is for Linux containers only
++    (void) path;
++    return;
++#endif
+     if (path.empty()) return;
+     std::string dir = path;
+     const size_t sl = dir.find_last_of('/');
+@@ -468,7 +475,7 @@ struct llama_model::pxa_xc_adaptor {
+         FILE * f = fopen(tmp.c_str(), "w");
+         if (!f) return;
+         fprintf(f, "sessions %d\nlearning %d\n", sessions < 0 ? 0 : sessions, learning ? 1 : 0);
+-        const bool ok = fclose(f) == 0 && rename(tmp.c_str(), st.c_str()) == 0;
++        const bool ok = fclose(f) == 0 && pxa_rename_over(tmp.c_str(), st.c_str()) == 0;
+         if (!ok) std::remove(tmp.c_str());
+     }
+ 
+diff --git a/src/llama.cpp b/src/llama.cpp
+index 8366adb..fda1962 100644
+--- a/src/llama.cpp
++++ b/src/llama.cpp
+@@ -5,6 +5,7 @@
+ // SPDX-License-Identifier: MIT
+ //
+ 
++#include "pxa-win-compat.h"
+ #include "llama-impl.h"
+ #include "llama-qsa-prof.h"
+ #include "llama-vocab.h"
+@@ -98,7 +99,9 @@ void llama_set_mtp_target_context(struct llama_context * ctx, struct llama_conte
+ //#endif
+ #define LU8(x) (const char*)(u8##x)
+ #include <sys/stat.h>
++#if !defined(_WIN32)
+ #include <unistd.h>
++#endif
+ #include <cerrno>
+ #include <algorithm>
+ #include <atomic> // PXA_SCOPED_CANCEL_v1
+@@ -5782,7 +5785,7 @@ bool llama_pxa_xcache_counts_write(const struct llama_model * model, const uint6
+         if (tot == 0) continue;
+         for (int e = 0; e < n_expert; ++e) { fprintf(f, "%s,%d,%llu\n", nm, e, (unsigned long long) counts[(size_t) il*n_expert + e]); ++rows; }
+     }
+-    if (fclose(f) != 0 || rows <= 0 || rename(tmp.c_str(), path) != 0) {
++    if (fclose(f) != 0 || rows <= 0 || pxa_rename_over(tmp.c_str(), path) != 0) {
+         remove(tmp.c_str());
+         return false;
+     }
+diff --git a/src/pxa-win-compat.h b/src/pxa-win-compat.h
+new file mode 100644
+index 0000000..b7f1c8c
+--- /dev/null
++++ b/src/pxa-win-compat.h
+@@ -0,0 +1,41 @@
++#pragma once
++#include <cstdio>
++#include <filesystem>
++#include <system_error>
++
++// rename() that replaces an existing target on every platform (the CRT one refuses on Windows).
++static inline int pxa_rename_over(const char * from, const char * to) {
++#if defined(_WIN32)
++    std::error_code ec;
++    std::filesystem::rename(from, to, ec);
++    return ec ? -1 : 0;
++#else
++    return std::rename(from, to);
++#endif
++}
++
++// Windows stand-ins for the POSIX calls PXA's llama sources use. No-op on other platforms.
++#if defined(_WIN32)
++#include <cstdlib>
++#include <ctime>
++#include <direct.h>
++#include <io.h>
++
++#ifndef F_OK
++#define F_OK 0
++#endif
++#ifndef W_OK
++#define W_OK 2
++#endif
++#ifndef R_OK
++#define R_OK 4
++#endif
++
++static inline int setenv(const char * name, const char * value, int overwrite) {
++    if (!overwrite && getenv(name)) return 0;
++    return _putenv_s(name, value);
++}
++static inline int unsetenv(const char * name) { return _putenv_s(name, ""); }
++static inline struct tm * gmtime_r(const time_t * t, struct tm * out) { return gmtime_s(out, t) == 0 ? out : nullptr; }
++static inline int mkdir(const char * path, int /*mode*/) { return _mkdir(path); }
++#endif

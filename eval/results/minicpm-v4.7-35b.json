@@ -1,0 +1,322 @@
+{
+ "label": "minicpm-v4.7-35b",
+ "scores": {
+  "coding": 100.0,
+  "chat": 83.3,
+  "ifeval": 100.0,
+  "search": 100.0,
+  "agent": 100.0,
+  "vision": 100.0
+ },
+ "speed": {
+  "gen_tps": 42.7,
+  "prompt_tps": 115.0
+ },
+ "log": [
+  {
+   "cat": "coding",
+   "task": "is_prime",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "fizzbuzz",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "roman",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "anagrams",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "balanced",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "lru",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "merge_intervals",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "word_freq",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "binary_search",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "matrix_spiral",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "csv_avg",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "dijkstra",
+   "ok": true
+  },
+  {
+   "cat": "chat",
+   "task": "A shop sells pens at 3 for $2. How many dollars do",
+   "ok": true,
+   "reply": "18"
+  },
+  {
+   "cat": "chat",
+   "task": "What is 17 * 23? Answer with the number only.",
+   "ok": true,
+   "reply": "391"
+  },
+  {
+   "cat": "chat",
+   "task": "If today is Wednesday, what day of the week will i",
+   "ok": true,
+   "reply": "Friday"
+  },
+  {
+   "cat": "chat",
+   "task": "A train leaves at 09:40 and the trip takes 2 hours",
+   "ok": true,
+   "reply": "To determine the arrival time, we add the duration of the trip to the departure time.\n\n**1. Identify the given values:**\n*   Departure time: $09:40$\n*   Duration: $2$ hours $35$ minutes\n\n**2. Add the "
+  },
+  {
+   "cat": "chat",
+   "task": "What is the chemical symbol for tungsten?",
+   "ok": true,
+   "reply": "The chemical symbol for tungsten is **W**.\n\nThis symbol comes from the element's alternative name, **wolfram**, which is derived from the mineral wolframite. While \"tungsten\" is the name used in Engli"
+  },
+  {
+   "cat": "chat",
+   "task": "Which planet in our solar system has the most moon",
+   "ok": true,
+   "reply": "As of 2024, **Saturn** has the most moons in our solar system, surpassing Jupiter.\n\nHere is the breakdown:\n\n*   **Saturn**: Has **146** confirmed moons (as recognized by the International Astronomical"
+  },
+  {
+   "cat": "chat",
+   "task": "Alice is older than Bob. Bob is older than Carol. ",
+   "ok": true,
+   "reply": "Carol"
+  },
+  {
+   "cat": "chat",
+   "task": "I have 3 apples. I eat one, buy five more, then gi",
+   "ok": false,
+   "reply": "3"
+  },
+  {
+   "cat": "chat",
+   "task": "What is the capital of Australia? One word.",
+   "ok": true,
+   "reply": "Canberra"
+  },
+  {
+   "cat": "chat",
+   "task": "Sort these numbers ascending and give only the mid",
+   "ok": true,
+   "reply": "19"
+  },
+  {
+   "cat": "chat",
+   "task": "A rectangle has a perimeter of 30 cm and its lengt",
+   "ok": true,
+   "reply": "50"
+  },
+  {
+   "cat": "chat",
+   "task": "How many prime numbers are there between 1 and 30?",
+   "ok": false,
+   "reply": "9"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Describe the moon in fewer than 40 words.",
+   "ok": true,
+   "reply": "Earth's only natural satellite, the Moon orbits our planet, influencing tides and providing a glowing presence in our night sky."
+  },
+  {
+   "cat": "ifeval",
+   "task": "List three fruits as a JSON array of strings and o",
+   "ok": true,
+   "reply": "[\"apple\", \"banana\", \"orange\"]"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Write one sentence about rain without using any co",
+   "ok": true,
+   "reply": "Rain falls gently from the sky to water the thirsty earth."
+  },
+  {
+   "cat": "ifeval",
+   "task": "Reply with the word OK in all capital letters and ",
+   "ok": true,
+   "reply": "OK"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Write exactly three bullet points (lines starting ",
+   "ok": true,
+   "reply": "- Regular physical activity improves cardiovascular health and strengthens muscles.\n- Exercise releases endorphins, which can enhance mood and reduce stress.\n- Consistent movement helps maintain a hea"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Write a short greeting that ends with the exact ph",
+   "ok": true,
+   "reply": "Hello! I hope you're having a wonderful day. See you soon."
+  },
+  {
+   "cat": "ifeval",
+   "task": "Answer in lowercase letters only: what is the larg",
+   "ok": true,
+   "reply": "pacific ocean"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Give a title for a story about a lost dog, wrapped",
+   "ok": true,
+   "reply": "<<The Long Walk Home>>"
+  },
+  {
+   "cat": "search",
+   "task": "Use web search: who won the 2026 Tour de Volta cyc",
+   "called": true,
+   "rounds": 1,
+   "answer_ok": true,
+   "first": "",
+   "query": "",
+   "reply": "Based on the search results, **Marta Kessler** (from Germany) won the 2026 Tour de Volta cycling race."
+  },
+  {
+   "cat": "search",
+   "task": "Search the web for the current population of the f",
+   "called": true,
+   "rounds": 1,
+   "answer_ok": true,
+   "first": "",
+   "query": "",
+   "reply": "The current population of the fictional city of Norvale is **482,300** (based on the 2026 census)."
+  },
+  {
+   "cat": "search",
+   "task": "What is the boiling point of the compound Zentroli",
+   "called": true,
+   "rounds": 1,
+   "answer_ok": true,
+   "first": "",
+   "query": "",
+   "reply": "213 C"
+  },
+  {
+   "cat": "search",
+   "task": "Look up online which company makes the Aurora X9 d",
+   "called": true,
+   "rounds": 1,
+   "answer_ok": true,
+   "first": "",
+   "query": "",
+   "reply": "The Aurora X9 drone is made by **SkyForge Robotics**."
+  },
+  {
+   "cat": "search",
+   "task": "Find the release year of the album 'Glass Rivers' ",
+   "called": true,
+   "rounds": 1,
+   "answer_ok": true,
+   "first": "",
+   "query": "",
+   "reply": "The album 'Glass Rivers' by the band Echo Harbor was released in **2019**."
+  },
+  {
+   "cat": "search",
+   "task": "Use the search tool to find who is the head coach ",
+   "called": true,
+   "rounds": 1,
+   "answer_ok": true,
+   "first": "",
+   "query": "",
+   "reply": "The head coach of the Riverton Owls football team is **Dana Whitfield**, who has held the position since 2024."
+  },
+  {
+   "cat": "agent",
+   "task": "fix_add",
+   "ok": true,
+   "steps": 2,
+   "reply": "The bug has been fixed. The `add` function in `utils.py` was incorrectly returning `a - b` (subtraction) instead of `a + b` (addition). I've corrected it to properly add the two numbers.\n\nDONE"
+  },
+  {
+   "cat": "agent",
+   "task": "port_9090",
+   "ok": true,
+   "steps": 2,
+   "reply": "The config.ini file has been updated. The port setting has been changed from 8080 to 9090, and all other settings remain unchanged.\n\nDONE"
+  },
+  {
+   "cat": "agent",
+   "task": "calc_result",
+   "ok": true,
+   "steps": 2,
+   "reply": "DONE"
+  },
+  {
+   "cat": "agent",
+   "task": "event",
+   "ok": true,
+   "steps": 1,
+   "reply": "The meeting titled 'Design review' has been successfully scheduled for 2026-11-03 at 14:30.\n\nDONE"
+  },
+  {
+   "cat": "agent",
+   "task": "todo_file",
+   "ok": true,
+   "steps": 3,
+   "reply": "DONE"
+  },
+  {
+   "cat": "vision",
+   "task": "shapes",
+   "ok": true,
+   "reply": "3, green"
+  },
+  {
+   "cat": "vision",
+   "task": "text",
+   "ok": true,
+   "reply": "K7-9QX"
+  },
+  {
+   "cat": "vision",
+   "task": "chart",
+   "ok": true,
+   "reply": "Q3"
+  },
+  {
+   "cat": "vision",
+   "task": "table",
+   "ok": true,
+   "reply": "41"
+  }
+ ],
+ "overall": 97.2,
+ "model": "MiniCPM-V 4.7 35B-A3B IQ3_XS",
+ "model_id": "minicpm-v4.7-35b",
+ "preset": "262k context, vision on GPU",
+ "kernel": "llamacpp",
+ "size_gb": 14.5
+}

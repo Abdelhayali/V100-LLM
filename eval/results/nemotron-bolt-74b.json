@@ -1,0 +1,322 @@
+{
+ "label": "nemotron-bolt-74b",
+ "scores": {
+  "coding": 100.0,
+  "chat": 91.7,
+  "ifeval": 100.0,
+  "search": 100.0,
+  "agent": 100.0,
+  "vision": 75.0
+ },
+ "speed": {
+  "gen_tps": 17.8,
+  "prompt_tps": 29.0
+ },
+ "log": [
+  {
+   "cat": "coding",
+   "task": "is_prime",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "fizzbuzz",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "roman",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "anagrams",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "balanced",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "lru",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "merge_intervals",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "word_freq",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "binary_search",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "matrix_spiral",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "csv_avg",
+   "ok": true
+  },
+  {
+   "cat": "coding",
+   "task": "dijkstra",
+   "ok": true
+  },
+  {
+   "cat": "chat",
+   "task": "A shop sells pens at 3 for $2. How many dollars do",
+   "ok": true,
+   "reply": "18"
+  },
+  {
+   "cat": "chat",
+   "task": "What is 17 * 23? Answer with the number only.",
+   "ok": true,
+   "reply": "391"
+  },
+  {
+   "cat": "chat",
+   "task": "If today is Wednesday, what day of the week will i",
+   "ok": true,
+   "reply": "Friday"
+  },
+  {
+   "cat": "chat",
+   "task": "A train leaves at 09:40 and the trip takes 2 hours",
+   "ok": true,
+   "reply": "12:15"
+  },
+  {
+   "cat": "chat",
+   "task": "What is the chemical symbol for tungsten?",
+   "ok": true,
+   "reply": "The chemical symbol for tungsten is **W**."
+  },
+  {
+   "cat": "chat",
+   "task": "Which planet in our solar system has the most moon",
+   "ok": true,
+   "reply": "As of 2024, **Saturn** has the most moons in our solar system.\n\nWhile Jupiter held the record for several years, astronomers discovered several new moons around Saturn in 2023, pushing its total to **"
+  },
+  {
+   "cat": "chat",
+   "task": "Alice is older than Bob. Bob is older than Carol. ",
+   "ok": true,
+   "reply": "Carol"
+  },
+  {
+   "cat": "chat",
+   "task": "I have 3 apples. I eat one, buy five more, then gi",
+   "ok": false,
+   "reply": "4"
+  },
+  {
+   "cat": "chat",
+   "task": "What is the capital of Australia? One word.",
+   "ok": true,
+   "reply": "Canberra"
+  },
+  {
+   "cat": "chat",
+   "task": "Sort these numbers ascending and give only the mid",
+   "ok": true,
+   "reply": "19"
+  },
+  {
+   "cat": "chat",
+   "task": "A rectangle has a perimeter of 30 cm and its lengt",
+   "ok": true,
+   "reply": "50"
+  },
+  {
+   "cat": "chat",
+   "task": "How many prime numbers are there between 1 and 30?",
+   "ok": true,
+   "reply": "10"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Describe the moon in fewer than 40 words.",
+   "ok": true,
+   "reply": "The moon is Earth's natural satellite. It orbits our planet, reflecting sunlight to illuminate the night sky. Its surface is rocky and cratered, lacking an atmosphere. The moon influences Earth's tide"
+  },
+  {
+   "cat": "ifeval",
+   "task": "List three fruits as a JSON array of strings and o",
+   "ok": true,
+   "reply": "[\"apple\", \"banana\", \"orange\"]"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Write one sentence about rain without using any co",
+   "ok": true,
+   "reply": "The rain fell steadily on the rooftop."
+  },
+  {
+   "cat": "ifeval",
+   "task": "Reply with the word OK in all capital letters and ",
+   "ok": true,
+   "reply": "OK"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Write exactly three bullet points (lines starting ",
+   "ok": true,
+   "reply": "- Regular physical activity improves cardiovascular health and strengthens muscles.\n- Exercise releases endorphins, which help reduce stress and improve mood.\n- Consistent movement enhances flexibilit"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Write a short greeting that ends with the exact ph",
+   "ok": true,
+   "reply": "Hello! I hope you're having a wonderful day. See you soon."
+  },
+  {
+   "cat": "ifeval",
+   "task": "Answer in lowercase letters only: what is the larg",
+   "ok": true,
+   "reply": "pacific ocean"
+  },
+  {
+   "cat": "ifeval",
+   "task": "Give a title for a story about a lost dog, wrapped",
+   "ok": true,
+   "reply": "<<The Long Way Home>>"
+  },
+  {
+   "cat": "search",
+   "task": "Use web search: who won the 2026 Tour de Volta cyc",
+   "called": true,
+   "rounds": 1,
+   "answer_ok": true,
+   "first": "",
+   "query": "",
+   "reply": "The 2026 Tour de Volta was won by **Marta Kessler** of Germany. She claimed her second Volta title, finishing ahead of J. Ruiz."
+  },
+  {
+   "cat": "search",
+   "task": "Search the web for the current population of the f",
+   "called": true,
+   "rounds": 1,
+   "answer_ok": true,
+   "first": "",
+   "query": "",
+   "reply": "The current population of the fictional city of Norvale is **482,300** (according to the 2026 census)."
+  },
+  {
+   "cat": "search",
+   "task": "What is the boiling point of the compound Zentroli",
+   "called": true,
+   "rounds": 1,
+   "answer_ok": true,
+   "first": "",
+   "query": "",
+   "reply": "213 \u00b0C"
+  },
+  {
+   "cat": "search",
+   "task": "Look up online which company makes the Aurora X9 d",
+   "called": true,
+   "rounds": 1,
+   "answer_ok": true,
+   "first": "",
+   "query": "",
+   "reply": "The Aurora X9 drone is made by **SkyForge Robotics**."
+  },
+  {
+   "cat": "search",
+   "task": "Find the release year of the album 'Glass Rivers' ",
+   "called": true,
+   "rounds": 1,
+   "answer_ok": true,
+   "first": "",
+   "query": "",
+   "reply": "The album **Glass Rivers** by Echo Harbor was released in **2019**."
+  },
+  {
+   "cat": "search",
+   "task": "Use the search tool to find who is the head coach ",
+   "called": true,
+   "rounds": 1,
+   "answer_ok": true,
+   "first": "",
+   "query": "",
+   "reply": "The head coach of the Riverton Owls football team is **Dana Whitfield**, who has held the position since 2024."
+  },
+  {
+   "cat": "agent",
+   "task": "fix_add",
+   "ok": true,
+   "steps": 4,
+   "reply": "The bug in `utils.py` was that the `add` function was using subtraction (`a - b`) instead of addition (`a + b`). I've fixed the file so that `add` now correctly returns the sum of its arguments."
+  },
+  {
+   "cat": "agent",
+   "task": "port_9090",
+   "ok": true,
+   "steps": 3,
+   "reply": "The port setting in config.ini has been changed to 9090. Everything else remains unchanged."
+  },
+  {
+   "cat": "agent",
+   "task": "calc_result",
+   "ok": true,
+   "steps": 2,
+   "reply": "DONE"
+  },
+  {
+   "cat": "agent",
+   "task": "event",
+   "ok": true,
+   "steps": 1,
+   "reply": "The meeting titled 'Design review' has been scheduled for 2026-11-03 at 14:30."
+  },
+  {
+   "cat": "agent",
+   "task": "todo_file",
+   "ok": true,
+   "steps": 3,
+   "reply": "DONE"
+  },
+  {
+   "cat": "vision",
+   "task": "shapes",
+   "ok": true,
+   "reply": "3, green"
+  },
+  {
+   "cat": "vision",
+   "task": "text",
+   "ok": false,
+   "reply": "K7=9QX"
+  },
+  {
+   "cat": "vision",
+   "task": "chart",
+   "ok": true,
+   "reply": "Q3"
+  },
+  {
+   "cat": "vision",
+   "task": "table",
+   "ok": true,
+   "reply": "41"
+  }
+ ],
+ "overall": 94.5,
+ "model": "NVIDIA Nemotron-3.5-Bolt-74B-A9B (2-bit)",
+ "model_id": "nemotron-bolt-74b",
+ "preset": "262k context, vision on CPU",
+ "kernel": "llamacpp",
+ "size_gb": 22.0
+}

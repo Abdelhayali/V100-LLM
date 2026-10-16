@@ -1,0 +1,322 @@
+{
+    "label":  "strata-flash-next",
+    "scores":  {
+                   "coding":  100.0,
+                   "chat":  75.0,
+                   "ifeval":  100.0,
+                   "search":  83.3,
+                   "agent":  100.0,
+                   "vision":  100.0
+               },
+    "speed":  {
+                  "gen_tps":  27.4,
+                  "prompt_tps":  44.0
+              },
+    "log":  [
+                {
+                    "cat":  "coding",
+                    "task":  "is_prime",
+                    "ok":  true
+                },
+                {
+                    "cat":  "coding",
+                    "task":  "fizzbuzz",
+                    "ok":  true
+                },
+                {
+                    "cat":  "coding",
+                    "task":  "roman",
+                    "ok":  true
+                },
+                {
+                    "cat":  "coding",
+                    "task":  "anagrams",
+                    "ok":  true
+                },
+                {
+                    "cat":  "coding",
+                    "task":  "balanced",
+                    "ok":  true
+                },
+                {
+                    "cat":  "coding",
+                    "task":  "lru",
+                    "ok":  true
+                },
+                {
+                    "cat":  "coding",
+                    "task":  "merge_intervals",
+                    "ok":  true
+                },
+                {
+                    "cat":  "coding",
+                    "task":  "word_freq",
+                    "ok":  true
+                },
+                {
+                    "cat":  "coding",
+                    "task":  "binary_search",
+                    "ok":  true
+                },
+                {
+                    "cat":  "coding",
+                    "task":  "matrix_spiral",
+                    "ok":  true
+                },
+                {
+                    "cat":  "coding",
+                    "task":  "csv_avg",
+                    "ok":  true
+                },
+                {
+                    "cat":  "coding",
+                    "task":  "dijkstra",
+                    "ok":  true
+                },
+                {
+                    "cat":  "chat",
+                    "task":  "A shop sells pens at 3 for $2. How many dollars do",
+                    "ok":  true,
+                    "reply":  "18"
+                },
+                {
+                    "cat":  "chat",
+                    "task":  "What is 17 * 23? Answer with the number only.",
+                    "ok":  true,
+                    "reply":  "391"
+                },
+                {
+                    "cat":  "chat",
+                    "task":  "If today is Wednesday, what day of the week will i",
+                    "ok":  false,
+                    "reply":  "Saturday"
+                },
+                {
+                    "cat":  "chat",
+                    "task":  "A train leaves at 09:40 and the trip takes 2 hours",
+                    "ok":  false,
+                    "reply":  "To determine the arrival time, we add the trip duration to the departure time.\n\n**1. Identify the given values:**\n*   Departure time: 09:40\n*   Trip duration: 2 hours 35 minutes\n\n**2. Add the hours:**"
+                },
+                {
+                    "cat":  "chat",
+                    "task":  "What is the chemical symbol for tungsten?",
+                    "ok":  true,
+                    "reply":  "The chemical symbol for tungsten is **W**.\n\n**Explanation:**\nThe symbol **W** comes from the element\u0027s Latin name, **Wolfram**. While the English name is \"Tungsten,\" the symbol is derived from the his"
+                },
+                {
+                    "cat":  "chat",
+                    "task":  "Which planet in our solar system has the most moon",
+                    "ok":  true,
+                    "reply":  "As of 2024, **Saturn** has the most moons in our solar system.\n\n### Key Facts:\n- **Saturn**: Has **146** confirmed moons (as of 2024).\n- **Jupiter**: Has **95** confirmed moons (as of 2024).\n\n### Cont"
+                },
+                {
+                    "cat":  "chat",
+                    "task":  "Alice is older than Bob. Bob is older than Carol. ",
+                    "ok":  true,
+                    "reply":  "Carol"
+                },
+                {
+                    "cat":  "chat",
+                    "task":  "I have 3 apples. I eat one, buy five more, then gi",
+                    "ok":  false,
+                    "reply":  "3"
+                },
+                {
+                    "cat":  "chat",
+                    "task":  "What is the capital of Australia? One word.",
+                    "ok":  true,
+                    "reply":  "Canberra"
+                },
+                {
+                    "cat":  "chat",
+                    "task":  "Sort these numbers ascending and give only the mid",
+                    "ok":  true,
+                    "reply":  "To find the middle number, we first sort the given numbers in ascending order:\n\n1.  3\n2.  7\n3.  **19**\n4.  42\n5.  88\n\nThe middle number (the 3rd value in the sorted list) is **19**."
+                },
+                {
+                    "cat":  "chat",
+                    "task":  "A rectangle has a perimeter of 30 cm and its lengt",
+                    "ok":  true,
+                    "reply":  "Let $w$ be the width and $l$ be the length.\nGiven:\n1. $l = 2w$\n2. Perimeter $P = 2(l + w) = 30$\n\nSubstitute $l = 2w$ into the perimeter equation:\n$$2(2w + w) = 30$$\n$$2(3w) = 30$$\n$$6w = 30$$\n$$w = 5$"
+                },
+                {
+                    "cat":  "chat",
+                    "task":  "How many prime numbers are there between 1 and 30?",
+                    "ok":  true,
+                    "reply":  "10"
+                },
+                {
+                    "cat":  "ifeval",
+                    "task":  "Describe the moon in fewer than 40 words.",
+                    "ok":  true,
+                    "reply":  "The Moon is Earth’s only natural satellite, a barren, rocky body that orbits our planet. It reflects sunlight, causing phases, and influences tides through its gravitational pull."
+                },
+                {
+                    "cat":  "ifeval",
+                    "task":  "List three fruits as a JSON array of strings and o",
+                    "ok":  true,
+                    "reply":  "[\"apple\", \"banana\", \"orange\"]"
+                },
+                {
+                    "cat":  "ifeval",
+                    "task":  "Write one sentence about rain without using any co",
+                    "ok":  true,
+                    "reply":  "Soft rain falls gently on the quiet earth."
+                },
+                {
+                    "cat":  "ifeval",
+                    "task":  "Reply with the word OK in all capital letters and ",
+                    "ok":  true,
+                    "reply":  "OK"
+                },
+                {
+                    "cat":  "ifeval",
+                    "task":  "Write exactly three bullet points (lines starting ",
+                    "ok":  true,
+                    "reply":  "- Regular physical activity improves cardiovascular health and reduces the risk of chronic diseases.\n- Exercise enhances mental well-being by releasing endorphins that help alleviate stress and anxiet"
+                },
+                {
+                    "cat":  "ifeval",
+                    "task":  "Write a short greeting that ends with the exact ph",
+                    "ok":  true,
+                    "reply":  "Hello! I hope you have a wonderful day. See you soon."
+                },
+                {
+                    "cat":  "ifeval",
+                    "task":  "Answer in lowercase letters only: what is the larg",
+                    "ok":  true,
+                    "reply":  "pacific ocean"
+                },
+                {
+                    "cat":  "ifeval",
+                    "task":  "Give a title for a story about a lost dog, wrapped",
+                    "ok":  true,
+                    "reply":  "\u003c\u003cThe Long Walk Home\u003e\u003e"
+                },
+                {
+                    "cat":  "search",
+                    "task":  "Use web search: who won the 2026 Tour de Volta cyc",
+                    "called":  true,
+                    "rounds":  2,
+                    "answer_ok":  true,
+                    "first":  "",
+                    "query":  "",
+                    "reply":  "The 2026 Tour de Volta was won by **Marta Kessler (Germany)**, finishing ahead of J. Ruiz. This was her second Volta title."
+                },
+                {
+                    "cat":  "search",
+                    "task":  "Search the web for the current population of the f",
+                    "called":  true,
+                    "rounds":  3,
+                    "answer_ok":  false,
+                    "first":  "",
+                    "query":  "{\u0027query\u0027: \u0027Norvale fictional city\u0027}",
+                    "reply":  ""
+                },
+                {
+                    "cat":  "search",
+                    "task":  "What is the boiling point of the compound Zentroli",
+                    "called":  true,
+                    "rounds":  1,
+                    "answer_ok":  true,
+                    "first":  "",
+                    "query":  "",
+                    "reply":  "213 °C"
+                },
+                {
+                    "cat":  "search",
+                    "task":  "Look up online which company makes the Aurora X9 d",
+                    "called":  true,
+                    "rounds":  3,
+                    "answer_ok":  false,
+                    "first":  "",
+                    "query":  "{\u0027query\u0027: \u0027Aurora X9 drone company makes\u0027}",
+                    "reply":  ""
+                },
+                {
+                    "cat":  "search",
+                    "task":  "Find the release year of the album \u0027Glass Rivers\u0027 ",
+                    "called":  true,
+                    "rounds":  2,
+                    "answer_ok":  true,
+                    "first":  "",
+                    "query":  "",
+                    "reply":  "The album **Glass Rivers** by Echo Harbor was released in **2019**."
+                },
+                {
+                    "cat":  "search",
+                    "task":  "Use the search tool to find who is the head coach ",
+                    "called":  true,
+                    "rounds":  1,
+                    "answer_ok":  true,
+                    "first":  "",
+                    "query":  "",
+                    "reply":  "The head coach of the Riverton Owls football team is **Dana Whitfield**, who has held the position since 2024."
+                },
+                {
+                    "cat":  "agent",
+                    "task":  "fix_add",
+                    "ok":  true,
+                    "steps":  4,
+                    "reply":  "The bug was in `utils.py`: `add` performed subtraction (`a - b`) instead of addition. It now returns `a + b`.\n\nDONE"
+                },
+                {
+                    "cat":  "agent",
+                    "task":  "port_9090",
+                    "ok":  true,
+                    "steps":  2,
+                    "reply":  "The port setting in config.ini has been changed from 8080 to 9090, with all other settings unchanged.\n\nDONE"
+                },
+                {
+                    "cat":  "agent",
+                    "task":  "calc_result",
+                    "ok":  true,
+                    "steps":  10,
+                    "reply":  ""
+                },
+                {
+                    "cat":  "agent",
+                    "task":  "event",
+                    "ok":  true,
+                    "steps":  1,
+                    "reply":  "DONE"
+                },
+                {
+                    "cat":  "agent",
+                    "task":  "todo_file",
+                    "ok":  true,
+                    "steps":  3,
+                    "reply":  "The file mentioning \u0027TODO\u0027 is **b.py**, and I\u0027ve written its name into todo.txt.\n\nDONE"
+                },
+                {
+                    "cat":  "vision",
+                    "task":  "shapes",
+                    "ok":  true,
+                    "reply":  "3, green"
+                },
+                {
+                    "cat":  "vision",
+                    "task":  "text",
+                    "ok":  true,
+                    "reply":  "K7-9QX"
+                },
+                {
+                    "cat":  "vision",
+                    "task":  "chart",
+                    "ok":  true,
+                    "reply":  "Q3"
+                },
+                {
+                    "cat":  "vision",
+                    "task":  "table",
+                    "ok":  true,
+                    "reply":  "41"
+                }
+            ],
+    "overall":  93.0,
+    "model":  "Strata: Qwen3.8-Flash-Next 125B IQ2_XS",
+    "model_id":  "strata-flash-next",
+    "preset":  "262k context, vision on CPU",
+    "kernel":  "strata",
+    "size_gb":  63.3
+}
