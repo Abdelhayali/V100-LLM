@@ -1984,6 +1984,129 @@
      ]
     }
    ]
+  },
+  {
+   "id": "minicpm-v4.7-35b-crack",
+   "name": "MiniCPM-V 4.7 35B-A3B CRACK Q4_K_M (dealignai)",
+   "desc": "Refusal-direction ablated MiniCPM-V 4.7 (dealignai CRACK, all three residual writer tiers), Q4_K_M 22.6 GB with Q6_K routed experts. Card: MMLU +0.5pp vs base, complies with harmful requests. Part of the experts in RAM.",
+   "files": [
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-CRACK-Q4_K_M.gguf",
+     "repo": "dealignai/MiniCPM-V-4.7-35B-A3B-CRACK-GGUF",
+     "sha256": "799ea4ec3b8b240e592860a60035b6f36ab9bfa3314656302fb2aede2da9797f",
+     "size": 22550375840,
+     "url": "https://huggingface.co/dealignai/MiniCPM-V-4.7-35B-A3B-CRACK-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-CRACK-Q4_K_M.gguf"
+    },
+    {
+     "name": "mmproj-MiniCPM-V-4.7-35B-A3B-CRACK-f16-4x.gguf",
+     "repo": "dealignai/MiniCPM-V-4.7-35B-A3B-CRACK-GGUF",
+     "sha256": "735c152720f9faae3ffd207736ff16010a689278a3216828c783ff3364a64819",
+     "size": 909137152,
+     "url": "https://huggingface.co/dealignai/MiniCPM-V-4.7-35B-A3B-CRACK-GGUF/resolve/main/mmproj-MiniCPM-V-4.7-35B-A3B-CRACK-f16-4x.gguf"
+    },
+    {
+     "name": "MiniCPM-V-4.7-35B-A3B-CRACK-DSpark-BF16.gguf",
+     "repo": "dealignai/MiniCPM-V-4.7-35B-A3B-CRACK-GGUF",
+     "sha256": "230179e4f657a19599c188990746406f2427d7acc025d1cee79a426f6980497e",
+     "size": 789442400,
+     "url": "https://huggingface.co/dealignai/MiniCPM-V-4.7-35B-A3B-CRACK-GGUF/resolve/main/MiniCPM-V-4.7-35B-A3B-CRACK-DSpark-BF16.gguf"
+    }
+   ],
+   "model": "MiniCPM-V-4.7-35B-A3B-CRACK-Q4_K_M.gguf",
+   "mmproj": "mmproj-MiniCPM-V-4.7-35B-A3B-CRACK-f16-4x.gguf",
+   "presets": [
+    {
+     "id": "262k",
+     "name": "262k context, vision on GPU",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "40.0 tok/s gen (n-cpu-moe 19); with DSpark: 0 tok/s",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "19",
+       "experts of 19 layers in RAM (tuned)"
+      ],
+      [
+       "-t",
+       "14",
+       ""
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       ""
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ]
+     ]
+    }
+   ]
   }
  ]
 }

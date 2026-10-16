@@ -1879,6 +1879,120 @@
      ]
     }
    ]
+  },
+  {
+   "id": "minicpm-v4.7-35b-crack",
+   "name": "MiniCPM-V 4.7 35B-A3B CRACK Q4_K_M (dealignai)",
+   "desc": "Refusal-direction ablated MiniCPM-V 4.7 (dealignai CRACK, all three residual writer tiers), Q4_K_M 22.6 GB with Q6_K routed experts. Card: MMLU +0.5pp vs base, complies with harmful requests. Part of the experts in RAM.",
+   "files": [
+    [
+     "dealignai/MiniCPM-V-4.7-35B-A3B-CRACK-GGUF",
+     "MiniCPM-V-4.7-35B-A3B-CRACK-Q4_K_M.gguf"
+    ],
+    [
+     "dealignai/MiniCPM-V-4.7-35B-A3B-CRACK-GGUF",
+     "mmproj-MiniCPM-V-4.7-35B-A3B-CRACK-f16-4x.gguf"
+    ],
+    [
+     "dealignai/MiniCPM-V-4.7-35B-A3B-CRACK-GGUF",
+     "MiniCPM-V-4.7-35B-A3B-CRACK-DSpark-BF16.gguf"
+    ]
+   ],
+   "model": "MiniCPM-V-4.7-35B-A3B-CRACK-Q4_K_M.gguf",
+   "mmproj": "mmproj-MiniCPM-V-4.7-35B-A3B-CRACK-f16-4x.gguf",
+   "presets": [
+    {
+     "id": "262k",
+     "name": "262k context, vision on GPU",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "40.0 tok/s gen (n-cpu-moe 19); with DSpark: 0 tok/s",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "19",
+       "experts of 19 layers in RAM (tuned)"
+      ],
+      [
+       "-t",
+       "14",
+       ""
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       ""
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ]
+     ]
+    }
+   ]
   }
  ]
 }
