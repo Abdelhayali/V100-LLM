@@ -1317,6 +1317,168 @@
        ""
       ]
      ]
+    },
+    {
+     "id": "q2_0",
+     "name": "Q2_0 (2-bit, fastest), 262k, vision on CPU",
+     "kernel": "strata",
+     "kernels": [
+      "strata"
+     ],
+     "bench": "Q2_0: 37.6 GB of experts in RAM + the shared 28.8 GB n-gram table on SSD",
+     "params": [
+      [
+       "--pack",
+       "{model:packs/q2_0}",
+       ""
+      ],
+      [
+       "--native",
+       "{model:models/Q2_0/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00001-of-00002.gguf}",
+       "experts (RAM)"
+      ],
+      [
+       "--ple-gguf",
+       "{model:models/Q2_0/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00002-of-00002.gguf}",
+       "29 GB lookup table (SSD)"
+      ],
+      [
+       "--expert-profile",
+       "{kernel}\\data\\expert-profile.bin",
+       ""
+      ],
+      [
+       "--expert-cache",
+       "auto",
+       ""
+      ],
+      [
+       "--prefill",
+       "auto",
+       ""
+      ],
+      [
+       "--spec",
+       "4",
+       "MTP draft tokens"
+      ],
+      [
+       "--spec-min-p",
+       "0.5",
+       ""
+      ],
+      [
+       "--mtp",
+       "{model:mtp/rt}",
+       ""
+      ],
+      [
+       "--max-context",
+       "262144",
+       ""
+      ],
+      [
+       "--kv",
+       "int8",
+       ""
+      ],
+      [
+       "--kv-resident",
+       "32768",
+       "KV tokens kept in VRAM; rest streamed from RAM"
+      ],
+      [
+       "--vision",
+       "",
+       "image encoder (CPU)"
+      ],
+      [
+       "--vram-reserve-mib",
+       "700",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "coder-iq1m",
+     "name": "Coder IQ1_M (half the experts, coding), 262k, vision on CPU",
+     "kernel": "strata",
+     "kernels": [
+      "strata"
+     ],
+     "bench": "Coder IQ1_M: 29.6 GB of experts in RAM + the shared 28.8 GB n-gram table on SSD",
+     "params": [
+      [
+       "--pack",
+       "{model:packs/coder-iq1_m}",
+       ""
+      ],
+      [
+       "--native",
+       "{model:models/coder-IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf}",
+       "experts (RAM)"
+      ],
+      [
+       "--ple-gguf",
+       "{model:models/coder-IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf}",
+       "29 GB lookup table (SSD)"
+      ],
+      [
+       "--expert-profile",
+       "{kernel}\\data\\expert-profile-coder.bin",
+       ""
+      ],
+      [
+       "--expert-cache",
+       "auto",
+       ""
+      ],
+      [
+       "--prefill",
+       "auto",
+       ""
+      ],
+      [
+       "--spec",
+       "4",
+       "MTP draft tokens"
+      ],
+      [
+       "--spec-min-p",
+       "0.5",
+       ""
+      ],
+      [
+       "--mtp",
+       "{model:mtp/rt}",
+       ""
+      ],
+      [
+       "--max-context",
+       "262144",
+       ""
+      ],
+      [
+       "--kv",
+       "int8",
+       ""
+      ],
+      [
+       "--kv-resident",
+       "32768",
+       "KV tokens kept in VRAM; rest streamed from RAM"
+      ],
+      [
+       "--vision",
+       "",
+       "image encoder (CPU)"
+      ],
+      [
+       "--vram-reserve-mib",
+       "700",
+       ""
+      ]
+     ]
     }
    ]
   },

@@ -85,11 +85,13 @@ def main():
         if meta.exists():
             d = json.loads(meta.read_text(encoding="utf-8-sig"))
             # size = the files this preset loads: the main model plus any draft model it names (not the vision projector)
-            used = {m["model"]} | {Path(str(x[1]).replace("{model:", "").rstrip("}")).as_posix() for x in p["params"] if "{model:" in str(x[1])}
+            refs = {Path(str(x[1]).replace("{model:", "").rstrip("}")).as_posix() for x in p["params"] if "{model:" in str(x[1])}
+            # a Strata preset names its own GGUF (--native), so the model's default file is not loaded
+            used = refs if m.get("strata") and any(r.endswith(".gguf") for r in refs) else {m["model"]} | refs
             # a split GGUF (...-00001-of-00011.gguf) loads all of its shards, so count every sibling shard
             used = {re.sub(r"-00001-of-(\d+)\.gguf$", r"-*-of-\1.gguf", u) for u in used}
             mdir = ROOT / "models" / m["id"] / "model"
-            size = sum(f.stat().st_size for u in used for f in mdir.glob(u) if f.is_file())
+            size = sum(f.stat().st_size for f in {f for u in used for f in mdir.glob(u) if f.is_file()})
             d.update(model=m["name"], model_id=m["id"], preset=p["name"], kernel=p["kernel"], size_gb=round(size / 1e9, 1) if size else None)
             meta.write_text(json.dumps(d, indent=1), encoding="utf-8")
     api("/api/stop", {})

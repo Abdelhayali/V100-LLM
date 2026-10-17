@@ -17,6 +17,8 @@ block = ("<!-- LEADERBOARD -->\n## Leaderboard (hard suite v2)\n\n"
          "- Fusion4 and Ornith run without the model card's repetition penalties. With them they scored much lower, because "
          "the penalties corrupt numbers, code and tool calls (8080 became 80). The penalties are still available as the "
          "`creative` preset.\n"
+         "- Strata runs three quantizations of the same 125B model (IQ2_XS, Q2_0 and the Coder IQ1_M with half the experts); they share one 28.8 GB n-gram table that is read from the SSD.\n"
+         "- MiniCPM-V CRACK with its DSpark draft model is slower on a 16 GB card (34 vs 38.5 tok/s): the drafter needs ~1.5 GB of VRAM, so 7 more layers of experts go to RAM, and chat drafts are accepted only ~47% of the time.\n"
          "- ExLlamaV3 (Qwen3.8-27B EXL3) runs on the V100 but at ~11 tok/s, so it is not scored.\n"
          "- The older, easier suite (v1) is still in `eval/results/`; most models scored 90-100 there, which is why v2 exists.\n"
          "<!-- /LEADERBOARD -->")

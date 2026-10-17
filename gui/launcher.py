@@ -107,14 +107,18 @@ def strata_config(mid, k, params, port):
         if v != "":
             args.append(resolve(mid, v).replace("{kernel}", str(kd)))
     eng = kd / catalog()["kernels"][k]["exe"]
-    cfg = {"exe": str(eng), "args": args, "cwd": str(kd), "tokenizer": str(md / s["tokenizer"]),
-           "model_name": s["model_name"], "log": str(model_dir(mid) / "strata.log"), "lib_dirs": [str(eng.parent)],
+    # presets for other quantizations name their own pack (tokenizer inside it) and GGUF, so follow those
+    flag = {args[i]: args[i + 1] for i in range(len(args) - 1) if args[i].startswith("--")}
+    tok = Path(flag["--pack"]) / "tokenizer" if "--pack" in flag else md / s["tokenizer"]
+    name = "qwen3.8-flash-next-" + Path(flag["--pack"]).name if "--pack" in flag else s["model_name"]
+    cfg = {"exe": str(eng), "args": args, "cwd": str(kd), "tokenizer": str(tok),
+           "model_name": name, "log": str(model_dir(mid) / "strata.log"), "lib_dirs": [str(eng.parent)],
            "port": port, "cuda": 12, "gpu": 0, "gpus_asked": True, "open_browser": False}
     if "--vision" in args and s.get("vision"):
         v = dict(s["vision"])
         v["exe"] = str(eng.parent / v["exe"])
         v["mmproj"] = str(md / v["mmproj"])
-        v["model"] = str(md / v["model"])
+        v["model"] = flag.get("--native") or str(md / v["model"])
         cfg["vision"] = v
     out = kd / "v100-llm-config.json"
     out.write_text(json.dumps(cfg, indent=1), encoding="utf-8")
