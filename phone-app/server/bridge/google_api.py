@@ -72,8 +72,11 @@ def _access() -> str:
     return t["access_token"]
 
 
+_http = httpx.Client(timeout=60, limits=httpx.Limits(max_connections=20, max_keepalive_connections=20))  # one pool, kept alive
+
+
 def _api(method: str, url: str, **kw):
-    r = httpx.request(method, url, headers={"Authorization": "Bearer " + _access()}, timeout=60, **kw)
+    r = _http.request(method, url, headers={"Authorization": "Bearer " + _access()}, **kw)
     if r.status_code >= 400:
         try:
             msg = r.json().get("error", {}).get("message", r.text[:300])
@@ -222,23 +225,51 @@ def _text_of(part: dict) -> str:
     return ""
 
 
+_meta: dict[str, tuple[float, dict]] = {}     # message id -> (time, summary); a message's headers never change
+_full: dict[str, dict] = {}
+
+
+def _summary(mid: str) -> dict:
+    hit = _meta.get(mid)
+    if hit and time.time() - hit[0] < 300:        # unread flag may change: refresh after 5 min
+        return hit[1]
+    m = _api("GET", GMAIL + f"/messages/{mid}", params={"format": "metadata", "metadataHeaders": ["From", "To", "Subject", "Date"]})
+    s = {"id": m["id"], "thread": m.get("threadId", ""), "from": _hdr(m, "From"), "to": _hdr(m, "To"),
+         "subject": _hdr(m, "Subject"), "date": _hdr(m, "Date"), "snippet": html.unescape(m.get("snippet", "")),
+         "unread": "UNREAD" in m.get("labelIds", [])}
+    _meta[mid] = (time.time(), s)
+    return s
+
+
+def gmail_page(query: str = "in:inbox", page: str = "", n: int = 25) -> dict:
+    """One page of a Gmail search: {messages, next, total}. The summaries are fetched in parallel and cached."""
+    from concurrent.futures import ThreadPoolExecutor
+    p = {"q": query, "maxResults": max(1, min(int(n or 25), 100))}
+    if page:
+        p["pageToken"] = page
+    d = _api("GET", GMAIL + "/messages", params=p)
+    ids = [it["id"] for it in d.get("messages", [])]
+    _access()                                      # refresh the token once, not in every thread
+    with ThreadPoolExecutor(max_workers=16) as ex:
+        msgs = list(ex.map(_summary, ids))
+    return {"messages": msgs, "next": d.get("nextPageToken", ""), "total": d.get("resultSizeEstimate", len(ids))}
+
+
 def gmail_list(query: str = "in:inbox", max_results: int = 10) -> list[dict]:
-    d = _api("GET", GMAIL + "/messages", params={"q": query or "in:inbox", "maxResults": max(1, min(int(max_results or 10), 25))})
-    out = []
-    for it in d.get("messages", []):
-        m = _api("GET", GMAIL + f"/messages/{it['id']}", params={"format": "metadata",
-                                                                  "metadataHeaders": ["From", "Subject", "Date"]})
-        out.append({"id": m["id"], "thread": m.get("threadId", ""), "from": _hdr(m, "From"), "subject": _hdr(m, "Subject"),
-                    "date": _hdr(m, "Date"), "snippet": html.unescape(m.get("snippet", "")),
-                    "unread": "UNREAD" in m.get("labelIds", [])})
-    return out
+    return gmail_page(query or "in:inbox", "", max(1, min(int(max_results or 10), 50)))["messages"]
 
 
 def gmail_read(mid: str) -> dict:
+    if mid in _full:
+        return _full[mid]
     m = _api("GET", GMAIL + f"/messages/{mid}", params={"format": "full"})
-    return {"id": m["id"], "thread": m.get("threadId", ""), "from": _hdr(m, "From"), "to": _hdr(m, "To"),
-            "subject": _hdr(m, "Subject"), "date": _hdr(m, "Date"), "message_id": _hdr(m, "Message-ID"),
-            "body": re.sub(r"\n{3,}", "\n\n", _text_of(m.get("payload", {}))).strip()[:12000]}
+    out = {"id": m["id"], "thread": m.get("threadId", ""), "from": _hdr(m, "From"), "to": _hdr(m, "To"),
+           "subject": _hdr(m, "Subject"), "date": _hdr(m, "Date"), "message_id": _hdr(m, "Message-ID"),
+           "body": re.sub(r"\n{3,}", "\n\n", _text_of(m.get("payload", {}))).strip()[:12000]}
+    if len(_full) > 300:
+        _full.clear()
+    _full[mid] = out
+    return out
 
 
 def _raw(to: str, subject: str, body: str, reply_to_id: str = "") -> dict:
@@ -326,10 +357,11 @@ def execute(name: str, a: dict) -> str:
 
 # ---------------------------------------------------------------- REST for the phone app (mail view)
 @router.get("/mail")
-async def r_mail(q: str = "in:inbox", n: int = 15):
+async def r_mail(q: str = "in:inbox", n: int = 25, page: str = ""):
+    """A page of email: {messages, next, total}. Pass next back as page= to load more."""
     import asyncio
     try:
-        return await asyncio.to_thread(gmail_list, q, n)
+        return await asyncio.to_thread(gmail_page, q, page, n)
     except RuntimeError as e:
         raise HTTPException(400, str(e))
 

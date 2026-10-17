@@ -34,9 +34,12 @@ data class GoogleStatus(
 
 @Serializable
 data class MailDto(
-    val id: String, val from: String = "", val subject: String = "", val date: String = "",
+    val id: String, val from: String = "", val to: String = "", val subject: String = "", val date: String = "",
     val snippet: String = "", val unread: Boolean = false,
 )
+
+@Serializable
+data class MailPage(val messages: List<MailDto> = emptyList(), val next: String = "", val total: Int = 0)
 
 @Serializable
 data class MailFull(
@@ -66,6 +69,6 @@ suspend fun Api.googleClient(id: String, secret: String): GoogleStatus =
     sendJson("POST", "/api/google/client", buildJsonObject { put("client_id", id); put("client_secret", secret) })
 suspend fun Api.googleConnect(): JsonObject = sendJson("POST", "/api/google/connect", JsonObject(emptyMap()))
 suspend fun Api.googleDisconnect(): GoogleStatus = sendJson("POST", "/api/google/disconnect", JsonObject(emptyMap()))
-suspend fun Api.mail(q: String = "in:inbox"): List<MailDto> =
-    getJson("/api/google/mail?q=" + java.net.URLEncoder.encode(q, "UTF-8"))
+suspend fun Api.mail(q: String = "in:inbox", page: String = ""): MailPage =
+    getJson("/api/google/mail?n=25&q=" + java.net.URLEncoder.encode(q, "UTF-8") + "&page=" + java.net.URLEncoder.encode(page, "UTF-8"))
 suspend fun Api.mailOne(id: String): MailFull = getJson("/api/google/mail/$id")

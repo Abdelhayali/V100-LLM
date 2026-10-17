@@ -1,6 +1,7 @@
 package com.localai.bridge.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -287,54 +289,102 @@ private fun CalendarTab(vm: MainViewModel, reload: Int) {
 }
 
 // ---------------------------------------------------------------- email (Gmail) + Google setup
+/** Loaded mail per folder/search, kept while the app runs: reopening the tab shows it at once, then refreshes. */
+private object MailCache {
+    val pages = mutableMapOf<String, Pair<List<MailDto>, String>>()   // query -> (messages, next page token)
+    val full = mutableMapOf<String, MailFull>()
+}
+
 @Composable
 private fun EmailTab(vm: MainViewModel, reload: Int) {
     val scope = rememberCoroutineScope()
     var st by remember { mutableStateOf<GoogleStatus?>(null) }
-    var mails by remember { mutableStateOf<List<MailDto>?>(null) }
-    var open by remember { mutableStateOf<MailFull?>(null) }
     var q by remember { mutableStateOf("in:inbox") }
-    fun loadMail() = scope.launch { mails = runCatching { vm.api?.mail(q) }.onFailure { vm.toast = it.message }.getOrNull() }
-    fun loadStatus() = scope.launch {
+    var search by remember { mutableStateOf("") }
+    var mails by remember { mutableStateOf(MailCache.pages[q]?.first) }
+    var next by remember { mutableStateOf(MailCache.pages[q]?.second ?: "") }
+    var loading by remember { mutableStateOf(false) }
+    var open by remember { mutableStateOf<MailFull?>(null) }
+
+    fun loadMail(more: Boolean = false) = scope.launch {
+        if (loading) return@launch
+        loading = true
+        val query = q
+        runCatching { vm.api?.mail(query, if (more) next else "") }.onSuccess { p ->
+            if (p != null && query == q) {
+                val list = if (more) (mails.orEmpty() + p.messages).distinctBy { it.id } else p.messages
+                mails = list; next = p.next
+                MailCache.pages[query] = list to p.next
+            }
+        }.onFailure { vm.toast = it.message }
+        loading = false
+    }
+    fun show(query: String) {
+        q = query; mails = MailCache.pages[query]?.first; next = MailCache.pages[query]?.second ?: ""
+        loadMail()
+    }
+    LaunchedEffect(reload) {
         st = runCatching { vm.api?.googleStatus() }.onFailure { vm.toast = it.message }.getOrNull()
         if (st?.connected == true) loadMail()
     }
-    LaunchedEffect(reload) { loadStatus() }
-    val s = st ?: run { CircularProgressIndicator(); return }
-
-    if (!s.connected) { GoogleSetup(vm, s, onChange = { st = it }, onRecheck = { loadStatus() }); return }
+    val s = st ?: run { if (mails == null) CircularProgressIndicator(); null }
+    if (s != null && !s.connected) {
+        GoogleSetup(vm, s, onChange = { st = it }, onRecheck = { scope.launch { st = runCatching { vm.api?.googleStatus() }.getOrNull() ?: st } })
+        return
+    }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("Gmail: ${s.email}", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-        TextButton(onClick = { scope.launch { st = runCatching { vm.api?.googleDisconnect() }.getOrNull() ?: st } }) { Text("Disconnect") }
+        Text("Gmail" + (s?.email?.let { ": $it" } ?: ""), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+        if (s != null) TextButton(onClick = { scope.launch { st = runCatching { vm.api?.googleDisconnect() }.getOrNull() ?: st } }) { Text("Disconnect") }
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        listOf("in:inbox" to "Inbox", "is:unread" to "Unread", "in:drafts" to "Drafts").forEach { (k, label) ->
-            FilterChip(selected = q == k, onClick = { q = k; loadMail() }, label = { Text(label) })
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf("in:inbox" to "Inbox", "is:unread" to "Unread", "in:sent" to "Sent", "in:drafts" to "Drafts",
+            "is:starred" to "Starred", "-in:spam -in:trash" to "All mail").forEach { (k, label) ->
+            FilterChip(selected = q == k, onClick = { search = ""; show(k) }, label = { Text(label) })
         }
     }
+    OutlinedTextField(search, { search = it }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+        label = { Text("Search mail (e.g. from:sara invoice)") },
+        trailingIcon = { IconButton(onClick = { if (search.isNotBlank()) show(search.trim()) }) { Icon(Icons.Default.Search, "Search") } },
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { if (search.isNotBlank()) show(search.trim()) }))
     OutlinedButton(onClick = { askAi(vm, "Check my unread emails and summarize what needs a reply.") }) {
         Text("Ask the AI to summarize my unread email")
     }
-    val m = mails ?: run { CircularProgressIndicator(); return }
-    if (m.isEmpty()) Text("No emails.", style = MaterialTheme.typography.bodySmall)
+    if (loading) androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
+    val m = mails ?: return
+    if (m.isEmpty() && !loading) Text("No emails here.", style = MaterialTheme.typography.bodySmall)
+    val sent = q == "in:sent" || q == "in:drafts"
     m.forEach { e ->
-        Card(Modifier.fillMaxWidth().clickable { scope.launch { open = runCatching { vm.api?.mailOne(e.id) }.onFailure { vm.toast = it.message }.getOrNull() } }) {
+        Card(Modifier.fillMaxWidth().clickable {
+            MailCache.full[e.id]?.let { open = it } ?: scope.launch {
+                runCatching { vm.api?.mailOne(e.id) }.onSuccess { it?.let { f -> MailCache.full[e.id] = f; open = f } }.onFailure { vm.toast = it.message }
+            }
+        }) {
             Column(Modifier.padding(10.dp)) {
-                Text(e.from.substringBefore('<').trim().ifBlank { e.from }, style = MaterialTheme.typography.labelMedium,
+                Row {
+                    val who = if (sent) "To: " + e.to.substringBefore('<').trim().ifBlank { e.to } else e.from.substringBefore('<').trim().ifBlank { e.from }
+                    Text(who, style = MaterialTheme.typography.labelMedium, fontWeight = if (e.unread) FontWeight.Bold else null,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    Text(shortDate(e.date), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text(e.subject.ifBlank { "(no subject)" }, style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (e.unread) FontWeight.Bold else null, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(e.subject, style = MaterialTheme.typography.bodyMedium, fontWeight = if (e.unread) FontWeight.Bold else null,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(e.snippet, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
+    if (next.isNotBlank()) OutlinedButton(onClick = { loadMail(more = true) }, enabled = !loading, modifier = Modifier.fillMaxWidth()) {
+        Text(if (loading) "Loading…" else "Load more (${m.size} shown)")
+    } else if (m.isNotEmpty()) Text("${m.size} email(s), that's all.", style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant)
+
     open?.let { mf ->
         AlertDialog(onDismissRequest = { open = null }, title = { Text(mf.subject, maxLines = 2, overflow = TextOverflow.Ellipsis) },
             text = {
                 Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
-                    Text("From: ${mf.from}\n${mf.date}", style = MaterialTheme.typography.labelSmall)
+                    Text("From: ${mf.from}\nTo: ${mf.to}\n${mf.date}", style = MaterialTheme.typography.labelSmall)
                     Spacer(Modifier.size(8.dp))
                     SelectionContainer { Text(mf.body, style = MaterialTheme.typography.bodySmall) }
                 }
@@ -345,6 +395,13 @@ private fun EmailTab(vm: MainViewModel, reload: Int) {
             }) { Text("Draft a reply with AI") } },
             dismissButton = { TextButton(onClick = { open = null }) { Text("Close") } })
     }
+}
+
+/** "Fri, 17 Oct 2026 14:03:11 +0300" -> "17 Oct 14:03" (or the date only if it is not from today). */
+private fun shortDate(d: String): String {
+    val m = Regex("""(\d{1,2}) (\w{3}) (\d{4}) (\d{2}):(\d{2})""").find(d) ?: return d.take(16)
+    val (day, mon, _, hh, mm) = m.destructured
+    return "$day $mon $hh:$mm"
 }
 
 @Composable
