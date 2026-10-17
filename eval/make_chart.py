@@ -140,9 +140,10 @@ exact answers, checked tool calls and final agent state) - no LLM judge. Gen tok
     if edge:
         tmp = RES / "_chart.html"
         tmp.write_text(f'<!doctype html><html><body style="margin:0">{svg}</body></html>', encoding="utf-8")
-        subprocess.run([edge, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--window-size=1180,520",
+        subprocess.run([edge, "--headless=new", "--disable-gpu", "--hide-scrollbars", f"--user-data-dir={RES / '_edge'}", "--window-size=1180,520",
                         f"--screenshot={RES / 'leaderboard.png'}", tmp.as_uri()], capture_output=True, timeout=60)
         tmp.unlink(missing_ok=True)
+        shutil.rmtree(RES / "_edge", ignore_errors=True)
     print(f"leaderboard: {len(rows)} models -> {RES / 'leaderboard.html'}")
 
 
