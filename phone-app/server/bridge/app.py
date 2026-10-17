@@ -626,7 +626,12 @@ async def pair_page(req: Request):
     return f"""<!doctype html><meta charset=utf-8><title>Pair phone</title>
 <body style="font-family:Segoe UI;text-align:center;padding:30px">
 <h2>Scan with the LocalAI Bridge app</h2>{svg}<p><b>{url}</b></p>
-<p style="color:#a00">Keep this QR private - it grants full access to this PC.</p></body>"""
+<p style="color:#a00">Keep this QR private - it grants full access to this PC.</p>
+<h3>LocalAI Bridge Desktop (another laptop)</h3>
+<p>Copy this pairing code and paste it in the desktop app's connect screen:</p>
+<textarea id=c readonly rows=3 style="width:90%;max-width:640px;font-family:Consolas">{html.escape(payload)}</textarea><br>
+<button onclick="navigator.clipboard.writeText(document.getElementById('c').value);this.textContent='Copied'">Copy pairing code</button>
+</body>"""
 
 
 # ---------------------------------------------------------------- routes: sessions & chat

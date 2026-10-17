@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LocalAI Bridge</title>
+<link rel="icon" href="icon.svg">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <div class="brand"><img src="icon.svg" alt=""><span>LocalAI Bridge</span>
+      <button class="icon" id="theme" title="Light / dark">◐</button></div>
+    <div id="pcbar" class="pcbar" title="Open Models"></div>
+    <button class="primary wide" id="newchat">＋ New chat</button>
+    <nav id="nav"></nav>
+    <div class="sess-head"><span id="sesscount">Chats</span>
+      <input id="sessq" type="search" placeholder="Search chats"></div>
+    <div id="sessions"></div>
+  </aside>
+  <main id="main"></main>
+</div>
+<div id="toast"></div>
+<div id="modal" class="modal hidden"><div class="modal-box" id="modalbox"></div></div>
+<script src="core.js"></script>
+<script src="chat.js"></script>
+<script src="views.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
