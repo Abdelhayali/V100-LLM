@@ -1065,3 +1065,6 @@ from . import google_api  # noqa: E402
 
 app.include_router(google_api.router, dependencies=[Auth])   # Google setup + mail list for the app
 app.include_router(google_api.public)                         # OAuth redirect (PC browser, localhost only)
+from . import email_tasks  # noqa: E402
+
+app.include_router(email_tasks.router, dependencies=[Auth])   # tasks suggested from email (user accepts / dismisses)

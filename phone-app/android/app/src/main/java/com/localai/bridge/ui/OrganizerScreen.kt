@@ -1,6 +1,15 @@
 package com.localai.bridge.ui
 
 import androidx.compose.foundation.clickable
+import com.localai.bridge.data.forgetEmailScan
+import com.localai.bridge.data.dismissEmailTask
+import com.localai.bridge.data.acceptEmailTask
+import com.localai.bridge.data.scanStatus
+import com.localai.bridge.data.scanEmailTasks
+import com.localai.bridge.data.emailTasks
+import com.localai.bridge.data.ScanStatus
+import com.localai.bridge.data.EmailTaskDto
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.TimePicker
@@ -108,8 +117,8 @@ fun OrganizerScreen(vm: MainViewModel, openDrawer: () -> Unit) {
         )
     }) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
-            TabRow(selectedTabIndex = tab) {
-                listOf("Tasks", "Notes", "Calendar", "Email").forEachIndexed { i, t ->
+            ScrollableTabRow(selectedTabIndex = tab, edgePadding = 8.dp) {
+                listOf("Tasks", "Notes", "Calendar", "Email", "From email").forEachIndexed { i, t ->
                     Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t) })
                 }
             }
@@ -119,7 +128,8 @@ fun OrganizerScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                     0 -> TasksTab(vm, reload)
                     1 -> NotesTab(vm, reload)
                     2 -> CalendarTab(vm, reload)
-                    else -> EmailTab(vm, reload)
+                    3 -> EmailTab(vm, reload)
+                    else -> EmailTasksTab(vm, reload)
                 }
             }
         }
@@ -599,4 +609,81 @@ private fun DraftDialog(vm: MainViewModel, mf: MailFull, onClose: () -> Unit, on
                 }
             })
     }
+}
+
+// ---------------------------------------------------------------- tasks suggested from email
+@Composable
+private fun EmailTasksTab(vm: MainViewModel, reload: Int) {
+    val scope = rememberCoroutineScope()
+    var list by remember { mutableStateOf<List<EmailTaskDto>?>(null) }
+    var st by remember { mutableStateOf<ScanStatus?>(null) }
+    var days by remember { mutableIntStateOf(14) }
+    fun load() = scope.launch { list = runCatching { vm.api?.emailTasks() }.onFailure { vm.toast = it.message }.getOrNull() }
+    LaunchedEffect(reload) { load(); st = runCatching { vm.api?.scanStatus() }.getOrNull() }
+    // while a scan runs on the PC, follow its progress and show new suggestions as they come
+    LaunchedEffect(st?.running) {
+        while (st?.running == true) {
+            kotlinx.coroutines.delay(2500)
+            st = runCatching { vm.api?.scanStatus() }.getOrNull() ?: st
+            load()
+        }
+        st?.error?.takeIf { it.isNotBlank() }?.let { vm.toast = it }
+    }
+
+    Text("The AI on your PC reads your recent email and suggests tasks (deadlines, replies, payments, things to " +
+        "submit). Nothing is added to your tasks until you tap Add.", style = MaterialTheme.typography.bodySmall)
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf(3, 7, 14, 30).forEach { d -> FilterChip(selected = days == d, onClick = { days = d }, label = { Text("Last $d days") }) }
+    }
+    val running = st?.running == true
+    Button(onClick = {
+        scope.launch {
+            runCatching { vm.api?.scanEmailTasks("in:inbox newer_than:${days}d", if (days <= 7) 30 else 50) }
+                .onSuccess { st = it }.onFailure { vm.toast = it.message }
+        }
+    }, enabled = !running, modifier = Modifier.fillMaxWidth()) {
+        Text(if (running) "Reading email… ${st?.done ?: 0}/${st?.total ?: 0}" else "Scan my email for tasks")
+    }
+    if (running) {
+        val s = st!!
+        androidx.compose.material3.LinearProgressIndicator(progress = { if (s.total > 0) s.done.toFloat() / s.total else 0f },
+            modifier = Modifier.fillMaxWidth())
+        Text("Only new emails are read; the AI takes a few seconds per email. You can leave this screen.",
+            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    } else st?.takeIf { it.total > 0 || it.found > 0 }?.let {
+        Text("Last scan: ${it.total} new email(s) read, ${it.found} task(s) suggested.", style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+
+    val l = list ?: run { CircularProgressIndicator(); return }
+    Text("Suggested (${l.size})", style = MaterialTheme.typography.titleMedium)
+    if (l.isEmpty()) Text(if (running) "Looking…" else "No suggestions. Scan your email to find tasks.",
+        style = MaterialTheme.typography.bodySmall)
+    l.forEach { s ->
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(s.title.orEmpty(), style = MaterialTheme.typography.titleSmall,
+                    color = if (s.priority == "high") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
+                val meta = listOfNotNull(s.due?.takeIf { it.isNotBlank() }?.let { "due $it" }, s.priority?.takeIf { it != "normal" })
+                if (meta.isNotEmpty()) Text(meta.joinToString(" · "), style = MaterialTheme.typography.labelMedium)
+                if (!s.notes.isNullOrBlank()) Text(s.notes, style = MaterialTheme.typography.bodySmall)
+                Text("From: ${s.emailFrom.orEmpty().substringBefore('<').trim()} · \"${s.emailSubject.orEmpty()}\"",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        scope.launch {
+                            runCatching { vm.api?.acceptEmailTask(s.id) }.onSuccess { vm.toast = "Added to your tasks" }
+                                .onFailure { vm.toast = it.message }
+                            load()
+                        }
+                    }) { Text("Add to my tasks") }
+                    OutlinedButton(onClick = { scope.launch { runCatching { vm.api?.dismissEmailTask(s.id) }; load() } }) { Text("Dismiss") }
+                }
+            }
+        }
+    }
+    TextButton(onClick = {
+        scope.launch { runCatching { vm.api?.forgetEmailScan() }.onSuccess { vm.toast = "Next scan reads all emails again" }; load() }
+    }) { Text("Rescan everything next time") }
 }

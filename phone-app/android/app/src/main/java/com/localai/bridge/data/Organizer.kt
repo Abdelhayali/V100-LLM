@@ -89,3 +89,22 @@ suspend fun Api.draftOf(messageId: String): String =
 suspend fun Api.updateDraft(draftId: String, body: String, subject: String, to: String): JsonObject =
     sendJson("PUT", "/api/google/draft/$draftId", buildJsonObject { put("body", body); put("subject", subject); put("to", to) })
 suspend fun Api.sendDraft(draftId: String): JsonObject = sendJson("POST", "/api/google/draft/$draftId/send", JsonObject(emptyMap()))
+
+// ---- tasks suggested from email (the AI reads Gmail; the user accepts or dismisses each one)
+@Serializable
+data class EmailTaskDto(
+    val id: Long, val title: String? = "", val notes: String? = "", val due: String? = "", val priority: String? = "normal",
+    @SerialName("email_id") val emailId: String? = "", @SerialName("email_subject") val emailSubject: String? = "",
+    @SerialName("email_from") val emailFrom: String? = "",
+)
+
+@Serializable
+data class ScanStatus(val running: Boolean = false, val done: Int = 0, val total: Int = 0, val found: Int = 0, val error: String = "")
+
+suspend fun Api.emailTasks(): List<EmailTaskDto> = getJson("/api/email_tasks")
+suspend fun Api.scanEmailTasks(query: String, n: Int): ScanStatus =
+    sendJson("POST", "/api/email_tasks/scan", buildJsonObject { put("query", query); put("n", n) })
+suspend fun Api.scanStatus(): ScanStatus = getJson("/api/email_tasks/status")
+suspend fun Api.acceptEmailTask(id: Long): JsonObject = sendJson("POST", "/api/email_tasks/$id/accept", JsonObject(emptyMap()))
+suspend fun Api.dismissEmailTask(id: Long): JsonObject = sendJson("POST", "/api/email_tasks/$id/dismiss", JsonObject(emptyMap()))
+suspend fun Api.forgetEmailScan(): JsonObject = sendJson("POST", "/api/email_tasks/forget", JsonObject(emptyMap()))
