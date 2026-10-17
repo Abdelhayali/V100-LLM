@@ -6,24 +6,6 @@ mode, and ships a test suite that scores models in a leaderboard.
 
 You don't need WSL, Docker, CUDA, Visual Studio or Python: the folder brings its own engines, CUDA runtime and Python.
 
-## 📱 Control your V100 from your Android phone and switch models
-
-The **[phone app](phone-app/)** connects your Android phone to this PC through an encrypted Cloudflare tunnel (no port
-forwarding), from anywhere:
-
-| | |
-|---|---|
-| 🔀 **Switch models** | Every model of the catalog with its tuned presets: **Load**, **Switch**, **Reload** or **Unload** with one tap |
-| 📊 **Live PC status** | Loaded model plus **VRAM, GPU load, CPU and RAM** bars at the top of every chat, refreshed every 3 s |
-| 💬 **Chat** | Streaming replies, sessions, thinking view, tokens/s and context used; the model list follows what is loaded |
-| 🖼️ **Vision & files** | Send photos, PDFs and PC screenshots to the vision models; browse and upload files on the PC |
-| 🖥️ **Tools** | The model can run code, read files, search the web, draw charts and remember facts (you approve each action) |
-| 🤖 **Code agent (beta)** | OpenCode working on a project folder of your PC with the loaded model |
-
-**Get it:** install [`phone-app/release/LocalAI-Bridge-V100.apk`](phone-app/release/LocalAI-Bridge-V100.apk) (Android 8+),
-run `phone-app\Start-Server.bat` on the PC (needs Python 3.10+), and scan the QR code it shows. The V100-LLM launcher is
-started automatically when the phone needs it. Details: [phone-app/README.md](phone-app/README.md).
-
 ## Demo: MiniCPM-V 4.7 35B-A3B at ~90 tok/s on one V100 16 GB
 
 Real-time screen recordings (not sped up) of the `fast-128k` preset: official OpenBMB `mix_q3gud_im` quant, stock llama.cpp,
@@ -72,6 +54,24 @@ Notes:
 - ExLlamaV3 (Qwen3.8-27B EXL3) runs on the V100 but at ~11 tok/s, so it is not scored.
 - The older, easier suite (v1) is still in `eval/results/`; most models scored 90-100 there, which is why v2 exists.
 <!-- /LEADERBOARD -->
+
+## 📱 Control your V100 from your Android phone and switch models
+
+The **[phone app](phone-app/)** connects your Android phone to this PC through an encrypted Cloudflare tunnel (no port
+forwarding), from anywhere:
+
+| | |
+|---|---|
+| 🔀 **Switch models** | Every model of the catalog with its tuned presets: **Load**, **Switch**, **Reload** or **Unload** with one tap |
+| 📊 **Live PC status** | Loaded model plus **VRAM, GPU load, CPU and RAM** bars at the top of every chat, refreshed every 3 s |
+| 💬 **Chat** | Streaming replies, sessions, thinking view, tokens/s and context used; the model list follows what is loaded |
+| 🖼️ **Vision & files** | Send photos, PDFs and PC screenshots to the vision models; browse and upload files on the PC |
+| 🖥️ **Tools** | The model can run code, read files, search the web, draw charts and remember facts (you approve each action) |
+| 🤖 **Code agent (beta)** | OpenCode working on a project folder of your PC with the loaded model |
+
+**Get it:** install [`phone-app/release/LocalAI-Bridge-V100.apk`](phone-app/release/LocalAI-Bridge-V100.apk) (Android 8+),
+run `phone-app\Start-Server.bat` on the PC (needs Python 3.10+), and scan the QR code it shows. The V100-LLM launcher is
+started automatically when the phone needs it. Details: [phone-app/README.md](phone-app/README.md).
 
 ## Quick start
 
