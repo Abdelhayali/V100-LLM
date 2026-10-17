@@ -1,11 +1,11 @@
-"""RentedNoodle OrcaRouter Qwen3.8-27B uncensored GSQ-RCO IQ3_XXS v2.1 (10.4 GB, built-in MTP head, tool-use template
-baked in); presets from _build/tune-orca-gsq.ps1. Small enough for 160k context with MTP and the full 262k without."""
+"""empero-ai Qwen3.8-27B Ridge 3.7bpw (GDN-aware mixed quant, built-in MTP head); presets from _build/tune-ridge.ps1
+"""
 import json
 from pathlib import Path
 
 p = Path(__file__).resolve().parent / "catalog-src.json"
 c = json.loads(p.read_text(encoding="utf-8-sig"))
-GG = "Qwen3.8-27B-OrcaRouter-GSQ-RCO-IQ3_XXS-v2.1.gguf"
+GG = "Qwen3.8-27B-Ridge-3.7bpw.gguf"
 
 
 def preset(pid, name, bench, ctx, kv, mtp, ub, vis_cpu):
@@ -24,18 +24,18 @@ def preset(pid, name, bench, ctx, kv, mtp, ub, vis_cpu):
     return {"id": pid, "name": name, "kernel": "llamacpp", "kernels": ["llamacpp"], "bench": bench, "params": rows}
 
 
-m = {"id": "orca-qwen3.8-27b-gsq", "name": "Qwen3.8-27B OrcaRouter Uncensored GSQ-RCO-IQ3_XXS v2.1 (MTP)",
-     "desc": "OrcaRouter's abliterated (uncensored) Qwen3.8-27B, quantized by RentedNoodle with ISTA-DASLab's GSQ-RCO method "
-             "(10.4 GB, MTP head built in). Small enough for 160k context with MTP, or the full 262k without.",
-     "files": [["RentedNoodle/Qwen3.8-27B-OrcaRouter-GSQ-RCO-IQ3_XXS-Uncensored", GG], ["unsloth/Qwen3.8-27B-GGUF", "mmproj-F16.gguf"]],
+m = {"id": "ridge-qwen3.8-27b", "name": "Qwen3.8-27B Ridge 3.7bpw (MTP)",
+     "desc": "Official Qwen3.8-27B in empero-ai's Ridge mix (12.6 GB, 3.69 bpw, Gated-DeltaNet-aware types) with the MTP "
+             "head built in. Vision on the CPU.",
+     "files": [["empero-ai/Qwen3.8-27B-Ridge-GGUF", GG], ["unsloth/Qwen3.8-27B-GGUF", "mmproj-F16.gguf"]],
      "model": GG, "mmproj": "mmproj-F16.gguf",
      "presets": [
-         preset("fast-32k", "FAST: 32k context, MTP 4, vision on GPU (49 tok/s)",
-                "48.8 tok/s (code 58.6 / chat 39.0), draft accepted 60%, 14.2 GB VRAM; image ok", 32768, "f16", 4, 512, False),
-         preset("long-160k", "160k context, MTP 4, q4 KV (49 tok/s)",
-                "49.1 tok/s (code 58.3 / chat 40.0), draft accepted 63%, 15.2 GB VRAM; image ok", 163840, "q4_0", 4, 256, True),
-         preset("max-262k", "262k context (full), no MTP, q4 KV (28 tok/s)",
-                "28.4 tok/s, 15.5 GB VRAM; image ok", 262144, "q4_0", 0, 256, True)]}
+         preset("fast-32k", "FAST: 32k context, MTP 4 (50 tok/s)",
+                "50.3 tok/s (code 60.0 / chat 40.5), draft accepted 68%, 14.6 GB VRAM; image ok", 32768, "f16", 4, 512, True),
+         preset("long-96k", "96k context, MTP 4, q4 KV (48 tok/s)",
+                "48.3 tok/s (code 57.5 / chat 39.0), draft accepted 66%, 14.9 GB VRAM; image ok", 98304, "q4_0", 4, 256, True),
+         preset("max-192k", "192k context, no MTP, q4 KV (27 tok/s)",
+                "27.4 tok/s, 15.6 GB VRAM; image ok (262k does not fit)", 196608, "q4_0", 0, 256, True)]}
 c["models"] = [x for x in c["models"] if x["id"] != m["id"]] + [m]
 p.write_text(json.dumps(c, indent=1), encoding="utf-8")
 print("added", m["id"], [x["id"] for x in m["presets"]])

@@ -1,6 +1,6 @@
 @echo off
-rem Qwen3.8-27B OrcaRouter Uncensored GSQ-RCO-IQ3_XXS v2.1 (MTP) - 262k context (full), no MTP, q4 KV (28 tok/s) (kernel: llamacpp)
-rem 28.4 tok/s, 15.5 GB VRAM; image ok
+rem Qwen3.8-27B Ridge 3.7bpw (MTP) - 96k context, MTP 4, q4 KV (48 tok/s) (kernel: llamacpp)
+rem 48.3 tok/s (code 57.5 / chat 39.0), draft accepted 66%, 14.9 GB VRAM; image ok
 rem Open http://127.0.0.1:%PORT% (default 8899). Extra arguments are passed to llama-server.
 if not defined PORT set "PORT=8899"
 if not defined HOST set "HOST=127.0.0.1"
@@ -9,11 +9,16 @@ set "M=%~dp0model"
 set "PATH=%K%;%PATH%"
 if not exist "%K%\llama-server.exe" ( echo Kernel llamacpp missing: open START-GUI.bat and press Download. & pause & exit /b 1 )
 "%K%\llama-server.exe" ^
-  -m "%M%\Qwen3.8-27B-OrcaRouter-GSQ-RCO-IQ3_XXS-v2.1.gguf" ^
+  -m "%M%\Qwen3.8-27B-Ridge-3.7bpw.gguf" ^
   --mmproj "%M%\mmproj-F16.gguf" ^
   --no-mmproj-offload ^
+  --spec-type draft-mtp ^
+  --spec-draft-n-max 4 ^
+  --spec-draft-p-min 0 ^
+  --spec-draft-type-k q4_0 ^
+  --spec-draft-type-v q4_0 ^
   -ngl all ^
-  -c 262144 ^
+  -c 98304 ^
   -ctk q4_0 ^
   -ctv q4_0 ^
   -np 1 ^

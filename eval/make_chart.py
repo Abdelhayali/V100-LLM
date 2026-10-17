@@ -42,7 +42,7 @@ def load():
 SHORT = {"minicpm-v4.7-35b": "MiniCPM-V 4.7 IQ3_XS", "qwen3.8-27b-pxq3": "Qwen3.8-27B PXQ3", "saluki-27b": "Saluki 27B (MTP)",
          "bonsai-heretic-27b": "Bonsai-2 27B Heretic", "nemotron-bolt-74b": "Nemotron-3.5 Bolt 74B", "fusion4-35b-pxq2": "PXA-Fusion4 35B",
          "ornith-35b-pxq2": "Ornith-1.5 35B", "strata-flash-next": "Strata IQ2_XS", "strata-flash-next@q2_0": "Strata Q2_0", "strata-flash-next@coder-iq1m": "Strata Coder IQ1_M", "hauhau-qwen3.8-27b": "HauhauCS IQ3_XS",
-         "qwen3.8-27b-exl3": "Qwen3.8-27B EXL3 3.0bpw", "hauhau-qwen3.8-27b-q2kp": "HauhauCS Q2_K_P", "huihui-qwen3.8-27b-gsq": "Huihui abliterated GSQ IQ3_S", "ista-qwen3.8-27b-gsq": "ISTA-DASLab GSQ IQ3_S", "orca-qwen3.8-27b-gsq": "OrcaRouter Uncensored GSQ",
+         "qwen3.8-27b-exl3": "Qwen3.8-27B EXL3 3.0bpw", "hauhau-qwen3.8-27b-q2kp": "HauhauCS Q2_K_P", "huihui-qwen3.8-27b-gsq": "Huihui abliterated GSQ IQ3_S", "ista-qwen3.8-27b-gsq": "ISTA-DASLab GSQ IQ3_S", "ridge-qwen3.8-27b": "Qwen3.8-27B Ridge 3.7bpw",
          "unsloth-qwen3.8-27b-iq3s": "Qwen3.8-27B Unsloth UD-IQ3_S",
          "minicpm-v4.7-35b-q3mix": "MiniCPM-V 4.7 Q3 mix", "minicpm-v4.7-35b-uncensored": "MiniCPM-V 4.7 Uncensored",
          "minicpm-v4.7-35b-crack": "MiniCPM-V 4.7 CRACK"}
