@@ -79,6 +79,9 @@ import com.localai.bridge.data.googleDisconnect
 import com.localai.bridge.data.googleStatus
 import com.localai.bridge.data.mail
 import com.localai.bridge.data.mailOne
+import com.localai.bridge.data.sendDraft
+import com.localai.bridge.data.updateDraft
+import com.localai.bridge.data.draftOf
 import com.localai.bridge.data.notes
 import com.localai.bridge.data.organizerTasks
 import com.localai.bridge.data.saveNote
@@ -390,7 +393,12 @@ private fun EmailTab(vm: MainViewModel, reload: Int) {
     } else if (m.isNotEmpty()) Text("${m.size} email(s), that's all.", style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-    open?.let { mf ->
+    open?.takeIf { q == "in:drafts" }?.let { mf ->
+        DraftDialog(vm, mf, onClose = { open = null }, onChanged = {
+            MailCache.full.remove(mf.id); MailCache.pages.remove("in:drafts"); MailCache.pages.remove("in:sent"); loadMail()
+        })
+    }
+    open?.takeIf { q != "in:drafts" }?.let { mf ->
         AlertDialog(onDismissRequest = { open = null }, title = { Text(mf.subject, maxLines = 2, overflow = TextOverflow.Ellipsis) },
             text = {
                 Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
@@ -519,5 +527,76 @@ private fun DateTimeField(label: String, value: String, onValue: (String) -> Uni
             dismissButton = { TextButton(onClick = { if (timeOptional) onValue(d); pickTime = null }) {
                 Text(if (timeOptional) "No time" else "Cancel")
             } })
+    }
+}
+
+// ---------------------------------------------------------------- an opened Gmail draft: edit, ask AI to edit, send
+@Composable
+private fun DraftDialog(vm: MainViewModel, mf: MailFull, onClose: () -> Unit, onChanged: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var draftId by remember(mf.id) { mutableStateOf("") }
+    var mode by remember(mf.id) { mutableStateOf("view") }       // view | edit | ask | send
+    var to by remember(mf.id) { mutableStateOf(mf.to) }
+    var subject by remember(mf.id) { mutableStateOf(mf.subject) }
+    var body by remember(mf.id) { mutableStateOf(mf.body) }
+    var ask by remember(mf.id) { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    LaunchedEffect(mf.id) {
+        runCatching { vm.api?.draftOf(mf.id) }.onSuccess { draftId = it.orEmpty() }.onFailure { vm.toast = it.message }
+    }
+    fun act(block: suspend () -> Unit) = scope.launch { busy = true; runCatching { block() }.onFailure { vm.toast = it.message }; busy = false }
+
+    when (mode) {
+        "edit" -> AlertDialog(onDismissRequest = { mode = "view" }, title = { Text("Edit draft") },
+            text = {
+                Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(to, { to = it }, label = { Text("To") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(subject, { subject = it }, label = { Text("Subject") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(body, { body = it }, label = { Text("Email text") }, modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp))
+                }
+            },
+            confirmButton = { TextButton(enabled = !busy && draftId.isNotBlank() && body.isNotBlank(), onClick = {
+                act { vm.api?.updateDraft(draftId, body, subject, to); vm.toast = "Draft saved"; onChanged(); onClose() }
+            }) { Text(if (busy) "Saving…" else "Save") } },
+            dismissButton = { TextButton(onClick = { mode = "view" }) { Text("Back") } })
+
+        "ask" -> AlertDialog(onDismissRequest = { mode = "view" }, title = { Text("Ask AI to edit") },
+            text = {
+                OutlinedTextField(ask, { ask = it }, label = { Text("What should change? (e.g. shorter, more formal, add the date)") },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp))
+            },
+            confirmButton = { TextButton(enabled = draftId.isNotBlank() && ask.isNotBlank(), onClick = {
+                onClose()
+                askAi(vm, "Edit my Gmail draft (draft_id=$draftId, message id=${mf.id}, subject \"${mf.subject}\"). " +
+                    "Read it with gmail_read id=${mf.id}, then rewrite it: ${ask.trim()}. Save the new version with " +
+                    "gmail_update_draft (draft_id=$draftId) and show me the new text. Do not send it.")
+            }) { Text("Ask") } },
+            dismissButton = { TextButton(onClick = { mode = "view" }) { Text("Back") } })
+
+        "send" -> AlertDialog(onDismissRequest = { mode = "view" }, title = { Text("Send this email?") },
+            text = { Text("To: ${to.ifBlank { mf.to }}\nSubject: ${subject.ifBlank { mf.subject }}\n\nIt is sent from your Gmail right away.") },
+            confirmButton = { TextButton(enabled = !busy && draftId.isNotBlank(), onClick = {
+                act { vm.api?.sendDraft(draftId); vm.toast = "Email sent"; onChanged(); onClose() }
+            }) { Text(if (busy) "Sending…" else "Send") } },
+            dismissButton = { TextButton(onClick = { mode = "view" }) { Text("Cancel") } })
+
+        else -> AlertDialog(onDismissRequest = onClose, title = { Text("Draft: " + mf.subject.ifBlank { "(no subject)" }, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+            text = {
+                Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
+                    Text("To: ${mf.to.ifBlank { "(nobody yet)" }}", style = MaterialTheme.typography.labelSmall)
+                    Spacer(Modifier.size(8.dp))
+                    SelectionContainer { Text(mf.body, style = MaterialTheme.typography.bodySmall) }
+                    if (draftId.isBlank()) Text("Finding the draft in Gmail…", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            confirmButton = {
+                Column(horizontalAlignment = Alignment.End) {
+                    TextButton(enabled = draftId.isNotBlank(), onClick = { mode = "edit" }) { Text("Edit") }
+                    TextButton(enabled = draftId.isNotBlank(), onClick = { mode = "ask" }) { Text("Ask AI to edit") }
+                    TextButton(enabled = draftId.isNotBlank() && mf.to.isNotBlank(), onClick = { mode = "send" }) { Text("Send") }
+                    TextButton(onClick = onClose) { Text("Close") }
+                }
+            })
     }
 }

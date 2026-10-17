@@ -72,6 +72,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Drafts
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
@@ -448,6 +449,9 @@ private fun AssistantBubble(vm: MainViewModel, item: ChatItem.Assistant, isLast:
     val (thinkInline, visible) = splitThink(item.text)
     val reasoning = (item.reasoning + thinkInline).trim()
     var showReasoning by remember { mutableStateOf(false) }
+    var draftOpen by remember { mutableStateOf(false) }
+    val emailId = remember(vm.items.size) { emailIdOfChat(vm.items) }
+    if (draftOpen) SaveDraftDialog(vm, visible.trim(), emailId) { draftOpen = false }
     Column(Modifier.fillMaxWidth().animateContentSize()) {
         if (reasoning.isNotEmpty()) {
             AssistChip(onClick = { showReasoning = !showReasoning },
@@ -463,6 +467,7 @@ private fun AssistantBubble(vm: MainViewModel, item: ChatItem.Assistant, isLast:
                 SmallAction(Icons.Default.ContentCopy, "Copy") {
                     clip.setText(AnnotatedString(visible.trim())); vm.toast = "Copied"
                 }
+                if (looksLikeEmail(visible, emailId)) SmallAction(Icons.Default.Drafts, "Save as Gmail draft") { draftOpen = true }
                 val reading = vm.speakingKey == item.key
                 SmallAction(if (reading) Icons.Default.Stop else Icons.AutoMirrored.Filled.VolumeUp, if (reading) "Stop reading" else "Read aloud") {
                     vm.toggleSpeak(item.key, visible)

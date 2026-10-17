@@ -299,6 +299,38 @@ def gmail_send(to: str, subject: str, body: str, reply_to_id: str = "") -> dict:
     return _api("POST", GMAIL + "/messages/send", json=_raw(to, subject, body, reply_to_id))
 
 
+def draft_id_for(message_id: str) -> str:
+    """The draft that holds a message (the Drafts folder lists messages; editing needs the draft id)."""
+    page = ""
+    for _ in range(10):
+        d = _api("GET", GMAIL + "/drafts", params={"maxResults": 100, **({"pageToken": page} if page else {})})
+        for dr in d.get("drafts", []):
+            if dr.get("message", {}).get("id") == message_id:
+                return dr["id"]
+        page = d.get("nextPageToken", "")
+        if not page:
+            break
+    raise RuntimeError("That email is not a draft (it may have been sent or deleted)")
+
+
+def gmail_update_draft(draft_id: str, body: str, subject: str = "", to: str = "") -> dict:
+    """Replace a draft's text (and optionally To / Subject), keeping it in the same thread as a reply."""
+    cur = _api("GET", GMAIL + f"/drafts/{draft_id}", params={"format": "full"})
+    m = cur.get("message", {})
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["To"] = to or _hdr(m, "To")
+    msg["Subject"] = subject or _hdr(m, "Subject")
+    for h in ("In-Reply-To", "References", "Cc"):
+        if _hdr(m, h):
+            msg[h] = _hdr(m, h)
+    new = {"raw": base64.urlsafe_b64encode(msg.as_bytes()).decode()}
+    if m.get("threadId"):
+        new["threadId"] = m["threadId"]
+    _meta.pop(m.get("id", ""), None)
+    _full.pop(m.get("id", ""), None)
+    return _api("PUT", GMAIL + f"/drafts/{draft_id}", json={"id": draft_id, "message": new})
+
+
 def gmail_send_draft(draft_id: str) -> dict:
     return _api("POST", GMAIL + "/drafts/send", json={"id": draft_id})
 
@@ -309,7 +341,8 @@ def _fn(name, desc, props, required):
             "parameters": {"type": "object", "properties": props, "required": required}}}
 
 
-TOOL_NAMES = {"gmail_list", "gmail_read", "gmail_draft", "gmail_send", "gmail_send_draft", "google_calendar_add"}
+TOOL_NAMES = {"gmail_list", "gmail_read", "gmail_draft", "gmail_update_draft", "gmail_send", "gmail_send_draft",
+              "google_calendar_add"}
 
 
 def tool_schemas() -> list[dict]:
@@ -323,6 +356,9 @@ def tool_schemas() -> list[dict]:
         _fn("gmail_read", "Read one email in full by its id (from gmail_list).", {"id": {"type": "string"}}, ["id"]),
         _fn("gmail_draft", "Write a draft email or a draft reply (saved in Gmail Drafts, NOT sent). Prefer this, then "
             "show the draft to the user and ask whether to send it.", mail, ["body"]),
+        _fn("gmail_update_draft", "Change an existing Gmail draft (rewrite its text, subject or recipient). Give the "
+            "full new text. Not sent.", {"draft_id": {"type": "string"}, "body": {"type": "string"},
+                                         "subject": {"type": "string"}, "to": {"type": "string"}}, ["draft_id", "body"]),
         _fn("gmail_send", "Send an email or a reply now. The user must approve it on the phone first.", mail, ["body"]),
         _fn("gmail_send_draft", "Send a draft created with gmail_draft. The user must approve it on the phone first.",
             {"draft_id": {"type": "string"}}, ["draft_id"]),
@@ -343,6 +379,9 @@ def execute(name: str, a: dict) -> str:
     if name == "gmail_draft":
         d = gmail_draft(a.get("to", ""), a.get("subject", ""), a.get("body", ""), a.get("reply_to_id", ""))
         return f"Draft saved in Gmail (draft_id={d.get('id')}). It was NOT sent. Show it to the user and ask before sending."
+    if name == "gmail_update_draft":
+        gmail_update_draft(a["draft_id"], a.get("body", ""), a.get("subject", ""), a.get("to", ""))
+        return f"Draft {a['draft_id']} updated (not sent). Show the user the new text."
     if name == "gmail_send":
         m = gmail_send(a.get("to", ""), a.get("subject", ""), a.get("body", ""), a.get("reply_to_id", ""))
         return f"Email sent (id={m.get('id')})."
@@ -364,6 +403,63 @@ async def r_mail(q: str = "in:inbox", n: int = 25, page: str = ""):
         return await asyncio.to_thread(gmail_page, q, page, n)
     except RuntimeError as e:
         raise HTTPException(400, str(e))
+
+
+class DraftIn(BaseModel):
+    body: str
+    to: str = ""
+    subject: str = ""
+    reply_to_id: str = ""
+
+
+@router.post("/draft")
+async def r_draft(b: DraftIn):
+    """Save text as a Gmail draft (a reply when reply_to_id is given). Nothing is sent."""
+    import asyncio
+    if not b.body.strip():
+        raise HTTPException(400, "The draft is empty")
+    try:
+        d = await asyncio.to_thread(gmail_draft, b.to.strip(), b.subject.strip(), b.body, b.reply_to_id.strip())
+    except RuntimeError as e:
+        raise HTTPException(400, str(e))
+    return {"ok": True, "draft_id": d.get("id", "")}
+
+
+class DraftEdit(BaseModel):
+    body: str
+    subject: str = ""
+    to: str = ""
+
+
+@router.get("/draft_of/{mid}")
+async def r_draft_of(mid: str):
+    import asyncio
+    try:
+        return {"draft_id": await asyncio.to_thread(draft_id_for, mid)}
+    except RuntimeError as e:
+        raise HTTPException(404, str(e))
+
+
+@router.put("/draft/{draft_id}")
+async def r_draft_put(draft_id: str, b: DraftEdit):
+    """Save the user's own edit of a draft. Nothing is sent."""
+    import asyncio
+    try:
+        d = await asyncio.to_thread(gmail_update_draft, draft_id, b.body, b.subject.strip(), b.to.strip())
+    except RuntimeError as e:
+        raise HTTPException(400, str(e))
+    return {"ok": True, "draft_id": d.get("id", draft_id), "message_id": d.get("message", {}).get("id", "")}
+
+
+@router.post("/draft/{draft_id}/send")
+async def r_draft_send(draft_id: str):
+    """Send a draft: only from the user's own tap in the app (it confirms first)."""
+    import asyncio
+    try:
+        m = await asyncio.to_thread(gmail_send_draft, draft_id)
+    except RuntimeError as e:
+        raise HTTPException(400, str(e))
+    return {"ok": True, "message_id": m.get("id", "")}
 
 
 @router.get("/mail/{mid}")

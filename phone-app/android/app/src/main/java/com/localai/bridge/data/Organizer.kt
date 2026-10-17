@@ -7,6 +7,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.put
 
 // ------------------------------------------------------------------ notes, tasks, calendar, Google (stored on the PC)
@@ -69,6 +70,22 @@ suspend fun Api.googleClient(id: String, secret: String): GoogleStatus =
     sendJson("POST", "/api/google/client", buildJsonObject { put("client_id", id); put("client_secret", secret) })
 suspend fun Api.googleConnect(): JsonObject = sendJson("POST", "/api/google/connect", JsonObject(emptyMap()))
 suspend fun Api.googleDisconnect(): GoogleStatus = sendJson("POST", "/api/google/disconnect", JsonObject(emptyMap()))
-suspend fun Api.mail(q: String = "in:inbox", page: String = ""): MailPage =
-    getJson("/api/google/mail?n=25&q=" + java.net.URLEncoder.encode(q, "UTF-8") + "&page=" + java.net.URLEncoder.encode(page, "UTF-8"))
+/** A page of mail. Also accepts an older PC server, which sends a plain list (no paging). */
+suspend fun Api.mail(q: String = "in:inbox", page: String = ""): MailPage {
+    val raw = rawGet("/api/google/mail?n=25&q=" + java.net.URLEncoder.encode(q, "UTF-8") + "&page=" + java.net.URLEncoder.encode(page, "UTF-8"))
+    val el = json.parseToJsonElement(raw)
+    return if (el is kotlinx.serialization.json.JsonArray) MailPage(json.decodeFromJsonElement(el))
+           else json.decodeFromJsonElement(el)
+}
 suspend fun Api.mailOne(id: String): MailFull = getJson("/api/google/mail/$id")
+
+suspend fun Api.saveDraft(body: String, to: String, subject: String, replyToId: String): JsonObject =
+    sendJson("POST", "/api/google/draft", buildJsonObject {
+        put("body", body); put("to", to); put("subject", subject); put("reply_to_id", replyToId)
+    })
+
+suspend fun Api.draftOf(messageId: String): String =
+    getJson<JsonObject>("/api/google/draft_of/$messageId")["draft_id"]?.let { (it as? JsonPrimitive)?.contentOrNull }.orEmpty()
+suspend fun Api.updateDraft(draftId: String, body: String, subject: String, to: String): JsonObject =
+    sendJson("PUT", "/api/google/draft/$draftId", buildJsonObject { put("body", body); put("subject", subject); put("to", to) })
+suspend fun Api.sendDraft(draftId: String): JsonObject = sendJson("POST", "/api/google/draft/$draftId/send", JsonObject(emptyMap()))
