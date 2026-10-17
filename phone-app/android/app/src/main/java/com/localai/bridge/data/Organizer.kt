@@ -101,11 +101,13 @@ data class EmailTaskDto(
 )
 
 @Serializable
-data class ScanStatus(val running: Boolean = false, val done: Int = 0, val total: Int = 0, val found: Int = 0, val error: String = "")
+data class ScanStatus(val running: Boolean = false, val done: Int = 0, val total: Int = 0, val found: Int = 0, val error: String = "",
+                      val matched: Int = 0)
 
 suspend fun Api.emailTasks(): List<EmailTaskDto> = getJson("/api/email_tasks")
-suspend fun Api.scanEmailTasks(query: String, n: Int): ScanStatus =
-    sendJson("POST", "/api/email_tasks/scan", buildJsonObject { put("query", query); put("n", n) })
+suspend fun Api.scanEmailTasks(query: String, skipPromotions: Boolean): ScanStatus =
+    sendJson("POST", "/api/email_tasks/scan", buildJsonObject { put("query", query); put("n", 2000); put("skip_promotions", skipPromotions) })
+suspend fun Api.cancelEmailScan(): ScanStatus = sendJson("POST", "/api/email_tasks/cancel", JsonObject(emptyMap()))
 suspend fun Api.scanStatus(): ScanStatus = getJson("/api/email_tasks/status")
 suspend fun Api.acceptEmailTask(id: Long): JsonObject = sendJson("POST", "/api/email_tasks/$id/accept", JsonObject(emptyMap()))
 suspend fun Api.dismissEmailTask(id: Long): JsonObject = sendJson("POST", "/api/email_tasks/$id/dismiss", JsonObject(emptyMap()))

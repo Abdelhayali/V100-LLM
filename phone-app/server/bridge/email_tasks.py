@@ -32,8 +32,22 @@ db._conn.commit()
 SCANNED = "email_scanned_v2"    # v2 also looks for emails that need a reply, so older scans are read again once
 
 router = APIRouter(prefix="/api/email_tasks")
-job = {"running": False, "done": 0, "total": 0, "found": 0, "error": "", "finished": 0.0}
-BATCH = 4
+job = {"running": False, "done": 0, "total": 0, "found": 0, "error": "", "finished": 0.0, "cancel": False, "matched": 0}
+BATCH = 6            # emails per model call
+MAX_EMAILS = 2000    # safety cap for one scan
+
+
+def _all_ids(query: str) -> list[str]:
+    """Every message id matching the search (Gmail pages of 500), newest first."""
+    ids, page = [], ""
+    while len(ids) < MAX_EMAILS:
+        p = {"q": query, "maxResults": 500, **({"pageToken": page} if page else {})}
+        d = google_api._api("GET", google_api.GMAIL + "/messages", params=p)
+        ids += [m["id"] for m in d.get("messages", [])]
+        page = d.get("nextPageToken", "")
+        if not page:
+            break
+    return ids[:MAX_EMAILS]
 
 
 def _llm_headers():
@@ -76,14 +90,17 @@ async def _ask_model(client: httpx.AsyncClient, emails: list[dict]) -> list[dict
 
 
 async def _scan(query: str, n: int):
-    job.update(running=True, done=0, total=0, found=0, error="", finished=0.0)
+    job.update(running=True, done=0, total=0, found=0, error="", finished=0.0, cancel=False, matched=0)
     try:
-        page = await asyncio.to_thread(google_api.gmail_page, query, "", n)
+        ids = await asyncio.to_thread(_all_ids, query)
         seen = {r["email_id"] for r in db._q(f"SELECT email_id FROM {SCANNED}")}
-        todo = [m for m in page["messages"] if m["id"] not in seen]
-        job["total"] = len(todo)
+        todo = [{"id": i} for i in ids if i not in seen]
+        job.update(total=len(todo), matched=len(ids))
         async with httpx.AsyncClient(timeout=httpx.Timeout(600, connect=10)) as client:
             for i in range(0, len(todo), BATCH):
+                if job["cancel"]:
+                    job["error"] = "Stopped. Emails read so far are remembered; scan again to continue."
+                    break
                 batch = todo[i:i + BATCH]
                 full = await asyncio.gather(*[asyncio.to_thread(google_api.gmail_read, m["id"]) for m in batch])
                 for t in await _ask_model(client, full):
@@ -114,8 +131,9 @@ async def _scan(query: str, n: int):
 
 
 class ScanIn(BaseModel):
-    query: str = "in:inbox newer_than:14d"
-    n: int = 30
+    query: str = "in:inbox newer_than:30d"
+    n: int = MAX_EMAILS                 # kept for older apps; the scan now reads every matching email
+    skip_promotions: bool = True        # Gmail's Promotions / Social / Forums tabs rarely hold tasks
 
 
 @router.post("/scan")
@@ -124,8 +142,17 @@ async def scan(b: ScanIn):
         raise HTTPException(400, "Connect Google first (Email tab)")
     if job["running"]:
         return job
-    asyncio.create_task(_scan(b.query or "in:inbox newer_than:14d", max(1, min(b.n, 100))))
+    q = b.query or "in:inbox newer_than:30d"
+    if b.skip_promotions and "category:" not in q:
+        q += " -category:promotions -category:social -category:forums"
+    asyncio.create_task(_scan(q, MAX_EMAILS))
     await asyncio.sleep(0.2)
+    return job
+
+
+@router.post("/cancel")
+async def cancel():
+    job["cancel"] = True
     return job
 
 

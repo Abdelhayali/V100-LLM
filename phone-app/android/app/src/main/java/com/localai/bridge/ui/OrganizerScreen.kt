@@ -88,6 +88,7 @@ import com.localai.bridge.data.googleDisconnect
 import com.localai.bridge.data.googleStatus
 import com.localai.bridge.data.mail
 import com.localai.bridge.data.mailOne
+import com.localai.bridge.data.cancelEmailScan
 import com.localai.bridge.data.sendDraft
 import com.localai.bridge.data.updateDraft
 import com.localai.bridge.data.draftOf
@@ -627,7 +628,8 @@ private fun EmailTasksTab(vm: MainViewModel, reload: Int) {
     val scope = rememberCoroutineScope()
     var list by remember { mutableStateOf<List<EmailTaskDto>?>(null) }
     var st by remember { mutableStateOf<ScanStatus?>(null) }
-    var days by remember { mutableIntStateOf(14) }
+    var days by remember { mutableIntStateOf(30) }
+    var skipPromo by remember { mutableStateOf(true) }
     fun load() = scope.launch { list = runCatching { vm.api?.emailTasks() }.onFailure { vm.toast = it.message }.getOrNull() }
     LaunchedEffect(reload) { load(); st = runCatching { vm.api?.scanStatus() }.getOrNull() }
     // while a scan runs on the PC, follow its progress and show new suggestions as they come
@@ -644,22 +646,34 @@ private fun EmailTasksTab(vm: MainViewModel, reload: Int) {
         "emails that need your reply (someone asks you something or needs information). Nothing is added to your " +
         "tasks until you tap Add; a reply task opens an AI draft when you tap it.", style = MaterialTheme.typography.bodySmall)
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        listOf(3, 7, 14, 30).forEach { d -> FilterChip(selected = days == d, onClick = { days = d }, label = { Text("Last $d days") }) }
+        listOf(3, 7, 14, 30, 90).forEach { d -> FilterChip(selected = days == d, onClick = { days = d }, label = { Text("Last $d days") }) }
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text("Skip Promotions & Social", style = MaterialTheme.typography.bodyMedium)
+            Text("Newsletters and ads rarely hold tasks; skipping them makes the scan faster.",
+                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        androidx.compose.material3.Switch(checked = skipPromo, onCheckedChange = { skipPromo = it })
     }
     val running = st?.running == true
     Button(onClick = {
         scope.launch {
-            runCatching { vm.api?.scanEmailTasks("in:inbox newer_than:${days}d", if (days <= 7) 30 else 50) }
+            runCatching { vm.api?.scanEmailTasks("in:inbox newer_than:${days}d", skipPromo) }
                 .onSuccess { st = it }.onFailure { vm.toast = it.message }
         }
     }, enabled = !running, modifier = Modifier.fillMaxWidth()) {
-        Text(if (running) "Reading email… ${st?.done ?: 0}/${st?.total ?: 0}" else "Scan my email for tasks")
+        Text(if (running) "Reading email… ${st?.done ?: 0}/${st?.total ?: 0}" else "Scan all my email for tasks")
     }
+    if (running) OutlinedButton(onClick = { scope.launch { st = runCatching { vm.api?.cancelEmailScan() }.getOrNull() ?: st } },
+        modifier = Modifier.fillMaxWidth()) { Text("Stop scanning") }
     if (running) {
         val s = st!!
         androidx.compose.material3.LinearProgressIndicator(progress = { if (s.total > 0) s.done.toFloat() / s.total else 0f },
             modifier = Modifier.fillMaxWidth())
-        Text("Only new emails are read; the AI takes a few seconds per email. You can leave this screen.",
+        val left = ((s.total - s.done) * 3.3 / 60).toInt()
+        Text("Every email in the period is read once (${s.matched} found, ${s.total} new). About $left min left; " +
+            "you can leave this screen, the PC keeps going.",
             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     } else st?.takeIf { it.total > 0 || it.found > 0 }?.let {
         Text("Last scan: ${it.total} new email(s) read, ${it.found} task(s) suggested.", style = MaterialTheme.typography.labelSmall,
