@@ -150,15 +150,16 @@ def list_all(query: str = "", category: str = "") -> list[dict]:
 
 
 # ---------------------------------------------------------------- what the model sees
-def context(message: str) -> str:
-    """Memories for the system prompt: the ones related to the current message, then the newest ones."""
-    rel = search(message, k=12) if message.strip() else []
+def context(message: str, recent: bool = True) -> str:
+    """Memories related to a message (plus the newest ones when recent=True). Attached to the user message it was made
+    for, so it never changes afterwards (that keeps llama.cpp's prompt cache valid)."""
+    rel = search(message, k=10) if message.strip() else []
     seen = {m["id"] for m in rel}
-    recent = [_public(r) for r in _rows()[:8] if r["id"] not in seen]
-    pick = rel + recent[: max(0, 16 - len(rel))]
+    newest = [_public(r) for r in _rows()[:6] if r["id"] not in seen] if recent else []
+    pick = rel + newest[: max(0, 14 - len(rel))]
     if not pick:
         return ""
-    return ("What you remember about the user (long-term memory; use it naturally, never say you 'checked memory'):\n"
+    return ("what you remember about the user that may matter here:\n"
             + "\n".join(f"- [{m['category']}] {m['content']}" for m in pick))
 
 

@@ -3,6 +3,7 @@ import asyncio
 import base64
 import io
 import json
+import os
 import mimetypes
 import re
 import secrets
@@ -158,20 +159,43 @@ def image_data_uri(att: dict) -> str:
 
 
 def system_prompt(message: str = "") -> str:
-    """message = the user's latest message: the memories related to it are added (memory.py)."""
+    """Kept the same for the whole day: llama.cpp reuses what it already read only while the start of the prompt does not
+    change (hybrid models like MiniCPM-V 4.7 / Qwen3.6 even re-read EVERYTHING after any change). So no clock and no
+    memories here; each user message carries its own sent-time and related memories instead (message_context)."""
     parts = [config["system_prompt"],
-             f"Current date/time: {time.strftime('%Y-%m-%d %H:%M')}",
+             f"Today's date: {time.strftime('%A %Y-%m-%d')} (each user message shows when it was sent)",
              f"Allowed folders: {', '.join(tools.allowed_roots())}",
              f"Code working directory: {config['workspace']}",
              "Working style: when a request needs a tool or more than one step, your FIRST tool call must be update_tasks "
              "with your plan (short steps), then keep it current: mark a step in_progress when you start it and done "
              "when it is finished, and add steps you discover. The user watches this list on their phone to see "
              "exactly what you are doing. When you need the user to decide something (an approach, a file, yes/no, "
-             "one of several options), call ask_user instead of guessing or ending your reply with a question."]
-    mem = memory.context(message)
+             "one of several options), call ask_user instead of guessing or ending your reply with a question.",
+             "Some user messages end with a [Context …] block from the app: when the message was sent and what you "
+             "remember about the user that relates to it. Use it naturally; never mention the block."]
+    return "\n\n".join(parts)
+
+
+# what a user message is sent with, fixed when it arrives (so earlier prompt text never changes)
+db._conn.execute("CREATE TABLE IF NOT EXISTS message_context(message_id INTEGER PRIMARY KEY, text TEXT)")
+db._conn.commit()
+
+
+def attach_context(mid: int, content: str):
+    """Sent-time + memories related to this message, stored once with the message."""
+    parts = [f"sent {time.strftime('%Y-%m-%d %H:%M (%A)')}"]
+    mem = memory.context(content, recent=False)
     if mem:
         parts.append(mem)
-    return "\n\n".join(parts)
+    db._q("INSERT OR REPLACE INTO message_context VALUES(?,?)", (mid, "\n".join(parts)))
+
+
+def _contexts(rows) -> dict:
+    ids = [r["id"] for r in rows if r["role"] == "user"]
+    if not ids:
+        return {}
+    q = ",".join("?" * len(ids))
+    return {r["message_id"]: r["text"] for r in db._q(f"SELECT * FROM message_context WHERE message_id IN ({q})", ids)}
 
 
 def build_llm_messages(session_id: str) -> list[dict]:
@@ -179,18 +203,22 @@ def build_llm_messages(session_id: str) -> list[dict]:
     rows = db.get_messages(session_id)
     if summ:
         rows = [r for r in rows if r["id"] > summ["upto_id"]]
-    rows = rows[-80:]
+    # no sliding window: dropping the oldest messages would change the start of the prompt on every step and make the
+    # model re-read the whole chat; long chats are shortened by compression (a summary) instead
+    rows = rows[-1000:]
     while rows and rows[0]["role"] != "user":
         rows.pop(0)
     last_user_idx = max((i for i, r in enumerate(rows) if r["role"] == "user"), default=-1)
-    last_user = next((r["content"] or "" for r in reversed(rows) if r["role"] == "user"), "")
-    sp = system_prompt(last_user)
+    ctx = _contexts(rows)
+    sp = system_prompt()
     if summ:
         sp += "\n\nSummary of the earlier part of this conversation (older messages were compressed):\n" + summ["summary"]
     out = [{"role": "system", "content": sp}]
     for i, r in enumerate(rows):
         if r["role"] == "user":
             text = r["content"] or ""
+            if ctx.get(r["id"]):
+                text += f"\n\n[Context from the app: {ctx[r['id']]}]"
             images = []
             for a in r["attachments"]:
                 att = db.get_attachment(a["id"])
@@ -394,6 +422,9 @@ async def stream_completion(client, payload, run: Run):
     n_tok, t_first, t_last_progress = 0, None, 0.0
     t_start = time.time()
     url = llm_api_base() + "/chat/completions"
+    if os.environ.get("BRIDGE_DUMP_PROMPTS"):      # debugging the prompt cache: keep each request as sent
+        (DATA_DIR / "dumps").mkdir(exist_ok=True)
+        (DATA_DIR / "dumps" / f"{int(time.time() * 1000)}.json").write_text(json.dumps(payload), encoding="utf-8")
     run.emit({"type": "phase", "phase": "prompt"})  # model is reading the conversation
     async with client.stream("POST", url, json=payload, headers=llm_headers()) as r:
         if r.status_code >= 400:
@@ -711,7 +742,11 @@ async def chat(sid: str, body: ChatIn):
         a = db.get_attachment(aid)
         if a:
             atts.append({"id": a["id"], "filename": a["filename"], "kind": a["kind"], "mime": a["mime"]})
-    db.add_message(sid, "user", body.content, attachments=atts or None)
+    mid = db.add_message(sid, "user", body.content, attachments=atts or None)
+    try:
+        await asyncio.to_thread(attach_context, mid, body.content)
+    except Exception:
+        pass   # memory is optional: the chat goes on without it
     if s["title"] == "New chat":  # name the chat right away, not after the reply
         first = re.sub(r"\s+", " ", body.content).strip() or (atts[0]["filename"] if atts else "")
         db.update_session(sid, title=first[:48] or "Chat")
