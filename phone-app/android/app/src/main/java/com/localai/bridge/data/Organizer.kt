@@ -53,8 +53,8 @@ suspend fun Api.saveNote(title: String, body: String, id: Long? = null): NoteDto
         buildJsonObject { put("title", title); put("body", body) })
 
 suspend fun Api.organizerTasks(status: String = "all"): List<TaskDto> = getJson("/api/tasks_list?status=$status")
-suspend fun Api.addTask(title: String, due: String, priority: String): TaskDto =
-    sendJson("POST", "/api/tasks_list", buildJsonObject { put("title", title); put("due", due); put("priority", priority) })
+suspend fun Api.addTask(title: String, due: String, priority: String, notes: String = ""): TaskDto =
+    sendJson("POST", "/api/tasks_list", buildJsonObject { put("title", title); put("due", due); put("priority", priority); put("notes", notes) })
 suspend fun Api.setTaskDone(id: Long, done: Boolean): TaskDto =
     sendJson("PATCH", "/api/tasks_list/$id", buildJsonObject { put("done", done) })
 

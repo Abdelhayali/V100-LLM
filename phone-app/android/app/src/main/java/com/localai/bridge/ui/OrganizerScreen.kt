@@ -1,6 +1,14 @@
 package com.localai.bridge.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePicker
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -78,9 +86,9 @@ import com.localai.bridge.data.setTaskDone
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.jsonPrimitive
 
-/** Put a request in the chat box and switch to the chat, so the model does it (the user taps send). */
+/** Ask the model in a NEW chat (so it does not mix with the conversation that was open), and send at once. */
 private fun askAi(vm: MainViewModel, text: String) {
-    vm.draft = text; vm.screen = Screen.CHAT; vm.toast = "Tap send to ask the AI"
+    vm.newChat(); vm.draft = text; vm.send()
 }
 
 /** Notes, tasks, calendar and Gmail, kept on the PC and shared with the model (it can read and change them too). */
@@ -123,6 +131,7 @@ private fun TasksTab(vm: MainViewModel, reload: Int) {
     var showDone by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
     var due by remember { mutableStateOf("") }
+    var desc by remember { mutableStateOf("") }
     var high by remember { mutableStateOf(false) }
     fun load() = scope.launch { list = runCatching { vm.api?.organizerTasks("all") }.onFailure { vm.toast = it.message }.getOrNull() }
     LaunchedEffect(reload) { load() }
@@ -133,16 +142,17 @@ private fun TasksTab(vm: MainViewModel, reload: Int) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             OutlinedTextField(title, { title = it }, label = { Text("New task") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(desc, { desc = it }, label = { Text("Description (optional)") }, modifier = Modifier.fillMaxWidth(),
+                minLines = 1, maxLines = 4)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(due, { due = it }, label = { Text("Due (YYYY-MM-DD, optional)") }, singleLine = true,
-                    modifier = Modifier.weight(1f))
+                DateTimeField("Due (optional)", due, { due = it }, modifier = Modifier.weight(1f))
                 Spacer(Modifier.width(6.dp))
                 FilterChip(selected = high, onClick = { high = !high }, label = { Text("High") })
             }
             Button(onClick = {
                 scope.launch {
-                    runCatching { vm.api?.addTask(title.trim(), due.trim(), if (high) "high" else "normal") }
-                        .onSuccess { title = ""; due = ""; high = false; load() }.onFailure { vm.toast = it.message }
+                    runCatching { vm.api?.addTask(title.trim(), due.trim(), if (high) "high" else "normal", desc.trim()) }
+                        .onSuccess { title = ""; due = ""; desc = ""; high = false; load() }.onFailure { vm.toast = it.message }
                 }
             }, enabled = title.isNotBlank()) { Icon(Icons.Default.Add, null); Text(" Add task") }
         }
@@ -266,24 +276,24 @@ private fun CalendarTab(vm: MainViewModel, reload: Int) {
     }
     if (adding) {
         var t by remember { mutableStateOf("") }
-        var d by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
-        var tm by remember { mutableStateOf("09:00") }
+        var start by remember { mutableStateOf(java.time.LocalDate.now().toString() + " 09:00") }
+        var end by remember { mutableStateOf("") }
         var loc by remember { mutableStateOf("") }
         AlertDialog(onDismissRequest = { adding = false }, title = { Text("New event") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(t, { t = it }, label = { Text("Title") }, singleLine = true)
-                    OutlinedTextField(d, { d = it }, label = { Text("Date (YYYY-MM-DD)") }, singleLine = true)
-                    OutlinedTextField(tm, { tm = it }, label = { Text("Time (HH:MM, empty = all day)") }, singleLine = true)
+                    DateTimeField("Starts (No time = all day)", start, { start = it })
+                    DateTimeField("Ends (optional)", end, { end = it })
                     OutlinedTextField(loc, { loc = it }, label = { Text("Location (optional)") }, singleLine = true)
                 }
             },
             confirmButton = { TextButton(onClick = {
                 scope.launch {
-                    runCatching { vm.api?.addEvent(t.ifBlank { "Event" }, (d.trim() + " " + tm.trim()).trim(), "", loc.trim()) }
+                    runCatching { vm.api?.addEvent(t.ifBlank { "Event" }, start.trim(), end.trim(), loc.trim()) }
                         .onSuccess { adding = false; load() }.onFailure { vm.toast = it.message }
                 }
-            }, enabled = t.isNotBlank() && d.isNotBlank()) { Text("Add") } },
+            }, enabled = t.isNotBlank() && start.isNotBlank()) { Text("Add") } },
             dismissButton = { TextButton(onClick = { adding = false }) { Text("Cancel") } })
     }
 }
@@ -389,11 +399,21 @@ private fun EmailTab(vm: MainViewModel, reload: Int) {
                     SelectionContainer { Text(mf.body, style = MaterialTheme.typography.bodySmall) }
                 }
             },
-            confirmButton = { TextButton(onClick = {
-                open = null
-                askAi(vm, "Read the email with id=${mf.id} (\"${mf.subject}\") and draft a reply for me. Save it as a draft, show it to me, and don't send it until I approve.")
-            }) { Text("Draft a reply with AI") } },
-            dismissButton = { TextButton(onClick = { open = null }) { Text("Close") } })
+            confirmButton = {
+                Column(horizontalAlignment = Alignment.End) {
+                    TextButton(onClick = {
+                        open = null
+                        askAi(vm, "Read the email with id=${mf.id} (\"${mf.subject}\") and explain it to me simply: who sent it, " +
+                            "what they want or tell me, any dates, deadlines or amounts, and whether I need to do or reply anything.")
+                    }) { Text("Explain this email") }
+                    TextButton(onClick = {
+                        open = null
+                        askAi(vm, "Read the email with id=${mf.id} (\"${mf.subject}\") and draft a reply for me. Save it as a draft, " +
+                            "show it to me, and don't send it until I approve.")
+                    }) { Text("Draft a reply with AI") }
+                    TextButton(onClick = { open = null }) { Text("Close") }
+                }
+            })
     }
 }
 
@@ -447,5 +467,57 @@ private fun GoogleSetup(vm: MainViewModel, s: GoogleStatus, onChange: (GoogleSta
                 AssistChip(onClick = {}, label = { Text("Redirect: ${s.redirectUri}", style = MaterialTheme.typography.labelSmall) })
             }
         }
+    }
+}
+
+// ---------------------------------------------------------------- date + time pickers
+/**
+ * A date (and optionally time) field: tapping it opens a small calendar, then a clock. Value: "YYYY-MM-DD" or
+ * "YYYY-MM-DD HH:MM" (what the PC server stores). timeOptional adds a "No time" button on the clock.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DateTimeField(label: String, value: String, onValue: (String) -> Unit, withTime: Boolean = true,
+                          timeOptional: Boolean = true, modifier: Modifier = Modifier) {
+    var pickDate by remember { mutableStateOf(false) }
+    var pickTime by remember { mutableStateOf<String?>(null) }      // the chosen date while the clock is open
+    Box(modifier) {
+        OutlinedTextField(value, {}, readOnly = true, singleLine = true, label = { Text(label) }, modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                if (value.isNotBlank()) IconButton(onClick = { onValue("") }) { Icon(Icons.Default.Close, "Clear") }
+                else Icon(Icons.Default.CalendarMonth, null)
+            })
+        // the read-only field swallows taps, so a transparent layer on top opens the calendar
+        Box(Modifier.matchParentSize().padding(end = 48.dp).clickable { pickDate = true })
+    }
+    if (pickDate) {
+        val initial = runCatching {
+            java.time.LocalDate.parse(value.take(10)).atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+        }.getOrNull() ?: System.currentTimeMillis()
+        val state = rememberDatePickerState(initialSelectedDateMillis = initial)
+        DatePickerDialog(onDismissRequest = { pickDate = false },
+            confirmButton = { TextButton(onClick = {
+                pickDate = false
+                state.selectedDateMillis?.let { ms ->
+                    val d = java.time.Instant.ofEpochMilli(ms).atZone(java.time.ZoneOffset.UTC).toLocalDate().toString()
+                    if (withTime) pickTime = d else onValue(d)
+                }
+            }) { Text(if (withTime) "Next: time" else "OK") } },
+            dismissButton = { TextButton(onClick = { pickDate = false }) { Text("Cancel") } }) {
+            DatePicker(state = state)
+        }
+    }
+    pickTime?.let { d ->
+        val old = value.drop(11).split(":")
+        val state = rememberTimePickerState(initialHour = old.getOrNull(0)?.toIntOrNull() ?: 9,
+            initialMinute = old.getOrNull(1)?.toIntOrNull() ?: 0, is24Hour = true)
+        AlertDialog(onDismissRequest = { pickTime = null }, title = { Text("Time on $d") },
+            text = { TimePicker(state = state) },
+            confirmButton = { TextButton(onClick = {
+                onValue("%s %02d:%02d".format(d, state.hour, state.minute)); pickTime = null
+            }) { Text("OK") } },
+            dismissButton = { TextButton(onClick = { if (timeOptional) onValue(d); pickTime = null }) {
+                Text(if (timeOptional) "No time" else "Cancel")
+            } })
     }
 }
