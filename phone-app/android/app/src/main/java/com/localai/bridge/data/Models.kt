@@ -43,6 +43,10 @@ data class MessageDto(
 @Serializable
 data class PendingApproval(val id: String, val name: String, val args: JsonObject = JsonObject(emptyMap()))
 
+/** One step of the model's plan (update_tasks tool): pending | in_progress | done. */
+@Serializable
+data class PlanStep(val title: String = "", val status: String = "pending")
+
 /** The model asked the user to choose (ask_user tool); the reply on the PC waits for the answer. */
 @Serializable
 data class PendingQuestion(
@@ -73,6 +77,7 @@ data class SessionDetail(
     val messages: List<MessageDto> = emptyList(),
     @SerialName("pending_approvals") val pendingApprovals: List<PendingApproval> = emptyList(),
     @SerialName("pending_questions") val pendingQuestions: List<PendingQuestion> = emptyList(),
+    val plan: List<PlanStep> = emptyList(),
     val stats: SessionStats? = null,
     @SerialName("summary_upto") val summaryUpto: Long? = null,   // messages up to this id were compressed
 )

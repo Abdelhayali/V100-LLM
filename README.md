@@ -66,6 +66,8 @@ forwarding), from anywhere:
 | 📊 **Live PC status** | Loaded model plus **VRAM, GPU load, CPU and RAM** bars at the top of every chat, refreshed every 3 s |
 | 💬 **Chat** | Streaming replies, sessions, thinking view, tokens/s and context used; the model list follows what is loaded |
 | 🖼️ **Vision & files** | Send photos, PDFs and PC screenshots to the vision models; browse and upload files on the PC |
+| ❓ **Choices** | When the model needs a decision it asks with buttons and waits; listed options become tap-to-answer chips |
+| 👁️ **See every step** | A live step list of what the model does on the PC (code, files, search, questions) with now / waiting / done |
 | 🖥️ **Tools** | The model can run code, read files, search the web, draw charts and remember facts (you approve each action) |
 | 🤖 **Code agent (beta)** | OpenCode working on a project folder of your PC with the loaded model |
 

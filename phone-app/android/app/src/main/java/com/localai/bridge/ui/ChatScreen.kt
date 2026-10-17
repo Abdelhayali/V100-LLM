@@ -221,6 +221,9 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             // ---- the model asks the user to choose (ask_user): reply paused until a choice is tapped
             vm.questions.firstOrNull()?.let { QuestionCard(it, vm) }
 
+            // ---- step list: the model's plan, or the actions it is taking on the PC
+            ActivityCard(vm)
+
             // ---- live status while the PC is working
             if (vm.streaming) LiveStatus(vm)
 
@@ -361,7 +364,8 @@ private fun LiveStatus(vm: MainViewModel) {
         "thinking" -> "Thinking… ${vm.liveTokens} tokens$speed"
         "writing" -> "Writing… ${vm.liveTokens} tokens$speed"
         "tool_args" -> "Preparing a tool call… ${vm.liveTokens} tokens$speed"
-        "tool" -> "Running ${vm.phaseTool.replace('_', ' ')}…"
+        "tool" -> "Now: " + (vm.items.lastOrNull { it is ChatItem.Tool && it.status == "running" }
+            ?.let { toolSummary((it as ChatItem.Tool).name, it.args) } ?: vm.phaseTool.replace('_', ' '))
         "approval" -> "Waiting for your approval"
         "question" -> "Waiting for your choice (see the options below)"
         "compressing" -> "Compressing the conversation…"
@@ -466,7 +470,9 @@ private fun AssistantBubble(vm: MainViewModel, item: ChatItem.Assistant, isLast:
 
 private fun argText(args: JsonObject, k: String) = (args[k] as? JsonPrimitive)?.contentOrNull.orEmpty()
 
-private fun toolSummary(name: String, args: JsonObject): String = when (name) {
+internal fun toolSummary(name: String, args: JsonObject): String = when (name) {
+    "ask_user" -> "Ask you: ${argText(args, "question")}"
+    "update_tasks" -> "Update the plan"
     "run_code" -> "Run ${argText(args, "language")}"
     "list_dir" -> "List ${argText(args, "path")}"
     "read_file" -> "Read ${argText(args, "path")}"

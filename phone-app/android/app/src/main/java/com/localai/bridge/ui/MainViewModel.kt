@@ -66,6 +66,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var loadingSession by mutableStateOf(false)
     val approvals = mutableStateListOf<PendingApproval>()
     val questions = mutableStateListOf<com.localai.bridge.data.PendingQuestion>()   // ask_user choices waiting on the phone
+    val plan = mutableStateListOf<com.localai.bridge.data.PlanStep>()               // the model's own step list (update_tasks)
 
     val pendingAttachments = mutableStateListOf<AttachmentRef>()
     var uploading by mutableStateOf(false)
@@ -177,7 +178,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         currentTitle = "New chat"
         currentModel = info?.defaultModel.orEmpty()
         stats = null
-        items.clear(); approvals.clear(); questions.clear()
+        items.clear(); approvals.clear(); questions.clear(); plan.clear()
         screen = Screen.CHAT
     }
 
@@ -197,7 +198,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             items.clear(); items.addAll(toItems(s.messages, s.summaryUpto))
             approvals.clear(); approvals.addAll(s.pendingApprovals)
         questions.clear(); questions.addAll(s.pendingQuestions)
+        plan.clear(); plan.addAll(s.plan)
             questions.clear(); questions.addAll(s.pendingQuestions)
+        plan.clear(); plan.addAll(s.plan)
+            plan.clear(); plan.addAll(s.plan)
             if (s.running) {
                 // the reply is still generating on the PC: re-attach to its stream
                 trimToLastUser()
@@ -279,6 +283,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         draft = ""
         pendingAttachments.clear()
         editingMessageId = null
+        plan.clear()   // a new request gets a new plan
         if (editId != null) {
             val idx = items.indexOfFirst { it is ChatItem.User && it.messageId == editId }
             if (idx >= 0) while (items.size > idx) items.removeAt(items.size - 1)
@@ -466,6 +471,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         items.clear(); items.addAll(toItems(s.messages, s.summaryUpto))
         approvals.clear(); approvals.addAll(s.pendingApprovals)
         questions.clear(); questions.addAll(s.pendingQuestions)
+        plan.clear(); plan.addAll(s.plan)
         if (s.running) {
             trimToLastUser()
             streamStartMs = System.currentTimeMillis(); phase = "prompt"
@@ -543,6 +549,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }.getOrNull()?.let { questions += it }
             }
             "question_answered" -> questions.removeAll { it.id == str(ev, "id") }
+            "tasks" -> runCatching {
+                api!!.json.decodeFromJsonElement<List<com.localai.bridge.data.PlanStep>>(ev["tasks"]!!)
+            }.getOrNull()?.let { plan.clear(); plan.addAll(it) }
             "tool_result" -> {
                 val id = str(ev, "id")
                 approvals.removeAll { it.id == id }

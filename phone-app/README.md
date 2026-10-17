@@ -10,6 +10,8 @@ What this version adds:
 - **Live PC status bar** at the top of every chat and in the menu: loaded model (ready / loading / none), **VRAM, GPU
   load, CPU and RAM**, refreshed every 3 s. Tap it to open the Models screen.
 - The chat's model list follows whatever is loaded on the PC.
+- **Choices:** when the model needs you to decide, it asks with buttons (one or several options, or your own answer) and its reply waits on the PC until you tap. Options it lists in plain text get tap-to-answer chips.
+- **See exactly what it does:** a step list in the chat shows every action on the PC (run code with its first lines, read / write which file, search, ask you) with a live status (now, waiting for you, done, failed), or the model's own plan when it sends one. The status line names the current action.
 - The V100-LLM launcher is started on the PC automatically when the phone needs it.
 
 How it fits together:

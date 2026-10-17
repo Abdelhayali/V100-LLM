@@ -161,7 +161,12 @@ def system_prompt() -> str:
     parts = [config["system_prompt"],
              f"Current date/time: {time.strftime('%Y-%m-%d %H:%M')}",
              f"Allowed folders: {', '.join(tools.allowed_roots())}",
-             f"Code working directory: {config['workspace']}"]
+             f"Code working directory: {config['workspace']}",
+             "Working style: when a request needs a tool or more than one step, your FIRST tool call must be update_tasks "
+             "with your plan (short steps), then keep it current: mark a step in_progress when you start it and done "
+             "when it is finished, and add steps you discover. The user watches this list on their phone to see "
+             "exactly what you are doing. When you need the user to decide something (an approach, a file, yes/no, "
+             "one of several options), call ask_user instead of guessing or ending your reply with a question."]
     if mems:
         parts.append("Long-term memories about the user:\n" + "\n".join(f"- {m['content']}" for m in reversed(mems)))
     return "\n\n".join(parts)
@@ -299,6 +304,7 @@ class Run:
         # live state for the "Running tasks" screen
         self.started = time.time()
         self.phase, self.tool, self.tokens, self.tps = "starting", "", 0, None
+        self.plan: list[dict] = []
 
     def emit(self, ev: dict):
         t = ev.get("type")
@@ -310,6 +316,8 @@ class Run:
             self.tps = ev.get("tps") or self.tps
         elif t == "approval_required":
             self.phase, self.tool = "approval", ev.get("name", "")
+        elif t == "tasks":
+            self.plan = ev.get("tasks") or []
         elif t == "question_required":
             self.phase, self.tool = "question", "ask_user"
         self.history.append(ev)
@@ -325,6 +333,33 @@ questions: dict[str, dict] = {}  # call_id -> {"future", "session_id", "question
 def _question_view(k: str, v: dict) -> dict:
     return {"id": k, "question": v["question"], "options": v["options"], "multiple": v["multiple"],
             "allow_other": v["allow_other"]}
+
+
+def normalize_tasks(raw) -> list[dict]:
+    """The model's plan as [{title, status}], tolerant of strings and odd status names."""
+    out = []
+    for t in raw if isinstance(raw, list) else []:
+        if isinstance(t, str):
+            t = {"title": t}
+        if not isinstance(t, dict) or not str(t.get("title", "")).strip():
+            continue
+        s = str(t.get("status", "pending")).lower().replace(" ", "_").replace("-", "_")
+        s = "done" if s in ("done", "completed", "complete", "finished") else (
+            "in_progress" if s in ("in_progress", "active", "running", "doing", "started") else "pending")
+        out.append({"title": str(t["title"]).strip()[:120], "status": s})
+    return out[:20]
+
+
+def last_plan(sid: str) -> list[dict]:
+    """The latest update_tasks plan of a session (kept in its message history, so it survives restarts)."""
+    for r in reversed(db.get_messages(sid)):
+        for tc in reversed(r.get("tool_calls") or []):
+            if tc.get("function", {}).get("name") == "update_tasks":
+                try:
+                    return normalize_tasks(json.loads(tc["function"].get("arguments") or "{}").get("tasks"))
+                except (json.JSONDecodeError, AttributeError):
+                    return []
+    return []
 
 
 async def ask_user(run: "Run", call_id: str, args: dict) -> str:
@@ -471,6 +506,11 @@ async def chat_turn(run: Run, model: str | None):
                     run.emit({"type": "tool_call", "id": tc["id"], "name": name, "args": args})
                     if name == "ask_user":
                         result, atts = await ask_user(run, tc["id"], args), []
+                    elif name == "update_tasks":
+                        plan = normalize_tasks(args.get("tasks"))
+                        run.emit({"type": "tasks", "tasks": plan})
+                        done = sum(t["status"] == "done" for t in plan)
+                        result, atts = f"Task list updated ({done}/{len(plan)} done). Continue with the work.", []
                     elif name in tools.NEEDS_APPROVAL and config["require_tool_approval"] and not run.auto_approve:
                         fut = asyncio.get_running_loop().create_future()
                         approvals[tc["id"]] = {"future": fut, "session_id": sid, "name": name, "args": args}
@@ -618,7 +658,8 @@ async def sessions_get(sid: str):
     summ = db.get_summary(sid)
     return {**s, "stats": db.get_stats(sid), "summary_upto": summ["upto_id"] if summ else None,
             "running": sid in runs, "messages": db.get_messages(sid), "pending_approvals": pending,
-            "pending_questions": [_question_view(k, v) for k, v in questions.items() if v["session_id"] == sid]}
+            "pending_questions": [_question_view(k, v) for k, v in questions.items() if v["session_id"] == sid],
+            "plan": last_plan(sid)}
 
 
 @app.patch("/api/sessions/{sid}", dependencies=[Auth])
@@ -764,7 +805,9 @@ async def tasks_list():
         out.append({"session_id": sid, "title": s["title"] if s else "?", "phase": r.phase, "tool": r.tool,
                     "tokens": r.tokens, "tps": r.tps, "elapsed": round(now - r.started),
                     "waiting_approval": any(v["session_id"] == sid for v in approvals.values()),
-                    "waiting_question": any(v["session_id"] == sid for v in questions.values())})
+                    "waiting_question": any(v["session_id"] == sid for v in questions.values()),
+                    "step": next((p["title"] for p in r.plan if p["status"] == "in_progress"), ""),
+                    "steps_done": sum(p["status"] == "done" for p in r.plan), "steps": len(r.plan)})
     return {"runs": out, "processes": tools.list_procs(), "llm_busy": await llm_busy(),
             "agents": await agent.busy_sessions()}
 

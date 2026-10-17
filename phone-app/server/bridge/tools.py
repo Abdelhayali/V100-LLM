@@ -310,6 +310,16 @@ def tool_schemas(web: bool = False):
             {"content": {"type": "string"}}, ["content"]),
         _fn("search_memory", "Search saved long-term memories.",
             {"query": {"type": "string"}}, ["query"]),
+        _fn("update_tasks", "Call this FIRST for any task that uses tools or has several steps, then again after each step. "
+            "Shows your step-by-step plan for the current request on the user's phone. "
+            "Send the whole list every time (it replaces the previous one). Keep exactly one step in_progress while "
+            "you work, and mark steps done as you finish them.",
+            {"tasks": {"type": "array", "description": "The full plan, in order",
+                       "items": {"type": "object", "properties": {
+                           "title": {"type": "string", "description": "Short step, e.g. 'Read the CSV file'"},
+                           "status": {"type": "string", "enum": ["pending", "in_progress", "done"]}},
+                           "required": ["title", "status"]}}},
+            ["tasks"]),
         _fn("ask_user", "Ask the user to choose before you continue. Use it whenever you would otherwise end your reply "
             "with a list of options or a question the user must answer first (which approach, which file, yes/no...). "
             "The phone shows the options as buttons; the user's choice is returned to you and you continue.",
