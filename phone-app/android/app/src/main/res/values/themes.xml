@@ -1,0 +1,8 @@
+<resources>
+    <!-- DayNight base so the launch window matches light/dark before Compose draws -->
+    <style name="Theme.LocalAIBridge" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+</resources>

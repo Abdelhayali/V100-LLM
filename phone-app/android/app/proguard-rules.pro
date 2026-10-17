@@ -1,0 +1,9 @@
+-keepattributes *Annotation*, InnerClasses
+-keepclassmembers class com.localai.bridge.data.** { *; }
+-keep,includedescriptorclasses class com.localai.bridge.**$$serializer { *; }
+-dontwarn okhttp3.internal.platform.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**

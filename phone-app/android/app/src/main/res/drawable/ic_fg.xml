@@ -1,0 +1,9 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- chat bubble -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M30,34h48a6,6 0,0 1,6 6v24a6,6 0,0 1,-6 6H50l-12,10v-10h-8a6,6 0,0 1,-6 -6V40a6,6 0,0 1,6 -6z"/>
+    <!-- prompt symbol -->
+    <path android:fillColor="#1E3A5F" android:pathData="M38,44l8,6 -8,6v-4l3,-2 -3,-2z"/>
+    <path android:fillColor="#4FC3F7" android:pathData="M50,54h18v4H50z"/>
+</vector>
