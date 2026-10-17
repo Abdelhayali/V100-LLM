@@ -58,7 +58,7 @@ launcher for your own settings.
 
 | Model | Engine | Size | Context | Speed (gen) | Full-context test | Vision | System RAM used | Best for |
 |---|---|---|---|---|---|---|---|---|
-| **MiniCPM-V 4.7 35B-A3B Q3 mix** (official mix_q3gud_im) | llama.cpp | 15.5 GB | **262k** | **54-56 tok/s** | not run yet | GPU | ~4 GB (2.8 GB experts) | **best all-rounder** |
+| **MiniCPM-V 4.7 35B-A3B Q3 mix** (official mix_q3gud_im) | llama.cpp | 15.5 GB | 64k / 128k / **262k** | **93 / 85 / 70 tok/s** (fast presets) | not run yet | CPU (fast) / GPU (56 tok/s) | ~2 GB (64k: all experts on GPU) | **best all-rounder** |
 | **Qwen3.8-27B HauhauCS IQ3_XS** + FastMTP | FastMTP | 12.2 GB | 24k / 80k / 120k | 40-53 tok/s | 118k ✓ | GPU (80k) / CPU (120k) | ~2 GB | top score, uncensored |
 | **MiniCPM-V 4.7 35B-A3B** IQ3_XS | llama.cpp | 14.5 GB | **262k** | 39-41 tok/s | 252k ✓ | GPU | ~3.5 GB (2.1 GB experts) | coding |
 | MiniCPM-V 4.7 35B-A3B Uncensored Q4_K-IQ4_XS (AtomicChat) | llama.cpp | 20.1 GB | **262k** | 33-38 tok/s | not run yet | GPU | ~9.5 GB (7.9 GB experts) | uncensored + long context |

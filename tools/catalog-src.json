@@ -1950,8 +1950,296 @@
    "mmproj": "mmproj-model-f16-4x.gguf",
    "presets": [
     {
+     "id": "fast-64k",
+     "name": "FAST: 64k context, vision on CPU (93 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "93.4 tok/s gen (all experts on GPU, 15.6 GB VRAM); image ok",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "0",
+       "all experts on the GPU"
+      ],
+      [
+       "-t",
+       "14",
+       ""
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-c",
+       "65536",
+       ""
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on the CPU (frees ~0.9 GB VRAM; images take a few seconds longer)"
+      ]
+     ]
+    },
+    {
+     "id": "fast-128k",
+     "name": "FAST: 128k context, vision on CPU (85 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "85.4 tok/s gen (n-cpu-moe 1, 15.9 GB VRAM); image ok",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "1",
+       "experts of 1 layers in RAM"
+      ],
+      [
+       "-t",
+       "14",
+       ""
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-c",
+       "131072",
+       ""
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on the CPU (frees ~0.9 GB VRAM; images take a few seconds longer)"
+      ]
+     ]
+    },
+    {
+     "id": "fast-262k",
+     "name": "FAST: 262k context, vision on CPU (70 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "70.5 tok/s gen (n-cpu-moe 4, 16.0 GB VRAM); image ok",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "4",
+       "experts of 4 layers in RAM"
+      ],
+      [
+       "-t",
+       "14",
+       ""
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       ""
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on the CPU (frees ~0.9 GB VRAM; images take a few seconds longer)"
+      ]
+     ]
+    },
+    {
      "id": "262k",
-     "name": "262k context, vision on GPU",
+     "name": "262k context, vision on GPU (56 tok/s)",
      "kernel": "llamacpp",
      "kernels": [
       "llamacpp"

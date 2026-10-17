@@ -1,5 +1,5 @@
 @echo off
-rem Ornith-1.5-35B-A3B PXQ2 - 16k context, vision on GPU (kernel: pxa)
+rem Ornith-1.5-35B-A3B PXQ2 - 16k context, vision on GPU (no penalties: best for code/tools) (kernel: pxa)
 rem ~60 tok/s gen
 rem Open http://127.0.0.1:%PORT% (default 8899). Extra arguments are passed to llama-server.
 if not defined PORT set "PORT=8899"
@@ -17,9 +17,5 @@ if not exist "%K%\llama-server.exe" ( echo Kernel pxa missing: open START-GUI.ba
   -fa on ^
   --jinja ^
   --reasoning off ^
-  --presence-penalty 1.5 ^
-  --repeat-penalty 1.15 ^
-  --repeat-last-n 256 ^
-  --dry-multiplier 0.8 ^
   --host %HOST% --port %PORT% %*
 if errorlevel 1 pause
