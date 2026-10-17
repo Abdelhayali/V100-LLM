@@ -70,11 +70,9 @@ def svg_chart(rows, w=1180, h=520):
         y = top + ph - bh
         out.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{bw:.1f}" height="{bh:.1f}" rx="3" fill="{COLORS.get(k, "#ddd")}"/>')
         out.append(f'<text x="{x + bw / 2:.1f}" y="{y + bh / 2 + 5:.1f}" font-size="14" font-weight="600" fill="#222" text-anchor="middle">{d["overall"]:.0f}</text>')
-        tps = (d.get("fast") or {}).get("gen_tps") or d.get("speed", {}).get("gen_tps")
+        tps = d.get("speed", {}).get("gen_tps")
         if tps:
-            fast = bool(d.get("fast"))
-            out.append(f'<text x="{x + bw / 2:.1f}" y="{y - 6:.1f}" font-size="10" fill="{"#b45309" if fast else "#666"}" '
-                       f'font-weight="{700 if fast else 400}" text-anchor="middle">{tps:.0f} t/s{" ⚡" if fast else ""}</text>')
+            out.append(f'<text x="{x + bw / 2:.1f}" y="{y - 6:.1f}" font-size="10" fill="#666" text-anchor="middle">{tps:.0f} t/s</text>')
         out.append(f'<circle cx="{x + bw / 2:.1f}" cy="{top + ph + 14}" r="5" fill="{DARK.get(k, "#888")}"/>')
         lx, ly = x + bw / 2 + 4, top + ph + 28
         name = html.escape(short(d))
@@ -101,16 +99,15 @@ def context_of(d):
 
 
 def table(rows, md=False):
-    head = (["#", "Model", "Kernel", "Size (GB)", "Context", "Gen tok/s", "Fastest preset (tok/s @ context)", "Prompt tok/s (short)"]
+    head = (["#", "Model", "Kernel", "Size (GB)", "Context", "Gen tok/s", "Prompt tok/s (short)"]
             + [c[1] for c in CATS] + ["Overall"])
     lines = []
     for i, d in enumerate(rows, 1):
         sp = d.get("speed", {})
         sc = d["scores"]
-        f = d.get("fast") or {}
-        fast = (f'**{f["gen_tps"]} @ {f["ctx"]}**' if md else f'{f["gen_tps"]} @ {f["ctx"]}') if f else "–"
+
         lines.append([str(i), d.get("model", d["label"]), d.get("kernel", ""), f'{d.get("size_gb") or ""}', context_of(d),
-                      f'{sp.get("gen_tps") or ""}', fast, f'{int(sp["prompt_tps"]) if sp.get("prompt_tps") else ""}']
+                      f'{sp.get("gen_tps") or ""}', f'{int(sp["prompt_tps"]) if sp.get("prompt_tps") else ""}']
                      + [f'{sc[c]:.0f}' if c in sc else "–" for c, _ in CATS] + [f'**{d["overall"]:.1f}**' if md else f'{d["overall"]:.1f}'])
     if md:
         return "\n".join(["| " + " | ".join(head) + " |", "|" + "---|" * len(head)] + ["| " + " | ".join(l) + " |" for l in lines])

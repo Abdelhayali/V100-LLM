@@ -7,7 +7,8 @@ p = Path(__file__).resolve().parent / "catalog-src.json"
 c = json.loads(p.read_text(encoding="utf-8-sig"))
 m = next(x for x in c["models"] if x["id"] == "minicpm-v4.7-35b-q3mix")
 base = next(x for x in m["presets"] if x["id"] == "262k")
-base["name"] = "262k context, vision on GPU (56 tok/s)"
+base["name"] = "262k context, vision on GPU"
+base["bench"] = "vision on GPU (n-cpu-moe 8); the FAST presets are quicker"
 new = []
 for pid, name, ctx, n, bench in [
         ("fast-128k", "FAST: 128k context, vision on CPU (93 tok/s)", "131072", "0", "93 tok/s gen (all experts on GPU, 16.1 GB VRAM); 120k-token prompt filled without a crash (36 tok/s gen at 120k); image ok"),

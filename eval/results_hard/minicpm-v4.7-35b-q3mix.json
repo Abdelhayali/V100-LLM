@@ -11,7 +11,7 @@
   "longctx": 100.0
  },
  "speed": {
-  "gen_tps": 56.2,
+  "gen_tps": 93.4,
   "prompt_tps": 467.0
  },
  "log": [
@@ -514,13 +514,7 @@
  "overall": 87.5,
  "model": "MiniCPM-V 4.7 35B-A3B Q3 mix (official mix_q3gud_im)",
  "model_id": "minicpm-v4.7-35b-q3mix",
- "preset": "262k context, vision on GPU",
+ "preset": "FAST: 128k context, vision on CPU (93 tok/s)",
  "kernel": "llamacpp",
- "size_gb": 15.5,
- "fast": {
-  "gen_tps": 93.4,
-  "ctx": "128k",
-  "preset": "fast-128k",
-  "note": "same weights; vision encoder on CPU, all experts on GPU"
- }
+ "size_gb": 15.5
 }

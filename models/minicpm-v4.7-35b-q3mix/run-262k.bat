@@ -1,6 +1,6 @@
 @echo off
-rem MiniCPM-V 4.7 35B-A3B Q3 mix (official mix_q3gud_im) - 262k context, vision on GPU (56 tok/s) (kernel: llamacpp)
-rem 54.3 tok/s gen (n-cpu-moe 8); 250k needle passed: not tested
+rem MiniCPM-V 4.7 35B-A3B Q3 mix (official mix_q3gud_im) - 262k context, vision on GPU (kernel: llamacpp)
+rem vision on GPU (n-cpu-moe 8); the FAST presets are quicker
 rem Open http://127.0.0.1:%PORT% (default 8899). Extra arguments are passed to llama-server.
 if not defined PORT set "PORT=8899"
 if not defined HOST set "HOST=127.0.0.1"

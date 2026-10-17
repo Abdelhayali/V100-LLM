@@ -2143,12 +2143,12 @@
     },
     {
      "id": "262k",
-     "name": "262k context, vision on GPU (56 tok/s)",
+     "name": "262k context, vision on GPU",
      "kernel": "llamacpp",
      "kernels": [
       "llamacpp"
      ],
-     "bench": "54.3 tok/s gen (n-cpu-moe 8); 250k needle passed: not tested",
+     "bench": "vision on GPU (n-cpu-moe 8); the FAST presets are quicker",
      "params": [
       [
        "-ngl",
