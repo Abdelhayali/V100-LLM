@@ -10,3 +10,4 @@ user-params.json
 *.log
 __pycache__/
 
+eval/results_hard/_edge/

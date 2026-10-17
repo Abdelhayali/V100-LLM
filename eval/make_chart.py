@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import sys
@@ -41,7 +42,7 @@ def load():
 SHORT = {"minicpm-v4.7-35b": "MiniCPM-V 4.7 IQ3_XS", "qwen3.8-27b-pxq3": "Qwen3.8-27B PXQ3", "saluki-27b": "Saluki 27B (MTP)",
          "bonsai-heretic-27b": "Bonsai-2 27B Heretic", "nemotron-bolt-74b": "Nemotron-3.5 Bolt 74B", "fusion4-35b-pxq2": "PXA-Fusion4 35B",
          "ornith-35b-pxq2": "Ornith-1.5 35B", "strata-flash-next": "Strata IQ2_XS", "strata-flash-next@q2_0": "Strata Q2_0", "strata-flash-next@coder-iq1m": "Strata Coder IQ1_M", "hauhau-qwen3.8-27b": "HauhauCS IQ3_XS",
-         "qwen3.8-27b-exl3": "Qwen3.8-27B EXL3 3.0bpw", "hauhau-qwen3.8-27b-q2kp": "HauhauCS Q2_K_P",
+         "qwen3.8-27b-exl3": "Qwen3.8-27B EXL3 3.0bpw", "hauhau-qwen3.8-27b-q2kp": "HauhauCS Q2_K_P", "huihui-qwen3.8-27b-gsq": "Huihui abliterated GSQ IQ3_S", "ista-qwen3.8-27b-gsq": "ISTA-DASLab GSQ IQ3_S", "orca-qwen3.8-27b-gsq": "OrcaRouter Uncensored GSQ",
          "unsloth-qwen3.8-27b-iq3s": "Qwen3.8-27B Unsloth UD-IQ3_S",
          "minicpm-v4.7-35b-q3mix": "MiniCPM-V 4.7 Q3 mix", "minicpm-v4.7-35b-uncensored": "MiniCPM-V 4.7 Uncensored",
          "minicpm-v4.7-35b-crack": "MiniCPM-V 4.7 CRACK"}
@@ -99,15 +100,29 @@ def context_of(d):
         return ""
 
 
+CTX_FLAGS = ("-c", "--ctx-size", "--max-context", "--max-seq-len")
+
+
+def max_context_of(d):
+    """Largest context of any of the model's presets in catalog.json: the most it was tested to run with on the V100."""
+    try:
+        cat = json.loads((HERE.parent / "catalog.json").read_text(encoding="utf-8-sig"))
+        m = next(x for x in cat["models"] if x["id"] == d.get("model_id"))
+        v = max(int(x[1]) for p in m["presets"] for x in p["params"] if x[0] in CTX_FLAGS)
+        return "262k" if v == 262144 else f"{v // 1024}k"
+    except (StopIteration, KeyError, ValueError, OSError):
+        return ""
+
+
 def table(rows, md=False):
-    head = (["#", "Model", "Kernel", "Size (GB)", "Context", "Gen tok/s", "Prompt tok/s (short)"]
+    head = (["#", "Model", "Kernel", "Size (GB)", "Context (scored)", "Max context on V100", "Gen tok/s", "Prompt tok/s (short)"]
             + [c[1] for c in CATS] + ["Overall"])
     lines = []
     for i, d in enumerate(rows, 1):
         sp = d.get("speed", {})
         sc = d["scores"]
 
-        lines.append([str(i), d.get("model", d["label"]), d.get("kernel", ""), f'{d.get("size_gb") or ""}', context_of(d),
+        lines.append([str(i), d.get("model", d["label"]), d.get("kernel", ""), f'{d.get("size_gb") or ""}', context_of(d), max_context_of(d),
                       f'{sp.get("gen_tps") or ""}', f'{int(sp["prompt_tps"]) if sp.get("prompt_tps") else ""}']
                      + [f'{sc[c]:.0f}' if c in sc else "–" for c, _ in CATS] + [f'**{d["overall"]:.1f}**' if md else f'{d["overall"]:.1f}'])
     if md:
@@ -140,8 +155,14 @@ exact answers, checked tool calls and final agent state) - no LLM judge. Gen tok
     if edge:
         tmp = RES / "_chart.html"
         tmp.write_text(f'<!doctype html><html><body style="margin:0">{svg}</body></html>', encoding="utf-8")
+        t0 = time.time()
         subprocess.run([edge, "--headless=new", "--disable-gpu", "--hide-scrollbars", f"--user-data-dir={RES / '_edge'}", "--window-size=1180,520",
                         f"--screenshot={RES / 'leaderboard.png'}", tmp.as_uri()], capture_output=True, timeout=60)
+        # msedge.exe hands off to a background process and returns before the PNG is written
+        png = RES / "leaderboard.png"
+        while time.time() - t0 < 30 and (not png.exists() or png.stat().st_mtime < t0 - 2):
+            time.sleep(0.5)
+        time.sleep(2)
         tmp.unlink(missing_ok=True)
         shutil.rmtree(RES / "_edge", ignore_errors=True)
     print(f"leaderboard: {len(rows)} models -> {RES / 'leaderboard.html'}")
