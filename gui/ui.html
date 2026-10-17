@@ -24,17 +24,32 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, "Segoe UI", sans-serif; }
-header { display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
-header h1 { font-size: 16px; margin: 0; }
-.gpu { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
-.bar { width: 160px; height: 8px; background: var(--code); border-radius: 4px; overflow: hidden; }
+html, body { height: 100%; }
+body { display: flex; flex-direction: column; }
+header { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+header h1 { font-size: 16px; margin: 0; white-space: nowrap; }
+.meters { display: flex; gap: 14px; margin-left: auto; flex-wrap: wrap; align-items: center; }
+.meter { display: grid; grid-template-columns: auto 90px; column-gap: 6px; align-items: center; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.meter b { color: var(--text); font-weight: 600; }
+.meter .val { grid-column: 1 / 3; font-size: 11px; }
+.bar { width: 90px; height: 7px; background: var(--code); border-radius: 4px; overflow: hidden; }
 .bar > div { height: 100%; background: var(--accent); width: 0; transition: width .4s; }
+.bar.hot > div { background: var(--warn); } .bar.full > div { background: var(--bad); }
 .pill { padding: 2px 8px; border-radius: 10px; font-size: 12px; border: 1px solid var(--line); }
 .pill.ready { color: var(--ok); border-color: var(--ok); } .pill.loading { color: var(--warn); border-color: var(--warn); }
 .pill.stopped, .pill.error { color: var(--muted); }
-main { display: grid; grid-template-columns: minmax(340px, 460px) 1fr; gap: 12px; padding: 12px; height: calc(100vh - 54px); }
-@media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } }
+main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(360px, 480px) 1fr; grid-template-rows: minmax(0, 1fr); gap: 12px; padding: 12px; }
+@media (max-width: 900px) { body { display: block; } main { grid-template-columns: 1fr; } .side, section.chatbox { height: auto; } .chatbox .chat { min-height: 300px; } }
+.side { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding-right: 2px; }
 section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; min-height: 0; }
+.side section { flex: none; }
+section.chatbox { min-height: 0; }
+.load { position: sticky; bottom: 0; z-index: 2; box-shadow: 0 -4px 12px rgba(0,0,0,.08); }
+.loadrow { display: flex; gap: 8px; align-items: center; }
+.loadrow button { padding: 9px 14px; font-weight: 600; }
+.loadrow #start { flex: 1; }
+.loadstate { font-size: 12px; color: var(--muted); margin-top: 6px; min-height: 16px; }
+button.danger { color: var(--bad); border-color: var(--bad); }
 h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; }
 select, input, textarea, button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
 select { width: 100%; }
@@ -42,11 +57,15 @@ button { cursor: pointer; background: var(--panel); }
 button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
 button:disabled { opacity: .5; cursor: default; }
 .desc { color: var(--muted); font-size: 13px; margin: 8px 0; }
-.params { overflow: auto; flex: 1; min-height: 120px; border: 1px solid var(--line); border-radius: 6px; }
-.params table { width: 100%; border-collapse: collapse; }
-.params td { padding: 3px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.params { overflow: auto; max-height: 320px; border: 1px solid var(--line); border-radius: 6px; }
+.params table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.params col.c-on { width: 28px; } .params col.c-flag { width: 34%; } .params col.c-x { width: 32px; }
+.params td { padding: 3px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .params td input[type=text] { width: 100%; padding: 4px 6px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
-.params td.note { color: var(--muted); font-size: 11px; }
+.params td input[type=checkbox] { margin-top: 6px; }
+.params td.note { color: var(--muted); font-size: 11px; padding: 0 6px 4px 32px; border-bottom: 1px solid var(--line); }
+.params tr.main td { border-bottom: none; }
+.params tr.main.nonote td { border-bottom: 1px solid var(--line); }
 .params tr.changed input[type=text] { border-color: var(--warn); }
 .row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .cmd { font-family: ui-monospace, Consolas, monospace; font-size: 11px; background: var(--code); padding: 6px; border-radius: 6px; word-break: break-all; max-height: 70px; overflow: auto; margin-top: 8px; color: var(--muted); }
@@ -67,6 +86,7 @@ details { margin-top: 8px; } details pre { font-size: 11px; background: var(--co
 .thumb { font-size: 12px; color: var(--muted); }
 .pick { display: flex; gap: 8px; margin: 6px 0; } .pick label { flex: 1; font-size: 12px; color: var(--muted); } .pick select { margin-top: 2px; }
 .files { font-size: 12px; margin: 4px 0; } .files div { display: flex; justify-content: space-between; gap: 8px; padding: 1px 0; }
+.files div span:first-child { overflow-wrap: anywhere; min-width: 0; } .files div span:last-child { white-space: nowrap; }
 .files .ok { color: var(--ok); } .files .no { color: var(--bad); }
 #dlrow .bar { width: auto; }
 </style>
@@ -76,10 +96,16 @@ details { margin-top: 8px; } details pre { font-size: 11px; background: var(--co
   <h1>V100 LLM Launcher</h1>
   <span id="health" class="pill stopped">stopped</span>
   <span id="running" class="desc" style="margin:0"></span>
-  <div class="gpu" style="margin-left:auto"><span id="gpuname">GPU</span><div class="bar"><div id="gpubar"></div></div><span id="gputext">–</span></div>
+  <div class="meters">
+    <div class="meter" title="GPU memory used / total"><span><b id="gpuname">GPU</b> VRAM</span><div class="bar" id="gpub"><div id="gpubar"></div></div><span class="val" id="gputext">–</span></div>
+    <div class="meter" title="GPU compute load"><span><b>GPU</b> load</span><div class="bar"><div id="gpuutil"></div></div><span class="val" id="gpuutiltext">–</span></div>
+    <div class="meter" title="CPU load (all cores)"><span><b>CPU</b></span><div class="bar"><div id="cpubar"></div></div><span class="val" id="cputext">–</span></div>
+    <div class="meter" title="System RAM used / total, and how much of it the loaded model server holds"><span><b>RAM</b></span><div class="bar" id="ramb"><div id="rambar"></div></div><span class="val" id="ramtext">–</span></div>
+  </div>
   <button id="theme" title="Toggle theme">◐</button>
 </header>
 <main>
+  <div class="side">
   <section>
     <h2>Model</h2>
     <select id="model"></select>
@@ -95,20 +121,27 @@ details { margin-top: 8px; } details pre { font-size: 11px; background: var(--co
       <div class="bar" style="flex:1;align-self:center"><div id="dlbar"></div></div>
       <span class="desc" id="dltext" style="margin:0"></span>
     </div>
+  </section>
+  <section>
     <h2>Parameters <span style="text-transform:none;font-weight:normal">(edit any value; untick to drop a flag)</span></h2>
     <div class="params"><table id="ptable"></table></div>
     <div class="row">
       <button id="add">+ Add flag</button>
       <button id="reset">Recommended</button>
       <button id="savebat" title="Write a standalone .bat with these settings into the model folder">Save .bat</button>
-      <span style="flex:1"></span>
-      <button id="stop">Stop</button>
-      <button id="start" class="primary">Start</button>
     </div>
-    <div class="cmd" id="cmd"></div>
+    <details><summary>Command line</summary><div class="cmd" id="cmd"></div></details>
     <details><summary>Server log</summary><pre id="log"></pre></details>
   </section>
-  <section>
+  <section class="load">
+    <div class="loadrow">
+      <button id="start" class="primary">▶ Load model</button>
+      <button id="stop" class="danger">■ Unload</button>
+    </div>
+    <div class="loadstate" id="loadstate">No model loaded.</div>
+  </section>
+  </div>
+  <section class="chatbox">
     <h2>Chat</h2>
     <div class="speedbox">
       <div><span class="live" id="live">–</span><span class="label">tok/s generation (live)</span></div>
@@ -151,16 +184,17 @@ function recommended() { return preset ? preset.params.map(p => ({ flag: p[0], v
 function key() { return `${model.id}/${preset ? preset.id : 'custom'}/${$('kernel').value}`; }
 
 function renderParams(list) {
-  const t = $('ptable'); t.innerHTML = '';
+  const t = $('ptable');
+  t.innerHTML = '<colgroup><col class="c-on"><col class="c-flag"><col><col class="c-x"></colgroup>';
   const rec = recommended();
   list.forEach((p, i) => {
     const tr = document.createElement('tr');
     const r = rec.find(x => x.flag === p.flag);
-    if (!r || String(r.value) !== String(p.value) || !p.on) tr.className = 'changed';
+    const note = p.note || (r ? r.note : '');
+    tr.className = 'main' + (note ? '' : ' nonote') + ((!r || String(r.value) !== String(p.value) || !p.on) ? ' changed' : '');
     tr.innerHTML = `<td><input type="checkbox" ${p.on ? 'checked' : ''}></td>
-      <td style="width:38%"><input type="text" value="${esc(p.flag)}"></td>
-      <td style="width:30%"><input type="text" value="${esc(p.value)}"></td>
-      <td class="note">${esc(p.note || (r ? r.note : ''))}</td>
+      <td><input type="text" value="${esc(p.flag)}" title="${esc(p.flag)}"></td>
+      <td><input type="text" value="${esc(p.value)}" title="${esc(p.value)}"></td>
       <td><button title="Remove" style="padding:2px 6px">×</button></td>`;
     const [cb, f, v] = tr.querySelectorAll('input');
     cb.onchange = () => { p.on = cb.checked; renderParams(list); };
@@ -169,6 +203,7 @@ function renderParams(list) {
     f.onchange = v.onchange = () => renderParams(list);
     tr.querySelector('button').onclick = () => { list.splice(i, 1); renderParams(list); };
     t.appendChild(tr);
+    if (note) { const nr = document.createElement('tr'); nr.innerHTML = `<td colspan="4" class="note">${esc(note)}</td>`; t.appendChild(nr); }
   });
   current = list; updateCmd(list);
 }
@@ -186,7 +221,8 @@ function updateCmd(list) {
 function renderFiles() {
   const st = status[model.id]; if (!st) return;
   const k = $('kernel').value, kOk = st.kernels[k];
-  let html = st.files.map(f => `<div><span>${esc(f.name)}</span><span class="${f.have ? 'ok' : 'no'}">${f.have ? '✓ ' + gb(f.size) : (f.partial ? gb(f.partial) + ' of ' : 'missing · ') + gb(f.size)}</span></div>`).join('');
+  const sz = n => n ? gb(n) : '';
+  let html = st.files.map(f => `<div><span>${esc(f.name)}</span><span class="${f.have ? 'ok' : 'no'}">${f.have ? '✓ ' + (sz(f.size) || 'present') : (f.partial ? gb(f.partial) + ' of ' : 'missing') + (f.size ? ' · ' + gb(f.size) : '')}</span></div>`).join('');
   html += `<div><span>kernel: ${esc(cat.kernels[k].name)}</span><span class="${kOk ? 'ok' : 'no'}">${kOk ? '✓ installed' : 'missing'}</span></div>`;
   $('files').innerHTML = html;
   const missing = st.files.some(f => !f.have) || !kOk;
@@ -214,6 +250,7 @@ function selectModel(id) {
   $('preset').innerHTML = model.presets.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('') || '<option value="">custom</option>';
   selectPreset(model.presets.length ? model.presets[0].id : '');
   try { localStorage.setItem('model', id); } catch (e) {}
+  if (cat) poll();
 }
 
 async function refresh() { const d = await api('/api/catalog'); cat = d.catalog; user = d.user || {}; status = d.status; }
@@ -252,7 +289,7 @@ $('download').onclick = async () => {
   const r = await api('/api/download', { id: model.id, kernel: $('kernel').value });
   if (!r.ok) alert(r.error);
 };
-$('stop').onclick = async () => { await api('/api/stop', {}); poll(); };
+$('stop').onclick = async () => { $('stop').disabled = true; $('loadstate').textContent = 'Unloading…'; await api('/api/stop', {}); poll(); };
 
 async function poll() {
   let s; try { s = await api('/api/status'); } catch (e) { return; }
@@ -263,11 +300,28 @@ async function poll() {
   if (d.active || d.error) { $('dlbar').style.width = (d.total ? 100 * d.done / d.total : 0) + '%'; $('dltext').textContent = d.error ? 'Error: ' + d.error : `${d.item} ${d.total ? Math.round(100 * d.done / d.total) + '%' : ''}`; }
   if (window._wasDl && !d.active) { await refresh(); renderFiles(); $('dltext').textContent = d.error ? 'Error: ' + d.error : 'Download complete'; }
   window._wasDl = d.active;
+  const setBar = (bar, pct, wrap) => { $(bar).style.width = Math.min(100, pct) + '%'; if (wrap) $(wrap).className = 'bar' + (pct > 97 ? ' full' : pct > 85 ? ' hot' : ''); };
   if (s.gpu) {
-    $('gpuname').textContent = s.gpu.name.replace('Tesla ', '');
-    $('gpubar').style.width = (100 * s.gpu.used / s.gpu.total) + '%';
-    $('gputext').textContent = `${(s.gpu.used / 1024).toFixed(1)} / ${(s.gpu.total / 1024).toFixed(1)} GB · ${s.gpu.util}%`;
+    $('gpuname').textContent = s.gpu.name.replace('Tesla ', '').replace(/-SXM2|-PCIE/i, '');
+    setBar('gpubar', 100 * s.gpu.used / s.gpu.total, 'gpub');
+    $('gputext').textContent = `${(s.gpu.used / 1024).toFixed(1)} / ${(s.gpu.total / 1024).toFixed(1)} GB`;
+    setBar('gpuutil', s.gpu.util); $('gpuutiltext').textContent = `${s.gpu.util}%`;
   }
+  const y = s.sys;
+  if (y) {
+    if (y.cpu != null) { setBar('cpubar', y.cpu); $('cputext').textContent = `${y.cpu.toFixed(0)}% of ${y.cpu_threads} threads`; }
+    if (y.ram_total) {
+      setBar('rambar', 100 * y.ram_used / y.ram_total, 'ramb');
+      $('ramtext').textContent = `${(y.ram_used / 2 ** 30).toFixed(1)} / ${(y.ram_total / 2 ** 30).toFixed(0)} GB` + (y.model_ram ? ` · model ${(y.model_ram / 2 ** 30).toFixed(1)}` : '');
+    }
+  }
+  const loaded = s.health !== 'stopped', mine = model && s.model === model.id;
+  $('stop').disabled = !loaded;
+  $('start').disabled = s.health === 'loading' && mine;
+  $('start').textContent = !loaded ? '▶ Load model' : mine ? (s.health === 'loading' ? `Loading… ${s.uptime}s` : '↻ Reload with these settings') : '▶ Load this model instead';
+  $('loadstate').innerHTML = !loaded ? 'No model loaded. GPU memory is free.'
+    : `<b>${esc(m ? m.name : s.model)}</b> · ${esc(s.preset || '')} · ${s.health === 'ready' ? `ready on port ${s.port} (API http://127.0.0.1:${s.port}/v1)` : s.health === 'loading' ? `loading (${s.uptime}s)…` : s.health}`
+      + (y && y.model_ram ? ` · uses ${(y.model_ram / 2 ** 30).toFixed(1)} GB RAM` : '');
   const lg = $('log'), atEnd = lg.scrollTop + lg.clientHeight >= lg.scrollHeight - 10;
   lg.textContent = s.log.join('\n'); if (atEnd) lg.scrollTop = lg.scrollHeight;
   $('send').disabled = busy || s.health !== 'ready';

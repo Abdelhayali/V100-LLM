@@ -384,6 +384,74 @@ def gpu_info():
         return None
 
 
+# ---------------------------------------------------------------- CPU / RAM (Windows API through ctypes, no extra packages)
+_cpu_prev = None
+
+
+def sys_info():
+    """System CPU %, system RAM, and the RAM held by the running model server (its whole process tree)."""
+    global _cpu_prev
+    if os.name != "nt":
+        return None
+    import ctypes
+    from ctypes import wintypes as w
+    k32 = ctypes.windll.kernel32
+    out = {}
+
+    class MEMSTAT(ctypes.Structure):
+        _fields_ = [("len", w.DWORD), ("load", w.DWORD), ("total", ctypes.c_ulonglong), ("avail", ctypes.c_ulonglong),
+                    ("pf_total", ctypes.c_ulonglong), ("pf_avail", ctypes.c_ulonglong), ("v_total", ctypes.c_ulonglong),
+                    ("v_avail", ctypes.c_ulonglong), ("v_ext", ctypes.c_ulonglong)]
+    ms = MEMSTAT(); ms.len = ctypes.sizeof(MEMSTAT)
+    if k32.GlobalMemoryStatusEx(ctypes.byref(ms)):
+        out["ram_total"], out["ram_used"] = ms.total, ms.total - ms.avail
+
+    idle, kern, user = w.FILETIME(), w.FILETIME(), w.FILETIME()
+    if k32.GetSystemTimes(ctypes.byref(idle), ctypes.byref(kern), ctypes.byref(user)):
+        t = [(f.dwHighDateTime << 32) | f.dwLowDateTime for f in (idle, kern, user)]
+        if _cpu_prev:
+            di, dk, du = (a - b for a, b in zip(t, _cpu_prev))
+            busy = dk + du - di                      # kernel time includes idle time
+            out["cpu"] = round(100 * busy / (dk + du), 1) if dk + du else 0.0
+        _cpu_prev = t
+    out["cpu_threads"] = os.cpu_count()
+
+    proc = state.get("proc")
+    if proc and proc.poll() is None:
+        class PE(ctypes.Structure):
+            _fields_ = [("size", w.DWORD), ("usage", w.DWORD), ("pid", w.DWORD), ("heap", ctypes.c_void_p),
+                        ("mod", w.DWORD), ("threads", w.DWORD), ("ppid", w.DWORD), ("prio", ctypes.c_long),
+                        ("flags", w.DWORD), ("exe", ctypes.c_wchar * 260)]
+
+        class PMC(ctypes.Structure):
+            _fields_ = [("cb", w.DWORD), ("faults", w.DWORD), ("peak_ws", ctypes.c_size_t), ("ws", ctypes.c_size_t),
+                        ("qpp", ctypes.c_size_t), ("qp", ctypes.c_size_t), ("qnpp", ctypes.c_size_t), ("qnp", ctypes.c_size_t),
+                        ("pf", ctypes.c_size_t), ("peak_pf", ctypes.c_size_t), ("private", ctypes.c_size_t)]
+        k32.CreateToolhelp32Snapshot.restype = w.HANDLE
+        k32.OpenProcess.restype = w.HANDLE
+        snap = k32.CreateToolhelp32Snapshot(2, 0)            # TH32CS_SNAPPROCESS
+        kids, pe = {}, PE(); pe.size = ctypes.sizeof(PE)
+        ok = k32.Process32FirstW(snap, ctypes.byref(pe))
+        while ok:
+            kids.setdefault(pe.ppid, []).append(pe.pid)
+            ok = k32.Process32NextW(snap, ctypes.byref(pe))
+        k32.CloseHandle(snap)
+        tree, todo = [], [proc.pid]
+        while todo:
+            p = todo.pop(); tree.append(p); todo += [c for c in kids.get(p, []) if c not in tree]
+        private = ws = 0
+        for p in tree:
+            h = k32.OpenProcess(0x1000 | 0x0010, False, p)   # QUERY_LIMITED_INFORMATION | VM_READ
+            if not h:
+                continue
+            pmc = PMC(); pmc.cb = ctypes.sizeof(PMC)
+            if k32.K32GetProcessMemoryInfo(h, ctypes.byref(pmc), pmc.cb):
+                private += pmc.private; ws += pmc.ws
+            k32.CloseHandle(h)
+        out["model_ram"], out["model_ws"] = private, ws
+    return out
+
+
 # ---------------------------------------------------------------- HTTP
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
@@ -418,7 +486,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"model": state["model"], "preset": state["preset"], "kernel": state["kernel"],
                             "health": server_health(), "port": state["port"],
                             "uptime": round(time.time() - state["started"]) if state["started"] else 0,
-                            "gpu": gpu_info(), "log": list(log)[-150:], "download": dl,
+                            "gpu": gpu_info(), "sys": sys_info(), "log": list(log)[-150:], "download": dl,
                             "exit": p.poll() if p else None})
         else:
             self.send_error(404)
