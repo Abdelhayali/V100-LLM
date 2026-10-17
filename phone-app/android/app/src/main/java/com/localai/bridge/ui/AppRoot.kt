@@ -231,7 +231,7 @@ fun MainShell(vm: MainViewModel) {
             Screen.CHAT -> ChatScreen(vm, openDrawer)
             Screen.FILES -> FilesScreen(vm, openDrawer)
             Screen.TERMINAL -> TerminalScreen(vm, openDrawer)
-            Screen.MEMORY -> MemoryScreen(vm, openDrawer)
+            Screen.MEMORY -> MemoryScreen2(vm, openDrawer)
             Screen.SETTINGS -> SettingsScreen(vm, openDrawer)
             Screen.TASKS -> TasksScreen(vm, openDrawer)
             Screen.AGENT -> AgentScreen(vm, openDrawer)

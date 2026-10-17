@@ -312,10 +312,16 @@ def tool_schemas(web: bool = False, email: bool = False, organizer_access: bool 
         _fn("send_file_to_user", "Show an image (chart, figure, photo) or send any file from the PC to the "
             "user's phone chat. Images are displayed inline.",
             {"path": {"type": "string"}}, ["path"]),
-        _fn("save_memory", "Save a durable fact or preference about the user for future sessions.",
-            {"content": {"type": "string"}}, ["content"]),
-        _fn("search_memory", "Search saved long-term memories.",
+        _fn("save_memory", "Save a lasting fact or preference about the user (one short sentence) for future chats. "
+            "Similar memories are merged automatically.",
+            {"content": {"type": "string"}, "category": {"type": "string", "enum": ["personal", "family", "work", "preferences",
+                                                                                   "health", "places", "plans", "other"]}}, ["content"]),
+        _fn("search_memory", "Search what you remember about the user, by meaning (any language).",
             {"query": {"type": "string"}}, ["query"]),
+        _fn("forget_memory", "Delete a memory that is wrong or that the user asks you to forget (id from search_memory).",
+            {"id": {"type": "integer"}}, ["id"]),
+        _fn("search_chats", "Search the user's earlier conversations with you (when they say 'we talked about', "
+            "'last time', 'you told me'...).", {"query": {"type": "string"}}, ["query"]),
         _fn("update_tasks", "Call this FIRST for any task that uses tools or has several steps, then again after each step. "
             "Shows your step-by-step plan for the current request on the user's phone. "
             "Send the whole list every time (it replaces the previous one). Keep exactly one step in_progress while "
@@ -412,12 +418,18 @@ def _execute_text_tool(name: str, args: dict) -> str:
             return search_files(args.get("root", ""), args.get("pattern", "*"))
         if name == "write_file":
             return write_file(args.get("path", ""), args.get("content", ""))
+        from . import memory
         if name == "save_memory":
-            mid = db.add_memory(args.get("content", ""))
-            return f"Saved memory #{mid}"
+            m = memory.add(args.get("content", ""), args.get("category", "other"), "assistant")
+            return f"Saved memory #{m['id']}: {m['content']}"
         if name == "search_memory":
-            hits = db.search_memories(args.get("query", ""))
-            return "\n".join(f"#{m['id']}: {m['content']}" for m in hits) or "No matching memories."
+            hits = memory.search(args.get("query", ""), k=10)
+            return "\n".join(f"#{m['id']} [{m['category']}] {m['content']}" for m in hits) or "No matching memories."
+        if name == "forget_memory":
+            memory.delete(int(args["id"]))
+            return f"Forgot memory #{args['id']}"
+        if name == "search_chats":
+            return memory.search_chats(args.get("query", ""))
         return f"Unknown tool: {name}"
     except ToolError as e:
         return f"Error: {e}"

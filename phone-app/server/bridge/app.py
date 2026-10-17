@@ -16,10 +16,11 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
-from . import db, tools
+from . import db, memory, tools
 from .config import DATA_DIR, config, llm_api_base
 
 app = FastAPI(title="LocalAI Bridge", docs_url=None, redoc_url=None, openapi_url=None)
+memory.start()   # loads the embedding model in the background
 state = {"public_url": None}
 MAX_UPLOAD = 50 * 1024 * 1024
 
@@ -156,8 +157,8 @@ def image_data_uri(att: dict) -> str:
     return f"data:{att['mime']};base64," + base64.b64encode(raw).decode()
 
 
-def system_prompt() -> str:
-    mems = db.list_memories(60)
+def system_prompt(message: str = "") -> str:
+    """message = the user's latest message: the memories related to it are added (memory.py)."""
     parts = [config["system_prompt"],
              f"Current date/time: {time.strftime('%Y-%m-%d %H:%M')}",
              f"Allowed folders: {', '.join(tools.allowed_roots())}",
@@ -167,8 +168,9 @@ def system_prompt() -> str:
              "when it is finished, and add steps you discover. The user watches this list on their phone to see "
              "exactly what you are doing. When you need the user to decide something (an approach, a file, yes/no, "
              "one of several options), call ask_user instead of guessing or ending your reply with a question."]
-    if mems:
-        parts.append("Long-term memories about the user:\n" + "\n".join(f"- {m['content']}" for m in reversed(mems)))
+    mem = memory.context(message)
+    if mem:
+        parts.append(mem)
     return "\n\n".join(parts)
 
 
@@ -181,7 +183,8 @@ def build_llm_messages(session_id: str) -> list[dict]:
     while rows and rows[0]["role"] != "user":
         rows.pop(0)
     last_user_idx = max((i for i, r in enumerate(rows) if r["role"] == "user"), default=-1)
-    sp = system_prompt()
+    last_user = next((r["content"] or "" for r in reversed(rows) if r["role"] == "user"), "")
+    sp = system_prompt(last_user)
     if summ:
         sp += "\n\nSummary of the earlier part of this conversation (older messages were compressed):\n" + summ["summary"]
     out = [{"role": "system", "content": sp}]
@@ -552,6 +555,11 @@ async def chat_turn(run: Run, model: str | None):
             db.update_session(sid, title=title)
             run.emit({"type": "title", "title": title})
         run.emit({"type": "done"})
+        if not run.stopped:   # remember lasting facts from this exchange, after the reply (does not delay it)
+            msgs = db.get_messages(sid)
+            u = next((m["content"] for m in reversed(msgs) if m["role"] == "user"), "")
+            a = next((m["content"] for m in reversed(msgs) if m["role"] == "assistant" and m["content"]), "")
+            asyncio.create_task(memory.review_turn(u or "", a or ""))
     except asyncio.CancelledError:
         run.emit({"type": "error", "message": "Stopped from the Running tasks screen."})
     except Exception as e:
@@ -1031,16 +1039,43 @@ async def exec_code(body: ExecIn):
 
 class MemoryIn(BaseModel):
     content: str
+    category: str = "other"
+
+
+class MemorySettings(BaseModel):
+    auto_memory: bool
 
 
 @app.get("/api/memory", dependencies=[Auth])
-async def memory_list():
-    return db.list_memories()
+async def memory_list(q: str = "", category: str = ""):
+    return await asyncio.to_thread(memory.list_all, q, category)
+
+
+@app.get("/api/memory/status", dependencies=[Auth])
+async def memory_status():
+    return memory.status()
+
+
+@app.post("/api/memory/settings", dependencies=[Auth])
+async def memory_settings(b: MemorySettings):
+    config["auto_memory"] = b.auto_memory
+    return memory.status()
 
 
 @app.post("/api/memory", dependencies=[Auth])
 async def memory_add(body: MemoryIn):
-    return {"id": db.add_memory(body.content.strip())}
+    try:
+        return await asyncio.to_thread(memory.add, body.content, body.category, "manual")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.put("/api/memory/{mid}", dependencies=[Auth])
+async def memory_edit(mid: int, body: MemoryIn):
+    try:
+        return await asyncio.to_thread(memory.update, mid, body.content, body.category)
+    except KeyError as e:
+        raise HTTPException(404, str(e))
 
 
 # ---------------------------------------------------------------- OpenCode coding agent (beta feature)
@@ -1062,7 +1097,7 @@ app.include_router(openai_proxy.manage, dependencies=[Auth])     # key managemen
 
 @app.delete("/api/memory/{mid}", dependencies=[Auth])
 async def memory_delete(mid: int):
-    db.delete_memory(mid)
+    memory.delete(mid)
     return {"ok": True}
 
 

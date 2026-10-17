@@ -110,3 +110,13 @@ suspend fun Api.scanStatus(): ScanStatus = getJson("/api/email_tasks/status")
 suspend fun Api.acceptEmailTask(id: Long): JsonObject = sendJson("POST", "/api/email_tasks/$id/accept", JsonObject(emptyMap()))
 suspend fun Api.dismissEmailTask(id: Long): JsonObject = sendJson("POST", "/api/email_tasks/$id/dismiss", JsonObject(emptyMap()))
 suspend fun Api.forgetEmailScan(): JsonObject = sendJson("POST", "/api/email_tasks/forget", JsonObject(emptyMap()))
+
+// ---- long-term memory (meaning search, categories, auto-remember)
+suspend fun Api.memorySearch(q: String = "", category: String = ""): List<MemoryDto> =
+    getJson("/api/memory?q=" + java.net.URLEncoder.encode(q, "UTF-8") + "&category=" + category)
+suspend fun Api.memoryStatus(): MemoryStatus = getJson("/api/memory/status")
+suspend fun Api.setAutoMemory(on: Boolean): MemoryStatus = sendJson("POST", "/api/memory/settings", buildJsonObject { put("auto_memory", on) })
+suspend fun Api.addMemoryIn(content: String, category: String): MemoryDto =
+    sendJson("POST", "/api/memory", buildJsonObject { put("content", content); put("category", category) })
+suspend fun Api.editMemory(id: Long, content: String, category: String): MemoryDto =
+    sendJson("PUT", "/api/memory/$id", buildJsonObject { put("content", content); put("category", category) })

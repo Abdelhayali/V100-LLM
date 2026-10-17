@@ -118,7 +118,16 @@ data class ExecResult(
 )
 
 @Serializable
-data class MemoryDto(val id: Long, val content: String, val created: Double = 0.0)
+data class MemoryDto(
+    val id: Long, val content: String, val created: Double = 0.0, val category: String? = "other",
+    val source: String? = "manual", val updated: Double? = null, val score: Double? = null,
+)
+
+@Serializable
+data class MemoryStatus(
+    val model: String = "", val ready: Boolean = false, val loading: Boolean = false, val error: String = "",
+    val count: Int = 0, val embedded: Int = 0, @SerialName("auto_memory") val autoMemory: Boolean = true,
+)
 
 @Serializable
 data class TaskRun(
