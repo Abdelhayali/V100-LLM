@@ -1079,13 +1079,417 @@
    "mmproj": "mmproj-model-f16-4x.gguf",
    "presets": [
     {
-     "id": "262k",
-     "name": "262k context, vision on GPU",
+     "id": "fast-192k",
+     "name": "FAST: 192k context, vision on CPU (91 tok/s)",
      "kernel": "llamacpp",
      "kernels": [
       "llamacpp"
      ],
-     "bench": "39-41 tok/s gen; 252k-token prompt OK (296 tok/s prompt, 17 tok/s gen at 252k); image on GPU 3.8 s",
+     "bench": "91.3 tok/s gen (all experts on GPU, 15.7 GB VRAM); 20k-token prompt ok; image ok",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "0",
+       "all experts on the GPU"
+      ],
+      [
+       "-t",
+       "14",
+       "CPU threads"
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-c",
+       "196608",
+       "full native context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on the CPU (frees ~0.9 GB VRAM; images take a few seconds longer)"
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB (llama.cpp default 8192)"
+      ]
+     ]
+    },
+    {
+     "id": "fast-224k",
+     "name": "FAST: 224k context, vision on CPU (91 tok/s, tight VRAM)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "91.1 tok/s gen (all experts on GPU, 16.0 GB VRAM); 20k-token prompt ok; image ok",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "0",
+       "all experts on the GPU"
+      ],
+      [
+       "-t",
+       "14",
+       "CPU threads"
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-c",
+       "229376",
+       "full native context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on the CPU (frees ~0.9 GB VRAM; images take a few seconds longer)"
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB (llama.cpp default 8192)"
+      ]
+     ]
+    },
+    {
+     "id": "fast-128k",
+     "name": "FAST: 128k context, vision on CPU (91 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "91.3 tok/s gen (all experts on GPU, 15.2 GB VRAM); 20k-token prompt ok; image ok",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "0",
+       "all experts on the GPU"
+      ],
+      [
+       "-t",
+       "14",
+       "CPU threads"
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-c",
+       "131072",
+       "full native context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on the CPU (frees ~0.9 GB VRAM; images take a few seconds longer)"
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB (llama.cpp default 8192)"
+      ]
+     ]
+    },
+    {
+     "id": "fast-262k",
+     "name": "FAST: 262k context, vision on CPU (60 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "60.4 tok/s gen (n-cpu-moe 2, 15.8 GB VRAM); 20k-token prompt ok; image ok",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "--n-cpu-moe",
+       "2",
+       "experts of 2 layers in RAM"
+      ],
+      [
+       "-t",
+       "14",
+       "CPU threads"
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       "full native context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on the CPU (frees ~0.9 GB VRAM; images take a few seconds longer)"
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB (llama.cpp default 8192)"
+      ]
+     ]
+    },
+    {
+     "id": "262k",
+     "name": "262k context, vision on GPU (41 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "vision on GPU (n-cpu-moe 6); the FAST presets are quicker",
      "params": [
       [
        "-ngl",

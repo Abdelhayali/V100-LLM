@@ -32,7 +32,7 @@
 <text transform="translate(291.1,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Qwen3.8-27B Ridge 3.7bpw</text>
 <rect x="323.1" y="105.2" width="40.5" height="239.8" rx="3" fill="#bfe3c4"/>
 <text x="343.4" y="230.1" font-size="14" font-weight="600" fill="#222" text-anchor="middle">87</text>
-<text x="343.4" y="99.2" font-size="10" fill="#666" text-anchor="middle">41 t/s</text>
+<text x="343.4" y="99.2" font-size="10" fill="#666" text-anchor="middle">84 t/s</text>
 <circle cx="343.4" cy="359" r="5" fill="#3f9a52"/>
 <text transform="translate(347.4,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">MiniCPM-V 4.7 IQ3_XS</text>
 <rect x="379.5" y="106.0" width="40.5" height="239.0" rx="3" fill="#bfe3c4"/>

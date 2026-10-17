@@ -1,6 +1,6 @@
 @echo off
-rem MiniCPM-V 4.7 35B-A3B IQ3_XS - 262k context, vision on GPU (kernel: llamacpp)
-rem 39-41 tok/s gen; 252k-token prompt OK (296 tok/s prompt, 17 tok/s gen at 252k); image on GPU 3.8 s
+rem MiniCPM-V 4.7 35B-A3B IQ3_XS - 262k context, vision on GPU (41 tok/s) (kernel: llamacpp)
+rem vision on GPU (n-cpu-moe 6); the FAST presets are quicker
 rem Open http://127.0.0.1:%PORT% (default 8899). Extra arguments are passed to llama-server.
 if not defined PORT set "PORT=8899"
 if not defined HOST set "HOST=127.0.0.1"

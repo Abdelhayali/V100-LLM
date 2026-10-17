@@ -33,7 +33,7 @@ Real-time screen recordings (not sped up) of the `fast-128k` preset: official Op
 | 2 | Qwen3.8-27B Unsloth UD-IQ3_S (MTP) | llamacpp | 13.4 | 32k | 192k | 52.1 | 460 | 94 | 100 | 50 | 100 | 100 | 75 | 100 | **88.4** |
 | 3 | MiniCPM-V 4.7 35B-A3B Q3 mix (official mix_q3gud_im) | llamacpp | 15.5 | 128k | 262k | 93.4 | 467 | 88 | 100 | 50 | 88 | 100 | 88 | 100 | **87.5** |
 | 4 | Qwen3.8-27B Ridge 3.7bpw (MTP) | llamacpp | 12.6 | 32k | 192k | 49.6 | 478 | 88 | 95 | 42 | 100 | 100 | 88 | 100 | **87.4** |
-| 5 | MiniCPM-V 4.7 35B-A3B IQ3_XS | llamacpp | 14.5 | 262k | 262k | 41.4 | 476 | 94 | 100 | 42 | 88 | 100 | 88 | 100 | **87.2** |
+| 5 | MiniCPM-V 4.7 35B-A3B IQ3_XS | llamacpp | 14.5 | 192k | 262k | 84.4 | 535 | 94 | 100 | 42 | 88 | 100 | 88 | 100 | **87.2** |
 | 6 | MiniCPM-V 4.7 35B-A3B Uncensored Q4_K-IQ4_XS (AtomicChat) | llamacpp | 20.1 | 262k | 262k | 38.3 | 376 | 88 | 100 | 33 | 100 | 100 | 88 | 100 | **86.9** |
 | 7 | MiniCPM-V 4.7 35B-A3B CRACK Q4_K_M (dealignai) | llamacpp | 22.6 | 262k | 262k | 40.5 | 340 | 88 | 95 | 33 | 100 | 100 | 88 | 100 | **86.2** |
 | 8 | Strata: Qwen3.8-Flash-Next 125B Q2_0 | strata | 66.4 | 262k | 262k | 34.8 | 1207 | 94 | 90 | 42 | 88 | 100 | 88 | 100 | **85.8** |
@@ -53,6 +53,7 @@ Notes:
 - Long context is a ~14k-token text with three facts hidden in different places that have to be combined. Qwen3.8-27B PXQ3 runs with an 8k context preset, so the text does not fit; Ornith runs with 16k and still answered wrong.
 - Fusion4 and Ornith run without the model card's repetition penalties. With them they scored much lower, because the penalties corrupt numbers, code and tool calls (8080 became 80). The penalties are still available as the `creative` preset.
 - **Fastest:** MiniCPM-V 4.7 Q3 mix runs at **93 tok/s with 128k context** on the 16 GB V100 (preset `fast-128k`): the vision encoder runs on the CPU, which frees enough VRAM to keep every expert on the GPU. A 120k-token prompt was filled without a crash (36 tok/s while generating at 120k).
+- MiniCPM-V 4.7 IQ3_XS reaches **91 tok/s with up to 224k context** (presets `fast-192k` / `fast-224k`) the same way: vision encoder on the CPU, every expert on the GPU. It is 1 GB smaller than the Q3 mix, so the KV cache for 192-224k still fits. At the full 262k, 2 layers of experts go to RAM (60 tok/s, `fast-262k`).
 - Strata runs three quantizations of the same 125B model (IQ2_XS, Q2_0 and the Coder IQ1_M with half the experts); they share one 28.8 GB n-gram table that is read from the SSD.
 - MiniCPM-V CRACK with its DSpark draft model is slower on a 16 GB card (34 vs 38.5 tok/s): the drafter needs ~1.5 GB of VRAM, so 7 more layers of experts go to RAM, and chat drafts are accepted only ~47% of the time.
 - ExLlamaV3 (Qwen3.8-27B EXL3) runs on the V100 but at ~11 tok/s, so it is not scored.
@@ -111,7 +112,7 @@ launcher for your own settings.
 | **Qwen3.8-27B Ridge 3.7bpw** (empero-ai, built-in MTP) | llama.cpp | 12.6 GB | 32k / 96k / 192k | 50 tok/s at 32k, 48 at 96k, 27 at 192k (no MTP) | not run yet | CPU | ~2 GB | official, balanced (87.4) |
 | Qwen3.8-27B ISTA-DASLab GSQ-RCO-IQ3_S (built-in MTP) | llama.cpp | 12.1 GB | 32k / 96k / 192k | 52 tok/s at 32k, 52 at 96k, 27 at 192k (no MTP) | not run yet | CPU | ~2 GB | official, coding 94 |
 | Qwen3.8-27B Huihui abliterated GSQ-RCO-IQ3_S (built-in MTP) | llama.cpp | 12.1 GB | 32k / 96k / 192k | 52 tok/s at 32k, 51 at 96k, 29 at 192k (no MTP) | not run yet | CPU | ~2 GB | uncensored |
-| **MiniCPM-V 4.7 35B-A3B** IQ3_XS | llama.cpp | 14.5 GB | **262k** | 39-41 tok/s | 252k ✓ | GPU | ~3.5 GB (2.1 GB experts) | coding |
+| **MiniCPM-V 4.7 35B-A3B** IQ3_XS | llama.cpp | 14.5 GB | **192k** / 224k / 262k | **91 tok/s** up to 224k, 60 at 262k | 252k ✓ | CPU (fast presets) | ~2 GB (192k: all experts on GPU) | **fast + long context**, coding |
 | MiniCPM-V 4.7 35B-A3B Uncensored Q4_K-IQ4_XS (AtomicChat) | llama.cpp | 20.1 GB | **262k** | 33-38 tok/s | not run yet | GPU | ~9.5 GB (7.9 GB experts) | uncensored + long context |
 | MiniCPM-V 4.7 35B-A3B CRACK Q4_K_M (dealignai) | llama.cpp | 22.5 GB | **262k** | 37-40 tok/s (DSpark: slower, see note) | not run yet | GPU | ~11.5 GB (9.9 GB experts) | uncensored |
 | Qwen3.8-27B HauhauCS Q2_K_P | llama.cpp | 10.7 GB | **160k** | ~42 tok/s | not run yet | CPU | ~3 GB | long context on the 27B |

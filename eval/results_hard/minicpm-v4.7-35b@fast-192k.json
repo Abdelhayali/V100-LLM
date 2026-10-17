@@ -1,5 +1,5 @@
 {
- "label": "minicpm-v4.7-35b",
+ "label": "minicpm-v4.7-35b@fast-192k",
  "suite": "hard",
  "scores": {
   "coding": 93.8,
@@ -11,8 +11,8 @@
   "longctx": 100.0
  },
  "speed": {
-  "gen_tps": 41.4,
-  "prompt_tps": 476.0
+  "gen_tps": 84.4,
+  "prompt_tps": 535.0
  },
  "log": [
   {
@@ -67,7 +67,7 @@
    "cat": "coding",
    "task": "roman_parse",
    "ok": false,
-   "err": "AssertionError: iv"
+   "err": "AssertionError: IIV"
   },
   {
    "cat": "coding",
@@ -261,7 +261,7 @@
     "lowercase": true,
     "no_char": false
    },
-   "reply": "gold leafs fall down\ncold wind blows through bare brancs\nfall is on us"
+   "reply": "gold leafs fall down\ncold wind blows through bare branc\nfall day is short"
   },
   {
    "cat": "ifeval",
@@ -271,7 +271,7 @@
     "paragraphs_sep": true,
     "para_starts": true
    },
-   "reply": "First, sleep is fundamental to physical restoration and cognitive function, acting as a critical period where the body repairs tissues, consolidates memories, and clears metabolic waste from the brain"
+   "reply": "First, sleep is fundamental to physical restoration and cognitive function, acting as a critical period where the body repairs tissues, builds muscle, and consolidates memories. During deep sleep stag"
   },
   {
    "cat": "ifeval",
@@ -303,7 +303,7 @@
     "word_count": false,
     "no_char": true
    },
-   "reply": "Soft fur warm paws sharp claws quiet steps curious eyes gentle purrs playful nature independent spirit elegant grace silent hunter gentle companion"
+   "reply": "Soft fur bright eyes sharp claws quiet paws curious nature playful spirit independent soul gentle purr warm presence beloved companion sweet dreamer"
   },
   {
    "cat": "ifeval",
@@ -321,7 +321,7 @@
    "rules": {
     "bullet_word_counts": false
    },
-   "reply": "- Rain falls from sky\n- It waters the green fields\n- Rain brings life to earth"
+   "reply": "- Rain falls from sky\n- It waters the green fields\n- Rain brings life to earth and plants"
   },
   {
    "cat": "ifeval",
@@ -338,10 +338,10 @@
    "ok": false,
    "rules": {
     "ordered_words": false,
-    "word_range": true,
+    "word_range": false,
     "endswith": true
    },
-   "reply": "Does the silver river flow so quiet through the valley?"
+   "reply": "Does the silver river flow quiet through the valley?"
   },
   {
    "cat": "ifeval",
@@ -392,7 +392,7 @@
    "task": "How many more seats does the Riverton Owls' stadium have now",
    "ok": true,
    "searches": 2,
-   "reply": "3200"
+   "reply": "The Riverton Owls' stadium (Ashgrove Park) had a capacity of 15,200 before the 2021 expansion and 18,400 after the expansion.\n\n18,400 - 15,200 = 3,200\n\n3200"
   },
   {
    "cat": "search",
@@ -406,7 +406,7 @@
    "task": "How many minutes can the Aurora X9 fly, and what does it cos",
    "ok": true,
    "searches": 1,
-   "reply": "The Aurora X9 can fly for 41 minutes, and the cost per minute is $31.68 (rounded to 2 decimals).\n\n41, 31.68"
+   "reply": "The Aurora X9 can fly for 41 minutes, and the cost per minute is $31.68.\n\n41, 31.68"
   },
   {
    "cat": "agent",
@@ -420,7 +420,7 @@
    "task": "Add a function `slugify(title)` to text.py that lowercases, ",
    "ok": true,
    "steps": 4,
-   "reply": "The tests pass successfully. The `slugify` function has been implemented correctly in `text.py`.\n\nDONE"
+   "reply": "All tests pass. The `slugify` function has been successfully added to `text.py`.\n\nDONE"
   },
   {
    "cat": "agent",
@@ -434,7 +434,7 @@
    "task": "The function in parser.py is used by app.py. Rename it from ",
    "ok": true,
    "steps": 4,
-   "reply": "All tests pass. The function has been renamed from `parse_cfg` to `parse_config` in all files.\n\nDONE"
+   "reply": "The tests pass successfully. The function has been renamed from `parse_cfg` to `parse_config` in all files.\n\nDONE"
   },
   {
    "cat": "agent",
@@ -448,7 +448,7 @@
    "task": "Implement the missing function `merge_sorted(a, b)` in lists",
    "ok": true,
    "steps": 5,
-   "reply": "The tests pass. The implementation correctly merges two sorted lists in O(len(a)+len(b)) time without using `sort` or `sorted`.\n\nDONE"
+   "reply": "The implementation is complete and all tests pass.\n\nDONE"
   },
   {
    "cat": "vision",
@@ -466,13 +466,13 @@
    "cat": "vision",
    "task": "h_chart_value",
    "ok": true,
-   "final": "Final answer: 37"
+   "final": "37"
   },
   {
    "cat": "vision",
    "task": "h_count_dots",
    "ok": false,
-   "final": "2.  Top-center black dot"
+   "final": "6.  Bottom right."
   },
   {
    "cat": "vision",
@@ -514,7 +514,7 @@
  "overall": 87.2,
  "model": "MiniCPM-V 4.7 35B-A3B IQ3_XS",
  "model_id": "minicpm-v4.7-35b",
- "preset": "262k context, vision on GPU",
+ "preset": "FAST: 192k context, vision on CPU (91 tok/s)",
  "kernel": "llamacpp",
  "size_gb": 14.5
 }
