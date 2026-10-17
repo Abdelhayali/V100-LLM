@@ -1,6 +1,6 @@
 @echo off
-rem MiniCPM-V 4.7 35B-A3B Q3 mix (official mix_q3gud_im) - FAST: 128k context, vision on CPU (85 tok/s) (kernel: llamacpp)
-rem 85.4 tok/s gen (n-cpu-moe 1, 15.9 GB VRAM); image ok
+rem MiniCPM-V 4.7 35B-A3B Q3 mix (official mix_q3gud_im) - FAST: 128k context, vision on CPU (93 tok/s) (kernel: llamacpp)
+rem 93 tok/s gen (all experts on GPU, 16.1 GB VRAM); 120k-token prompt filled without a crash (36 tok/s gen at 120k); image ok
 rem Open http://127.0.0.1:%PORT% (default 8899). Extra arguments are passed to llama-server.
 if not defined PORT set "PORT=8899"
 if not defined HOST set "HOST=127.0.0.1"
@@ -12,7 +12,7 @@ if not exist "%K%\llama-server.exe" ( echo Kernel llamacpp missing: open START-G
   -m "%M%\MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf" ^
   --mmproj "%M%\mmproj-model-f16-4x.gguf" ^
   -ngl 99 ^
-  --n-cpu-moe 1 ^
+  --n-cpu-moe 0 ^
   -t 14 ^
   --fit off ^
   -c 131072 ^

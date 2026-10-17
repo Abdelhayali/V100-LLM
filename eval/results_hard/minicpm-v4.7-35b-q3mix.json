@@ -516,5 +516,11 @@
  "model_id": "minicpm-v4.7-35b-q3mix",
  "preset": "262k context, vision on GPU",
  "kernel": "llamacpp",
- "size_gb": 15.5
+ "size_gb": 15.5,
+ "fast": {
+  "gen_tps": 93.4,
+  "ctx": "128k",
+  "preset": "fast-128k",
+  "note": "same weights; vision encoder on CPU, all experts on GPU"
+ }
 }
