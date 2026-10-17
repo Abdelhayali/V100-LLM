@@ -74,6 +74,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var editingMessageId by mutableStateOf<Long?>(null)
     var themeMode by mutableStateOf(prefs.themeMode)   // system | light | dark
     var webSearch by mutableStateOf(prefs.webSearch)   // give the model internet search
+    var emailAccess by mutableStateOf(prefs.emailAccess)          // Gmail tools in chats (off by default)
+    var organizerAccess by mutableStateOf(prefs.organizerAccess)  // tasks / notes / calendar tools (off by default)
+    // one request may get access it needs (an "Ask the AI" button the user tapped), without changing the switches
+    private var onceEmail = false
+    private var onceOrganizer = false
+    fun sendWithAccess(email: Boolean, organizer: Boolean) { onceEmail = email; onceOrganizer = organizer; send() }
+    fun toggleEmailAccess() { emailAccess = !emailAccess; prefs.emailAccess = emailAccess
+        toast = if (emailAccess) "Email access ON: the AI can read your mail and write drafts (sending asks you)" else "Email access OFF" }
+    fun toggleOrganizerAccess() { organizerAccess = !organizerAccess; prefs.organizerAccess = organizerAccess
+        toast = if (organizerAccess) "Tasks & calendar access ON" else "Tasks & calendar access OFF" }
     var autoApprove by mutableStateOf(prefs.autoApprove)   // run code / write files without asking
     var autoCompress by mutableStateOf(prefs.autoCompress)
     var compressAt by mutableStateOf(prefs.compressAt)       // percent of the context
@@ -316,8 +326,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     sessions.add(0, com.localai.bridge.data.SessionDto(sid, title, currentModel, running = true))
                     currentTitle = title
                 }
+                val em = emailAccess || onceEmail
+                val org = organizerAccess || onceOrganizer
+                onceEmail = false; onceOrganizer = false
                 consume(a.chat(sid, text, atts.map { it.id }, currentModel.ifBlank { null }, webSearch, autoApprove,
-                    if (autoCompress) compressAt / 100.0 else 0.0))
+                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org))
             } catch (e: com.localai.bridge.data.ApiException) {
                 if (e.code == 409) {
                     // the PC is still finishing the previous reply (e.g. the phone was off): show it instead of failing

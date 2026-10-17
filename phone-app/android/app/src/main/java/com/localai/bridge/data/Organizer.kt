@@ -19,6 +19,7 @@ data class NoteDto(val id: Long, val title: String? = "", val body: String? = ""
 data class TaskDto(
     val id: Long, val title: String? = "", val notes: String? = "", val due: String? = "",
     val priority: String? = "normal", val done: Boolean = false,
+    @SerialName("email_id") val emailId: String? = "",          // set when the task came from an email
 )
 
 @Serializable
@@ -96,6 +97,7 @@ data class EmailTaskDto(
     val id: Long, val title: String? = "", val notes: String? = "", val due: String? = "", val priority: String? = "normal",
     @SerialName("email_id") val emailId: String? = "", @SerialName("email_subject") val emailSubject: String? = "",
     @SerialName("email_from") val emailFrom: String? = "",
+    val kind: String? = "task",                                  // task | reply (someone waits for your answer)
 )
 
 @Serializable

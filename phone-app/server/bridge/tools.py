@@ -292,7 +292,13 @@ def _fn(name, desc, props, required):
             "parameters": {"type": "object", "properties": props, "required": required}}}
 
 
-def tool_schemas(web: bool = False):
+EMAIL_TOOLS = {"gmail_list", "gmail_read", "gmail_draft", "gmail_update_draft", "gmail_send", "gmail_send_draft"}
+ORGANIZER_TOOLS = {"tasks_list", "tasks_add", "tasks_update", "notes_add", "notes_search", "calendar_list", "calendar_add",
+                   "google_calendar_add"}
+
+
+def tool_schemas(web: bool = False, email: bool = False, organizer_access: bool = False):
+    """The tools the model gets for one request. Email and tasks/calendar only when the user switched them on."""
     s = [
         _fn("list_dir", "List files and folders in a directory on the user's PC.",
             {"path": {"type": "string", "description": "Absolute path, or relative to the workspace"}}, ["path"]),
@@ -338,7 +344,9 @@ def tool_schemas(web: bool = False):
                         {"language": {"type": "string", "enum": ["python", "powershell", "cmd"]},
                          "code": {"type": "string"}}, ["language", "code"]))
     from . import organizer, google_api
-    s += organizer.tool_schemas() + google_api.tool_schemas()
+    extra = organizer.tool_schemas() + google_api.tool_schemas()
+    s += [x for x in extra if (x["function"]["name"] in EMAIL_TOOLS and email)
+          or (x["function"]["name"] in ORGANIZER_TOOLS and organizer_access)]
     if web:
         s += [
             _fn("web_search", "Search the internet (DuckDuckGo). Returns titles, URLs and snippets. "

@@ -76,7 +76,13 @@ _http = httpx.Client(timeout=60, limits=httpx.Limits(max_connections=20, max_kee
 
 
 def _api(method: str, url: str, **kw):
-    r = _http.request(method, url, headers={"Authorization": "Bearer " + _access()}, **kw)
+    # Gmail allows a limited "query cost" per user per minute: on 429 / quota 403, wait and try again
+    for attempt in range(6):
+        r = _http.request(method, url, headers={"Authorization": "Bearer " + _access()}, **kw)
+        limited = r.status_code == 429 or (r.status_code == 403 and ("quota" in r.text.lower() or "rate" in r.text.lower()))
+        if not limited or attempt == 5:
+            break
+        time.sleep(min(30, 2 ** attempt + secrets.randbelow(1000) / 1000))
     if r.status_code >= 400:
         try:
             msg = r.json().get("error", {}).get("message", r.text[:300])
@@ -250,7 +256,7 @@ def gmail_page(query: str = "in:inbox", page: str = "", n: int = 25) -> dict:
     d = _api("GET", GMAIL + "/messages", params=p)
     ids = [it["id"] for it in d.get("messages", [])]
     _access()                                      # refresh the token once, not in every thread
-    with ThreadPoolExecutor(max_workers=16) as ex:
+    with ThreadPoolExecutor(max_workers=8) as ex:
         msgs = list(ex.map(_summary, ids))
     return {"messages": msgs, "next": d.get("nextPageToken", ""), "total": d.get("resultSizeEstimate", len(ids))}
 

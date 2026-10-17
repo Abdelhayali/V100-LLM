@@ -113,12 +113,15 @@ class Api(private val baseUrl: String, private val token: String) {
     fun chat(
         sessionId: String, content: String, attachments: List<String>, model: String?,
         web: Boolean = false, autoApprove: Boolean = false, compressAt: Double = 0.0,
+        email: Boolean = false, organizer: Boolean = false,
     ): Flow<JsonObject> {
         val body = buildJsonObject {
             put("content", content)
             put("compress_at", compressAt)
             put("web", web)
             put("auto_approve", autoApprove)
+            put("email", email)
+            put("organizer", organizer)
             putJsonArray("attachments") { attachments.forEach { add(it) } }
             if (!model.isNullOrBlank()) put("model", model)
         }

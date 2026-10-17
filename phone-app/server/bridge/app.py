@@ -292,10 +292,11 @@ async def compress_turn(run, model: str | None):
 class Run:
     """A chat turn running in the background; survives phone disconnects."""
 
-    def __init__(self, sid, web=False, auto_approve=False, compress_at=0.0):
+    def __init__(self, sid, web=False, auto_approve=False, compress_at=0.0, email=False, organizer=False):
         self.sid = sid
         self.compress_at = compress_at
         self.web = web
+        self.email, self.organizer = email, organizer      # access switches from the phone (off = no such tools)
         self.auto_approve = auto_approve
         self.queues: list[asyncio.Queue] = []
         self.history: list[dict] = []
@@ -476,7 +477,7 @@ async def chat_turn(run: Run, model: str | None):
                 if config.data.get("max_tokens"):
                     payload["max_tokens"] = int(config["max_tokens"])
                 if use_tools:
-                    payload["tools"] = tools.tool_schemas(web=run.web)
+                    payload["tools"] = tools.tool_schemas(web=run.web, email=run.email, organizer_access=run.organizer)
                 try:
                     content, reasoning, tool_calls, stats = await stream_completion(client, payload, run)
                 except httpx.HTTPStatusError as e:
@@ -504,7 +505,13 @@ async def chat_turn(run: Run, model: str | None):
                     except json.JSONDecodeError:
                         args = {}
                     run.emit({"type": "tool_call", "id": tc["id"], "name": name, "args": args})
-                    if name == "ask_user":
+                    blocked = ((name in tools.EMAIL_TOOLS and not run.email)
+                               or (name in tools.ORGANIZER_TOOLS and not run.organizer))
+                    if blocked:   # the model asked for a tool the user did not switch on: refuse, never run it
+                        what = "email" if name in tools.EMAIL_TOOLS else "tasks, notes and calendar"
+                        result, atts = (f"Access denied: the user has not allowed {what} access in this chat. Tell them to "
+                                        f"switch on '{what}' access in the app (paperclip menu) if they want you to use it."), []
+                    elif name == "ask_user":
                         result, atts = await ask_user(run, tc["id"], args), []
                     elif name == "update_tasks":
                         plan = normalize_tasks(args.get("tasks"))
@@ -630,6 +637,8 @@ class ChatIn(BaseModel):
     attachments: list[str] = []
     model: str | None = None
     web: bool = False            # give the model web_search / fetch_url
+    email: bool = False          # allow the Gmail tools (read / draft / send with approval)
+    organizer: bool = False      # allow tasks, notes and calendar tools
     auto_approve: bool = False   # run code / write files without asking the phone
     compress_at: float = 0.0     # e.g. 0.75 = summarize old messages when 75% of the context is used; 0 = off
 
@@ -696,7 +705,8 @@ async def chat(sid: str, body: ChatIn):
     model = body.model or s["model"] or None
     if body.model and body.model != s["model"]:
         db.update_session(sid, model=body.model)
-    run = Run(sid, web=body.web, auto_approve=body.auto_approve, compress_at=max(0.0, min(body.compress_at, 0.98)))
+    run = Run(sid, web=body.web, auto_approve=body.auto_approve, compress_at=max(0.0, min(body.compress_at, 0.98)),
+              email=body.email, organizer=body.organizer)
     runs[sid] = run
     resp = sse_response(run)
     run.task = asyncio.create_task(chat_turn(run, model))

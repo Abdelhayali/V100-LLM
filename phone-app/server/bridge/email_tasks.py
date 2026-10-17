@@ -21,9 +21,15 @@ db._conn.executescript(
     CREATE TABLE IF NOT EXISTS email_task_suggestions(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, notes TEXT, due TEXT,
         priority TEXT, email_id TEXT, email_subject TEXT, email_from TEXT, status TEXT DEFAULT 'new', created REAL);
     CREATE TABLE IF NOT EXISTS email_scanned(email_id TEXT PRIMARY KEY, scanned REAL);
+    CREATE TABLE IF NOT EXISTS email_scanned_v2(email_id TEXT PRIMARY KEY, scanned REAL);
     """
 )
+try:   # task = something to do; reply = someone is waiting for the user's answer
+    db._conn.execute("ALTER TABLE email_task_suggestions ADD COLUMN kind TEXT DEFAULT 'task'")
+except Exception:
+    pass
 db._conn.commit()
+SCANNED = "email_scanned_v2"    # v2 also looks for emails that need a reply, so older scans are read again once
 
 router = APIRouter(prefix="/api/email_tasks")
 job = {"running": False, "done": 0, "total": 0, "found": 0, "error": "", "finished": 0.0}
@@ -35,12 +41,17 @@ def _llm_headers():
     return {"Authorization": f"Bearer {k}"} if k else {}
 
 
-PROMPT = """You read the user's emails and find things THEY need to do: reply by a date, pay, sign, submit, attend, prepare,
-call someone, deadlines. Ignore newsletters, ads, notifications that need no action, and things others must do.
-Today is {today}. For each real action item give a short task title starting with a verb (in the email's language),
-a due date YYYY-MM-DD if the email gives or implies one (else ""), priority high/normal/low, and one short note.
-Answer ONLY with JSON: {{"tasks": [{{"email": <number>, "title": "...", "due": "", "priority": "normal", "note": "..."}}]}}
-Use {{"tasks": []}} when there is nothing to do.
+PROMPT = """You read the user's emails and find two kinds of items for THEM (not for other people):
+- "task": something the user must do: pay, sign, submit, attend, prepare, register, renew, call someone, a deadline.
+- "reply": a real person is waiting for the user's answer: asks the user a question, asks for information, a document,
+  a decision, a confirmation or availability, or invites them and expects a response.
+Ignore newsletters, ads, automatic notifications, no-reply senders and emails that need nothing. One email can give one
+reply item and also task items. Today is {today}.
+For each item give: "type" ("task" or "reply"), a short "title" starting with a verb in the email's language (for a reply:
+"Reply to <name> about <topic>"), "due" YYYY-MM-DD if the email gives or implies one (else ""), "priority"
+(high/normal/low) and a short "note" (for a reply: what exactly they ask for).
+Answer ONLY with JSON: {{"tasks": [{{"email": <number>, "type": "task", "title": "...", "due": "", "priority": "normal", "note": "..."}}]}}
+Use {{"tasks": []}} when there is nothing.
 
 {emails}"""
 
@@ -68,7 +79,7 @@ async def _scan(query: str, n: int):
     job.update(running=True, done=0, total=0, found=0, error="", finished=0.0)
     try:
         page = await asyncio.to_thread(google_api.gmail_page, query, "", n)
-        seen = {r["email_id"] for r in db._q("SELECT email_id FROM email_scanned")}
+        seen = {r["email_id"] for r in db._q(f"SELECT email_id FROM {SCANNED}")}
         todo = [m for m in page["messages"] if m["id"] not in seen]
         job["total"] = len(todo)
         async with httpx.AsyncClient(timeout=httpx.Timeout(600, connect=10)) as client:
@@ -81,16 +92,18 @@ async def _scan(query: str, n: int):
                     except (ValueError, IndexError, TypeError):
                         continue
                     title = str(t.get("title", "")).strip()
-                    if not title:
-                        continue
-                    db._ins("INSERT INTO email_task_suggestions(title,notes,due,priority,email_id,email_subject,email_from,status,created)"
-                            " VALUES(?,?,?,?,?,?,?,'new',?)",
+                    kind = "reply" if str(t.get("type", "")).lower().startswith("repl") else "task"
+                    if not title or db._q("SELECT id FROM email_task_suggestions WHERE email_id=? AND (title=? OR (kind='reply' AND ?='reply'))",
+                                          (e["id"], title, kind), one=True):
+                        continue                        # already suggested from this email
+                    db._ins("INSERT INTO email_task_suggestions(title,notes,due,priority,email_id,email_subject,email_from,status,created,kind)"
+                            " VALUES(?,?,?,?,?,?,?,'new',?,?)",
                             (title[:160], str(t.get("note", ""))[:400], organizer._norm(str(t.get("due", "")) or None),
                              str(t.get("priority", "normal")).lower() if str(t.get("priority", "")).lower() in ("low", "high") else "normal",
-                             e["id"], e["subject"][:200], e["from"][:200], time.time()))
+                             e["id"], e["subject"][:200], e["from"][:200], time.time(), kind))
                     job["found"] += 1
                 for e in full:
-                    db._q("INSERT OR REPLACE INTO email_scanned VALUES(?,?)", (e["id"], time.time()))
+                    db._q(f"INSERT OR REPLACE INTO {SCANNED} VALUES(?,?)", (e["id"], time.time()))
                 job["done"] = min(len(todo), i + BATCH)
     except httpx.HTTPError:
         job["error"] = "No model is answering on the PC. Load one from the Models screen, then scan again."
@@ -134,7 +147,7 @@ async def accept(sid: int):
         raise HTTPException(404)
     who = re.sub(r"\s*<.*?>", "", s["email_from"] or "").strip()
     note = (s["notes"] + "\n" if s["notes"] else "") + f"From email: \"{s['email_subject']}\" ({who})"
-    t = organizer.task_save(s["title"], note, s["due"] or None, s["priority"])
+    t = organizer.task_save(s["title"], note, s["due"] or None, s["priority"], email_id=s["email_id"])
     db._q("UPDATE email_task_suggestions SET status='accepted' WHERE id=?", (sid,))
     return t
 
@@ -148,6 +161,6 @@ async def dismiss(sid: int):
 @router.post("/forget")
 async def forget():
     """Scan the same emails again next time (keeps decided suggestions)."""
-    db._q("DELETE FROM email_scanned")
+    db._q(f"DELETE FROM {SCANNED}")
     db._q("DELETE FROM email_task_suggestions WHERE status='new'")
     return {"ok": True}

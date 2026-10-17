@@ -31,6 +31,16 @@ class Prefs(context: Context) {
         get() = prefs.getString("theme", "system") ?: "system"
         set(v) = prefs.edit().putString("theme", v).apply()
 
+    /** Let the model use Gmail in chats (off = it has no email tools at all). */
+    var emailAccess: Boolean
+        get() = prefs.getBoolean("email_access", false)
+        set(v) = prefs.edit().putBoolean("email_access", v).apply()
+
+    /** Let the model read and change tasks, notes and the calendar in chats. */
+    var organizerAccess: Boolean
+        get() = prefs.getBoolean("organizer_access", false)
+        set(v) = prefs.edit().putBoolean("organizer_access", v).apply()
+
     var webSearch: Boolean
         get() = prefs.getBoolean("web_search", false)
         set(v) = prefs.edit().putBoolean("web_search", v).apply()

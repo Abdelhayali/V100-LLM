@@ -16,6 +16,8 @@ What this version adds:
 - **📝 Notes, tasks & calendar** (menu → *Notes, tasks & calendar*): stored on the PC and shared with the model, so you can say "remind me to call Sara on Friday" or ask "what tasks do I have?" / "what's on my calendar tomorrow?" in English or Arabic.
 - **📧 Gmail + Google Calendar (optional):** connect your Google account once (your own OAuth client, login kept on the PC). The model can read email, write draft replies, list and add Google events. **Sending an email or adding a Google event always asks you first**, showing the full email, even with auto-approve on.
 - **📬 Tasks from email:** the *From email* tab lets the AI read your recent Gmail and suggest tasks (deadlines, replies, payments). Each one waits for you: **Add to my tasks** or **Dismiss**. Already-read emails are skipped next time. Drafts can be edited by hand or by the AI, and sent after a confirm step.
+- **🔒 Access switches:** *Email access* and *Tasks & calendar access* in the chat's paperclip menu, both **off by default**. When off, the model gets no such tools and the server refuses them. An *Ask the AI* button turns on only what it needs, for that one request.
+- **✉ Replies from email:** the email scan also finds emails where someone is waiting for your answer (*Needs your reply*); once added to your tasks, tapping one asks the AI to draft the reply.
 - **See exactly what it does:** a step list in the chat shows every action on the PC (run code with its first lines, read / write which file, search, ask you) with a live status (now, waiting for you, done, failed), or the model's own plan when it sends one. The status line names the current action.
 - The V100-LLM launcher is started on the PC automatically when the phone needs it.
 

@@ -22,6 +22,10 @@ db._conn.executescript(
         location TEXT, notes TEXT, created REAL);
     """
 )
+try:   # a task made from an email keeps the email id, so the app can ask the AI to draft the reply
+    db._conn.execute("ALTER TABLE tasks ADD COLUMN email_id TEXT DEFAULT ''")
+except Exception:
+    pass
 db._conn.commit()
 
 router = APIRouter(prefix="/api")
@@ -89,7 +93,7 @@ def tasks_list(status: str = "open", due_before: str = ""):
 
 
 def task_save(title: str | None = None, notes: str | None = None, due: str | None = None, priority: str | None = None,
-              done: bool | None = None, tid: int | None = None):
+              done: bool | None = None, tid: int | None = None, email_id: str = ""):
     if tid:
         cur = db._q("SELECT * FROM tasks WHERE id=?", (tid,), one=True)
         if not cur:
@@ -102,8 +106,8 @@ def task_save(title: str | None = None, notes: str | None = None, due: str | Non
                time.time() if new["done"] and not cur["done"] else cur["done_at"], tid))
         r = db._q("SELECT * FROM tasks WHERE id=?", (tid,), one=True)
     else:
-        i = db._ins("INSERT INTO tasks(title,notes,due,priority,done,created) VALUES(?,?,?,?,0,?)",
-                    (title or "Task", notes or "", _norm(due), (priority or "normal").lower(), time.time()))
+        i = db._ins("INSERT INTO tasks(title,notes,due,priority,done,created,email_id) VALUES(?,?,?,?,0,?,?)",
+                    (title or "Task", notes or "", _norm(due), (priority or "normal").lower(), time.time(), email_id or ""))
         r = db._q("SELECT * FROM tasks WHERE id=?", (i,), one=True)
     r["done"] = bool(r["done"])
     return r

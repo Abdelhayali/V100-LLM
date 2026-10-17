@@ -99,9 +99,14 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.jsonPrimitive
 
 /** Ask the model in a NEW chat (so it does not mix with the conversation that was open), and send at once. */
-private fun askAi(vm: MainViewModel, text: String) {
-    vm.newChat(); vm.draft = text; vm.send()
+private fun askAi(vm: MainViewModel, text: String, email: Boolean = false, organizer: Boolean = false) {
+    vm.newChat(); vm.draft = text; vm.sendWithAccess(email = email, organizer = organizer)
 }
+
+/** Ask the AI (new chat) to draft a reply to an email; it saves a Gmail draft and waits for the user's OK. */
+private fun draftReply(vm: MainViewModel, emailId: String, about: String) = askAi(vm,
+    "Read the email with id=$emailId (\"$about\") and draft a reply for me. Save it as a draft, show it to me, " +
+        "and don't send it until I approve.", email = true)
 
 /** Notes, tasks, calendar and Gmail, kept on the PC and shared with the model (it can read and change them too). */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -149,7 +154,7 @@ private fun TasksTab(vm: MainViewModel, reload: Int) {
     fun load() = scope.launch { list = runCatching { vm.api?.organizerTasks("all") }.onFailure { vm.toast = it.message }.getOrNull() }
     LaunchedEffect(reload) { load() }
 
-    OutlinedButton(onClick = { askAi(vm, "What tasks do I have? Sort them by due date and tell me what is most urgent.") }) {
+    OutlinedButton(onClick = { askAi(vm, "What tasks do I have? Sort them by due date and tell me what is most urgent.", organizer = true) }) {
         Text("Ask the AI: what tasks do I have?")
     }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
@@ -178,7 +183,10 @@ private fun TasksTab(vm: MainViewModel, reload: Int) {
     val shown = l.filter { showDone || !it.done }
     if (shown.isEmpty()) Text("No tasks. Add one above, or tell the AI \"remind me to …\".", style = MaterialTheme.typography.bodySmall)
     shown.forEach { t ->
-        Card(Modifier.fillMaxWidth()) {
+        val fromEmail = !t.emailId.isNullOrBlank()
+        Card(Modifier.fillMaxWidth().clickable(enabled = fromEmail && !t.done) {
+            draftReply(vm, t.emailId.orEmpty(), t.title.orEmpty())
+        }) {
             Row(Modifier.padding(start = 4.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = t.done, onCheckedChange = { d ->
                     scope.launch { runCatching { vm.api?.setTaskDone(t.id, d) }.onFailure { vm.toast = it.message }; load() }
@@ -191,6 +199,8 @@ private fun TasksTab(vm: MainViewModel, reload: Int) {
                         t.priority?.takeIf { it != "normal" && it.isNotBlank() }, t.notes?.takeIf { it.isNotBlank() })
                     if (meta.isNotEmpty()) Text(meta.joinToString(" · "), style = MaterialTheme.typography.labelSmall,
                         color = if (t.priority == "high" && !t.done) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (fromEmail && !t.done) TextButton(onClick = { draftReply(vm, t.emailId.orEmpty(), t.title.orEmpty()) },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) { Text("✉ Draft reply with AI") }
                 }
                 IconButton(onClick = { scope.launch { runCatching { vm.api?.deleteOrganizer("tasks", t.id.toString()) }; load() } }) {
                     Icon(Icons.Default.Delete, "Delete", Modifier.size(18.dp))
@@ -262,7 +272,7 @@ private fun CalendarTab(vm: MainViewModel, reload: Int) {
 
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(onClick = { adding = true }) { Icon(Icons.Default.Add, null); Text(" Add event") }
-        OutlinedButton(onClick = { askAi(vm, "What do I have on my calendar this week?") }) { Text("Ask the AI") }
+        OutlinedButton(onClick = { askAi(vm, "What do I have on my calendar this week?", organizer = true) }) { Text("Ask the AI") }
     }
     Text("Next 30 days: your calendar on the PC, plus Google Calendar when connected (Email tab).",
         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -371,7 +381,7 @@ private fun EmailTab(vm: MainViewModel, reload: Int) {
         trailingIcon = { IconButton(onClick = { if (search.isNotBlank()) show(search.trim()) }) { Icon(Icons.Default.Search, "Search") } },
         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
         keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { if (search.isNotBlank()) show(search.trim()) }))
-    OutlinedButton(onClick = { askAi(vm, "Check my unread emails and summarize what needs a reply.") }) {
+    OutlinedButton(onClick = { askAi(vm, "Check my unread emails and summarize what needs a reply.", email = true) }) {
         Text("Ask the AI to summarize my unread email")
     }
     if (loading) androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -422,7 +432,7 @@ private fun EmailTab(vm: MainViewModel, reload: Int) {
                     TextButton(onClick = {
                         open = null
                         askAi(vm, "Read the email with id=${mf.id} (\"${mf.subject}\") and explain it to me simply: who sent it, " +
-                            "what they want or tell me, any dates, deadlines or amounts, and whether I need to do or reply anything.")
+                            "what they want or tell me, any dates, deadlines or amounts, and whether I need to do or reply anything.", email = true)
                     }) { Text("Explain this email") }
                     TextButton(onClick = {
                         open = null
@@ -579,7 +589,7 @@ private fun DraftDialog(vm: MainViewModel, mf: MailFull, onClose: () -> Unit, on
                 onClose()
                 askAi(vm, "Edit my Gmail draft (draft_id=$draftId, message id=${mf.id}, subject \"${mf.subject}\"). " +
                     "Read it with gmail_read id=${mf.id}, then rewrite it: ${ask.trim()}. Save the new version with " +
-                    "gmail_update_draft (draft_id=$draftId) and show me the new text. Do not send it.")
+                    "gmail_update_draft (draft_id=$draftId) and show me the new text. Do not send it.", email = true)
             }) { Text("Ask") } },
             dismissButton = { TextButton(onClick = { mode = "view" }) { Text("Back") } })
 
@@ -630,8 +640,9 @@ private fun EmailTasksTab(vm: MainViewModel, reload: Int) {
         st?.error?.takeIf { it.isNotBlank() }?.let { vm.toast = it }
     }
 
-    Text("The AI on your PC reads your recent email and suggests tasks (deadlines, replies, payments, things to " +
-        "submit). Nothing is added to your tasks until you tap Add.", style = MaterialTheme.typography.bodySmall)
+    Text("The AI on your PC reads your recent email and suggests tasks (deadlines, payments, things to submit) and " +
+        "emails that need your reply (someone asks you something or needs information). Nothing is added to your " +
+        "tasks until you tap Add; a reply task opens an AI draft when you tap it.", style = MaterialTheme.typography.bodySmall)
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf(3, 7, 14, 30).forEach { d -> FilterChip(selected = days == d, onClick = { days = d }, label = { Text("Last $d days") }) }
     }
@@ -656,12 +667,16 @@ private fun EmailTasksTab(vm: MainViewModel, reload: Int) {
     }
 
     val l = list ?: run { CircularProgressIndicator(); return }
-    Text("Suggested (${l.size})", style = MaterialTheme.typography.titleMedium)
+    val replies = l.count { it.kind == "reply" }
+    Text("Suggested (${l.size})" + if (replies > 0) " · $replies need a reply" else "", style = MaterialTheme.typography.titleMedium)
     if (l.isEmpty()) Text(if (running) "Looking…" else "No suggestions. Scan your email to find tasks.",
         style = MaterialTheme.typography.bodySmall)
-    l.forEach { s ->
+    l.sortedByDescending { it.kind == "reply" }.forEach { s ->
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                val isReply = s.kind == "reply"
+                if (isReply) Text("✉ NEEDS YOUR REPLY", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold)
                 Text(s.title.orEmpty(), style = MaterialTheme.typography.titleSmall,
                     color = if (s.priority == "high") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                 val meta = listOfNotNull(s.due?.takeIf { it.isNotBlank() }?.let { "due $it" }, s.priority?.takeIf { it != "normal" })
@@ -679,6 +694,9 @@ private fun EmailTasksTab(vm: MainViewModel, reload: Int) {
                         }
                     }) { Text("Add to my tasks") }
                     OutlinedButton(onClick = { scope.launch { runCatching { vm.api?.dismissEmailTask(s.id) }; load() } }) { Text("Dismiss") }
+                }
+                if (isReply) TextButton(onClick = { draftReply(vm, s.emailId.orEmpty(), s.emailSubject.orEmpty()) }) {
+                    Text("✉ Draft the reply with AI now")
                 }
             }
         }

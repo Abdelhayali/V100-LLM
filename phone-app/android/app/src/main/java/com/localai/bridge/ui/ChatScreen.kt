@@ -72,6 +72,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.EventNote
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Drafts
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Edit
@@ -242,8 +244,14 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             }
 
             // ---- active modes (tap to turn off) - kept out of the input row so the text field stays wide
-            if (vm.webSearch || vm.autoApprove) {
+            if (vm.webSearch || vm.autoApprove || vm.emailAccess || vm.organizerAccess) {
                 Row(Modifier.padding(start = 12.dp, top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (vm.emailAccess) InputChip(selected = true, onClick = { vm.toggleEmailAccess() },
+                        label = { Text("Email") }, leadingIcon = { Icon(Icons.Default.Email, null, Modifier.size(16.dp)) },
+                        trailingIcon = { Icon(Icons.Default.Close, "Turn off", Modifier.size(14.dp)) })
+                    if (vm.organizerAccess) InputChip(selected = true, onClick = { vm.toggleOrganizerAccess() },
+                        label = { Text("Tasks") }, leadingIcon = { Icon(Icons.Default.EventNote, null, Modifier.size(16.dp)) },
+                        trailingIcon = { Icon(Icons.Default.Close, "Turn off", Modifier.size(14.dp)) })
                     if (vm.webSearch) InputChip(selected = true, onClick = { vm.toggleWebSearch() },
                         label = { Text("Web search") },
                         leadingIcon = { Icon(Icons.Default.Public, null, Modifier.size(16.dp)) },
@@ -281,6 +289,12 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                         DropdownMenuItem(text = { Text("Web search") }, leadingIcon = { Icon(Icons.Default.Public, null) },
                             trailingIcon = { Switch(checked = vm.webSearch, onCheckedChange = null) },
                             onClick = { vm.toggleWebSearch() })
+                        DropdownMenuItem(text = { Text("Email access") }, leadingIcon = { Icon(Icons.Default.Email, null) },
+                            trailingIcon = { Switch(checked = vm.emailAccess, onCheckedChange = null) },
+                            onClick = { vm.toggleEmailAccess() })
+                        DropdownMenuItem(text = { Text("Tasks & calendar access") }, leadingIcon = { Icon(Icons.Default.EventNote, null) },
+                            trailingIcon = { Switch(checked = vm.organizerAccess, onCheckedChange = null) },
+                            onClick = { vm.toggleOrganizerAccess() })
                         DropdownMenuItem(text = { Text("Auto-approve") }, leadingIcon = { Icon(Icons.Default.Bolt, null) },
                             trailingIcon = { Switch(checked = vm.autoApprove, onCheckedChange = null) },
                             onClick = {
