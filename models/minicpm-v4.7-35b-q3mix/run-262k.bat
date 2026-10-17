@@ -27,5 +27,6 @@ if not exist "%K%\llama-server.exe" ( echo Kernel llamacpp missing: open START-G
   --temp 0.7 ^
   --top-p 0.8 ^
   --top-k 20 ^
+  --cache-ram 2048 ^
   --host %HOST% --port %PORT% %*
 if errorlevel 1 pause

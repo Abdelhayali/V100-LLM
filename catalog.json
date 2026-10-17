@@ -2147,6 +2147,11 @@
        "--no-mmproj-offload",
        "",
        "vision encoder on the CPU (frees ~0.9 GB VRAM; images take a few seconds longer)"
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB (llama.cpp default 8192)"
       ]
      ]
     },
@@ -2243,6 +2248,11 @@
        "--no-mmproj-offload",
        "",
        "vision encoder on the CPU (frees ~0.9 GB VRAM; images take a few seconds longer)"
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB (llama.cpp default 8192)"
       ]
      ]
     },
@@ -2334,6 +2344,11 @@
        "--top-k",
        "20",
        ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB (llama.cpp default 8192)"
       ]
      ]
     }

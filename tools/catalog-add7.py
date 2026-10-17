@@ -22,6 +22,8 @@ for pid, name, ctx, n, bench in [
             v, d = n, ("all experts on the GPU" if n == "0" else f"experts of {n} layers in RAM")
         rows.append([k, v, d])
     rows.append(["--no-mmproj-offload", "", "vision encoder on the CPU (frees ~0.9 GB VRAM; images take a few seconds longer)"])
+    if not any(r[0] == "--cache-ram" for r in rows):
+        rows.append(["--cache-ram", "2048", "prompt cache in RAM, MiB (llama.cpp default 8192)"])
     pre.update(id=pid, name=name, bench=bench, params=rows)
     new.append(pre)
 m["presets"] = new + [x for x in m["presets"] if x["id"] not in {q["id"] for q in new} | {"fast-64k"}]
