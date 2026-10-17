@@ -2362,6 +2362,352 @@
      ]
     }
    ]
+  },
+  {
+   "id": "unsloth-qwen3.8-27b-iq3s",
+   "name": "Qwen3.8-27B Unsloth UD-IQ3_S (MTP)",
+   "desc": "Official Qwen3.8-27B in Unsloth's dynamic UD-IQ3_S quant (12.0 GB) with Unsloth's MTP draft model (+75% speed). Vision on the CPU. Not uncensored.",
+   "files": [
+    [
+     "unsloth/Qwen3.8-27B-GGUF",
+     "Qwen3.8-27B-UD-IQ3_S.gguf"
+    ],
+    [
+     "unsloth/Qwen3.8-27B-GGUF",
+     "MTP/mtp-Qwen3.8-27B-Q4_0.gguf"
+    ],
+    [
+     "unsloth/Qwen3.8-27B-GGUF",
+     "mmproj-F16.gguf"
+    ]
+   ],
+   "model": "Qwen3.8-27B-UD-IQ3_S.gguf",
+   "mmproj": "mmproj-F16.gguf",
+   "presets": [
+    {
+     "id": "fast-32k",
+     "name": "FAST: 32k context, MTP 4 (53 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "53.4 tok/s (code 63.7 / chat 43.2), draft accepted 65%, 15.3 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU (with MTP the GPU has no room for it)"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "MTP draft model"
+      ],
+      [
+       "--spec-draft-model",
+       "{model:MTP/mtp-Qwen3.8-27B-Q4_0.gguf}",
+       ""
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "4",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "32768",
+       "context"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "long-96k",
+     "name": "96k context, MTP 4, q4 KV (51 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "50.6 tok/s (code 60.1 / chat 41.1), draft accepted 62%, 15.6 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU (with MTP the GPU has no room for it)"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "MTP draft model"
+      ],
+      [
+       "--spec-draft-model",
+       "{model:MTP/mtp-Qwen3.8-27B-Q4_0.gguf}",
+       ""
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "4",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "--spec-draft-type-k",
+       "q4_0",
+       ""
+      ],
+      [
+       "--spec-draft-type-v",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "98304",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "max-192k",
+     "name": "192k context, no MTP, q4 KV (28 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "27.9 tok/s, 15.5 GB VRAM; image ok (262k does not fit)",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU (with MTP the GPU has no room for it)"
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "196608",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
   }
  ]
 }
