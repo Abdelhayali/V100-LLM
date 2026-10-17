@@ -16,6 +16,10 @@ Real-time screen recordings (not sped up) of the `fast-128k` preset: official Op
 | ![MiniCPM-V 4.7 writing a long story at ~90 tok/s](media/minicpm-v-93tps-story.gif) | ![MiniCPM-V 4.7 writing calculator code at ~90 tok/s](media/minicpm-v-93tps-code.gif) |
 | [▶ MP4 video](media/minicpm-v-93tps-story.mp4) | [▶ MP4 video](media/minicpm-v-93tps-code.mp4) |
 
+**The GUI** (`START-GUI.bat`): pick a model, preset and engine, load or unload it, edit any parameter, chat with images, and watch live tok/s, VRAM, GPU load, CPU and RAM.
+
+![V100-LLM GUI with MiniCPM-V 4.7 loaded, generating at 92.8 tok/s](media/gui-screenshot.png)
+
 <!-- LEADERBOARD -->
 ## Leaderboard (hard suite v2)
 
