@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -183,6 +184,8 @@ fun MainShell(vm: MainViewModel) {
                     Icon(Icons.Default.Add, null); Spacer(Modifier.size(6.dp)); Text("New chat")
                 }
                 Spacer(Modifier.height(8.dp))
+                NavigationDrawerItem(label = { Text("Notes, tasks & calendar") }, icon = { Icon(Icons.Default.EventNote, null) },
+                    selected = vm.screen == Screen.ORGANIZER, onClick = { go(Screen.ORGANIZER) })
                 NavigationDrawerItem(
                     label = { Text("Running tasks" + if (vm.backgroundTaskCount > 0) "  (${vm.backgroundTaskCount})" else "") },
                     icon = { Icon(Icons.Default.Memory, null) },
@@ -235,6 +238,7 @@ fun MainShell(vm: MainViewModel) {
             Screen.AGENT -> AgentScreen(vm, openDrawer)
             Screen.MODELS -> ModelsScreen(vm, openDrawer)
             Screen.API -> ApiScreen(vm, openDrawer)
+            Screen.ORGANIZER -> OrganizerScreen(vm, openDrawer)
         }
     }
 

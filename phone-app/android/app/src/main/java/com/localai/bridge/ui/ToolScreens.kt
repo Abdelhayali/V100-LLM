@@ -371,6 +371,24 @@ fun SettingsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
+                    Text("Read replies aloud")
+                    Text("Every finished reply is spoken with the phone's voice, Arabic or English (detected per sentence). " +
+                        "Any reply can also be read with its speaker button.", style = MaterialTheme.typography.bodySmall)
+                }
+                Switch(checked = vm.autoRead, onCheckedChange = { vm.updateAutoRead(it) })
+            }
+            run {
+                var rate by remember { mutableStateOf(vm.speechRate) }
+                Text("Speech speed ${"%.1f".format(rate)}x", style = MaterialTheme.typography.bodyMedium)
+                Slider(value = rate, onValueChange = { rate = it }, valueRange = 0.6f..1.8f, steps = 11,
+                    onValueChangeFinished = { vm.updateSpeechRate(rate) })
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { vm.speaker.speak("Hello, I will read the replies for you. مرحباً، سأقرأ لك الردود.") }) { Text("Test voice") }
+                    if (vm.speaking) OutlinedButton(onClick = { vm.speaker.stop() }) { Text("Stop") }
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
                     Text("Auto-compress long chats")
                     Text("When the context fills up, older messages are summarized so the chat can go on. " +
                         "You still see the full history.", style = MaterialTheme.typography.bodySmall)

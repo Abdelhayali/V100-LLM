@@ -12,6 +12,9 @@ What this version adds:
 - The chat's model list follows whatever is loaded on the PC.
 - **Choices:** when the model needs you to decide, it asks with buttons (one or several options, or your own answer) and its reply waits on the PC until you tap. Options it lists in plain text get tap-to-answer chips.
 - **OpenAI API for any app:** menu → *API* shows an OpenAI-compatible base URL (`<tunnel URL>/openai/v1`) and an API key made and refreshed in the app. It always serves the model loaded on the PC, so it keeps working when you switch models. Copy-ready curl and Python examples included.
+- **🔊 Read aloud in Arabic and English:** a speaker button on every reply, or Settings → *Read replies aloud* for every reply. The language is detected per sentence, so mixed replies switch voice; speed is adjustable. Uses the phone's own voices (offline).
+- **📝 Notes, tasks & calendar** (menu → *Notes, tasks & calendar*): stored on the PC and shared with the model, so you can say "remind me to call Sara on Friday" or ask "what tasks do I have?" / "what's on my calendar tomorrow?" in English or Arabic.
+- **📧 Gmail + Google Calendar (optional):** connect your Google account once (your own OAuth client, login kept on the PC). The model can read email, write draft replies, list and add Google events. **Sending an email or adding a Google event always asks you first**, showing the full email, even with auto-approve on.
 - **See exactly what it does:** a step list in the chat shows every action on the PC (run code with its first lines, read / write which file, search, ask you) with a live status (now, waiting for you, done, failed), or the model's own plan when it sends one. The status line names the current action.
 - The V100-LLM launcher is started on the PC automatically when the phone needs it.
 

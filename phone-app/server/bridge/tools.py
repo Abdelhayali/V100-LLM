@@ -337,6 +337,8 @@ def tool_schemas(web: bool = False):
                         "automatically - never call plt.show().",
                         {"language": {"type": "string", "enum": ["python", "powershell", "cmd"]},
                          "code": {"type": "string"}}, ["language", "code"]))
+    from . import organizer, google_api
+    s += organizer.tool_schemas() + google_api.tool_schemas()
     if web:
         s += [
             _fn("web_search", "Search the internet (DuckDuckGo). Returns titles, URLs and snippets. "
@@ -348,7 +350,9 @@ def tool_schemas(web: bool = False):
     return s
 
 
-NEEDS_APPROVAL = {"run_code", "write_file"}
+NEEDS_APPROVAL = {"run_code", "write_file", "gmail_send", "gmail_send_draft", "google_calendar_add"}
+# these ask even when auto-approve is on: they act outside the PC, in the user's name (email, Google Calendar)
+ALWAYS_APPROVE = {"gmail_send", "gmail_send_draft", "google_calendar_add"}
 
 
 def execute_tool(name: str, args: dict) -> tuple[str, list[dict]]:
@@ -372,6 +376,11 @@ def execute_tool(name: str, args: dict) -> tuple[str, list[dict]]:
                 raise ToolError(f"Not a file: {p}")
             a = share_file(p)
             return f"Sent {p.name} to the user (displayed in their chat).", [a]
+        from . import organizer, google_api
+        if name in organizer.TOOL_NAMES:
+            return organizer.execute(name, args), []
+        if name in google_api.TOOL_NAMES:
+            return google_api.execute(name, args), []
         return _execute_text_tool(name, args), []
     except ToolError as e:
         return f"Error: {e}", []

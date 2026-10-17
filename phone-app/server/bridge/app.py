@@ -511,7 +511,8 @@ async def chat_turn(run: Run, model: str | None):
                         run.emit({"type": "tasks", "tasks": plan})
                         done = sum(t["status"] == "done" for t in plan)
                         result, atts = f"Task list updated ({done}/{len(plan)} done). Continue with the work.", []
-                    elif name in tools.NEEDS_APPROVAL and config["require_tool_approval"] and not run.auto_approve:
+                    elif name in tools.ALWAYS_APPROVE or (name in tools.NEEDS_APPROVAL and config["require_tool_approval"]
+                                                          and not run.auto_approve):
                         fut = asyncio.get_running_loop().create_future()
                         approvals[tc["id"]] = {"future": fut, "session_id": sid, "name": name, "args": args}
                         run.emit({"type": "approval_required", "id": tc["id"], "name": name, "args": args})
@@ -1053,3 +1054,14 @@ app.include_router(openai_proxy.manage, dependencies=[Auth])     # key managemen
 async def memory_delete(mid: int):
     db.delete_memory(mid)
     return {"ok": True}
+
+
+# ---------------------------------------------------------------- notes, tasks, calendar (+ Google) for the app and the model
+from . import organizer  # noqa: E402
+
+app.include_router(organizer.router, dependencies=[Auth])
+
+from . import google_api  # noqa: E402
+
+app.include_router(google_api.router, dependencies=[Auth])   # Google setup + mail list for the app
+app.include_router(google_api.public)                         # OAuth redirect (PC browser, localhost only)

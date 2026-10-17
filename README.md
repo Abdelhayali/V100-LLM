@@ -66,6 +66,9 @@ forwarding), from anywhere:
 | 📊 **Live PC status** | Loaded model plus **VRAM, GPU load, CPU and RAM** bars at the top of every chat, refreshed every 3 s |
 | 💬 **Chat** | Streaming replies, sessions, thinking view, tokens/s and context used; the model list follows what is loaded |
 | 🖼️ **Vision & files** | Send photos, PDFs and PC screenshots to the vision models; browse and upload files on the PC |
+| 🔊 **Read aloud** | Replies spoken in Arabic and English (detected per sentence), per reply or automatically |
+| 📝 **Notes, tasks & calendar** | Stored on the PC and used by the model: "what tasks do I have?", "remind me…", "what's tomorrow?" |
+| 📧 **Gmail & Google Calendar** | Read email, draft replies, list / add events; sending always waits for your approval |
 | 🔑 **OpenAI API anywhere** | An OpenAI-format URL + API key (made and refreshed in the app) for the loaded model; same URL after switching models |
 | ❓ **Choices** | When the model needs a decision it asks with buttons and waits; listed options become tap-to-answer chips |
 | 👁️ **See every step** | A live step list of what the model does on the PC (code, files, search, questions) with now / waiting / done |

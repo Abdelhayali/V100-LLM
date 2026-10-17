@@ -28,7 +28,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-enum class Screen { CHAT, FILES, TERMINAL, MEMORY, SETTINGS, TASKS, AGENT, MODELS, API }
+enum class Screen { CHAT, FILES, TERMINAL, MEMORY, SETTINGS, TASKS, AGENT, MODELS, API, ORGANIZER }
 
 sealed interface ChatItem {
     val key: String
@@ -77,6 +77,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var autoApprove by mutableStateOf(prefs.autoApprove)   // run code / write files without asking
     var autoCompress by mutableStateOf(prefs.autoCompress)
     var compressAt by mutableStateOf(prefs.compressAt)       // percent of the context
+    // read replies aloud (phone TTS, Arabic + English)
+    val speaker = com.localai.bridge.data.Speaker(app).also { s ->
+        s.rate = prefs.speechRate
+        s.onState = { on -> speaking = on; if (!on) speakingKey = null }
+        s.onMissingVoice = { lang -> toast = "No $lang voice on this phone: install it in Android Settings > Text-to-speech" }
+    }
+    var speaking by mutableStateOf(false)
+    var speakingKey by mutableStateOf<String?>(null)
+    var autoRead by mutableStateOf(prefs.autoRead)
+    var speechRate by mutableStateOf(prefs.speechRate)
     private var turnEnded = false                            // got "done" or "error" (vs. connection dropped)
     private var reconnectJob: Job? = null
 
@@ -497,6 +507,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun updateAutoCompress(on: Boolean) { autoCompress = on; prefs.autoCompress = on }
+    fun updateAutoRead(on: Boolean) { autoRead = on; prefs.autoRead = on; if (!on) speaker.stop() }
+    fun updateSpeechRate(r: Float) { speechRate = r; prefs.speechRate = r; speaker.rate = r }
+    /** Read one reply aloud, or stop if it is the one being read. */
+    fun toggleSpeak(key: String, text: String) {
+        if (speakingKey == key) { speaker.stop(); speakingKey = null; return }
+        speakingKey = key; speaker.speak(text)
+    }
+    override fun onCleared() { speaker.shutdown(); super.onCleared() }
     fun updateCompressAt(pct: Int) { compressAt = pct; prefs.compressAt = pct }
 
     /** Reload the finished conversation so every message has its server id (needed for editing). */
@@ -562,7 +580,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 updateTool(id) { it.copy(output = str(ev, "output"), status = "done", attachments = atts) }
             }
             "title" -> currentTitle = str(ev, "title")
-            "done" -> { turnCompleted = true; turnEnded = true }
+            "done" -> {
+                turnCompleted = true; turnEnded = true
+                if (autoRead) (items.lastOrNull { it is ChatItem.Assistant } as? ChatItem.Assistant)
+                    ?.takeIf { it.text.isNotBlank() }?.let { speakingKey = it.key; speaker.speak(it.text) }
+            }
             "compressed" -> items += ChatItem.Notice(nextKey(),
                 "Compressed ${str(ev, "messages")} earlier messages into a summary - context freed.")
             "notice" -> items += ChatItem.Notice(nextKey(), str(ev, "text"))

@@ -72,6 +72,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Screenshot
@@ -462,6 +463,10 @@ private fun AssistantBubble(vm: MainViewModel, item: ChatItem.Assistant, isLast:
                 SmallAction(Icons.Default.ContentCopy, "Copy") {
                     clip.setText(AnnotatedString(visible.trim())); vm.toast = "Copied"
                 }
+                val reading = vm.speakingKey == item.key
+                SmallAction(if (reading) Icons.Default.Stop else Icons.AutoMirrored.Filled.VolumeUp, if (reading) "Stop reading" else "Read aloud") {
+                    vm.toggleSpeak(item.key, visible)
+                }
                 if (isLast && !vm.streaming) SmallAction(Icons.Default.Refresh, "Regenerate") { vm.regenerate() }
             }
         }
@@ -472,6 +477,19 @@ private fun argText(args: JsonObject, k: String) = (args[k] as? JsonPrimitive)?.
 
 internal fun toolSummary(name: String, args: JsonObject): String = when (name) {
     "ask_user" -> "Ask you: ${argText(args, "question")}"
+    "tasks_list" -> "Look at your tasks"
+    "tasks_add" -> "Add task: ${argText(args, "title")}"
+    "tasks_update" -> "Update task #${argText(args, "id")}"
+    "notes_add" -> "Save note: ${argText(args, "title")}"
+    "notes_search" -> "Search notes: ${argText(args, "query")}"
+    "calendar_list" -> "Check calendar ${argText(args, "start")}"
+    "calendar_add" -> "Add event: ${argText(args, "title")} ${argText(args, "start")}"
+    "gmail_list" -> "Check email: ${argText(args, "query").ifBlank { "inbox" }}"
+    "gmail_read" -> "Read an email"
+    "gmail_draft" -> "Write a draft email"
+    "gmail_send" -> "Send email to ${argText(args, "to").ifBlank { "the sender" }}"
+    "gmail_send_draft" -> "Send the draft"
+    "google_calendar_add" -> "Add to Google Calendar: ${argText(args, "title")}"
     "update_tasks" -> "Update the plan"
     "run_code" -> "Run ${argText(args, "language")}"
     "list_dir" -> "List ${argText(args, "path")}"
@@ -531,10 +549,24 @@ private fun ToolCard(vm: MainViewModel, item: ChatItem.Tool) {
 
 @Composable
 private fun ApprovalDialog(p: PendingApproval, vm: MainViewModel) {
-    val code = argText(p.args, "code").ifBlank { argText(p.args, "content") }
+    val code = when (p.name) {
+        "gmail_send" -> "To: ${argText(p.args, "to").ifBlank { "(reply to the original sender)" }}\n" +
+            "Subject: ${argText(p.args, "subject").ifBlank { "(Re: original subject)" }}\n\n${argText(p.args, "body")}"
+        "gmail_send_draft" -> "Draft id: ${argText(p.args, "draft_id")}\n(the draft the AI showed you in the chat)"
+        "google_calendar_add" -> "${argText(p.args, "title")}\n${argText(p.args, "start")}" +
+            argText(p.args, "end").let { if (it.isBlank()) "" else " → $it" } +
+            argText(p.args, "location").let { if (it.isBlank()) "" else "\n@ $it" } +
+            argText(p.args, "description").let { if (it.isBlank()) "" else "\n\n$it" }
+        else -> argText(p.args, "code").ifBlank { argText(p.args, "content") }
+    }
     AlertDialog(
         onDismissRequest = {},
-        title = { Text(if (p.name == "run_code") "Run code on your PC?" else "Write file on your PC?") },
+        title = { Text(when (p.name) {
+            "run_code" -> "Run code on your PC?"
+            "gmail_send", "gmail_send_draft" -> "Send this email?"
+            "google_calendar_add" -> "Add to Google Calendar?"
+            else -> "Write file on your PC?"
+        }) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Text(toolSummary(p.name, p.args), style = MaterialTheme.typography.labelLarge)

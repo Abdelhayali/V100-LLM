@@ -51,5 +51,13 @@ class Prefs(context: Context) {
 
     val isPaired get() = serverUrl.isNotBlank() && token.isNotBlank()
 
+    /** Read every finished reply aloud (Arabic / English text-to-speech). */
+    var autoRead: Boolean
+        get() = prefs.getBoolean("auto_read", false)
+        set(v) = prefs.edit().putBoolean("auto_read", v).apply()
+
+    var speechRate: Float
+        get() = prefs.getFloat("speech_rate", 1.0f)
+        set(v) = prefs.edit().putFloat("speech_rate", v).apply()
     fun clear() = prefs.edit().clear().apply()
 }
