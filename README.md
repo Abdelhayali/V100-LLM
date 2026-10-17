@@ -6,6 +6,16 @@ mode, and ships a test suite that scores models in a leaderboard.
 
 You don't need WSL, Docker, CUDA, Visual Studio or Python: the folder brings its own engines, CUDA runtime and Python.
 
+## Demo: MiniCPM-V 4.7 35B-A3B at ~90 tok/s on one V100 16 GB
+
+Real-time screen recordings (not sped up) of the `fast-128k` preset: official OpenBMB `mix_q3gud_im` quant, stock llama.cpp,
+128k context, vision enabled. The tokens/s counter under each reply is the chat app's own measurement.
+
+| Long story (1,750 tokens) | Code (a calculator) |
+|---|---|
+| ![MiniCPM-V 4.7 writing a long story at ~90 tok/s](media/minicpm-v-93tps-story.gif) | ![MiniCPM-V 4.7 writing calculator code at ~90 tok/s](media/minicpm-v-93tps-code.gif) |
+| [▶ MP4 video](media/minicpm-v-93tps-story.mp4) | [▶ MP4 video](media/minicpm-v-93tps-code.mp4) |
+
 <!-- LEADERBOARD -->
 ## Leaderboard (hard suite v2)
 
