@@ -77,6 +77,8 @@ forwarding), from anywhere:
 
 **💻 Windows desktop app:** the same features on a laptop screen: [`desktop-app/release/LocalAI-Bridge-Desktop.exe`](desktop-app/release/LocalAI-Bridge-Desktop.exe) (one file, about 8 MB, no install). See [desktop-app/README.md](desktop-app/README.md).
 
+![LocalAI Bridge Desktop on Windows](media/desktop-app.png)
+
 **Get it:** install [`phone-app/release/LocalAI-Bridge-V100.apk`](phone-app/release/LocalAI-Bridge-V100.apk) (Android 8+),
 run `phone-app\Start-Server.bat` on the PC (needs Python 3.10+), and scan the QR code it shows. The V100-LLM launcher is
 started automatically when the phone needs it. Details: [phone-app/README.md](phone-app/README.md).

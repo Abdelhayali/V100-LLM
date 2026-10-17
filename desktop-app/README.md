@@ -6,6 +6,8 @@ the middle, and what the PC is doing (steps, plan, context) on the right.
 **Download:** `LocalAI-Bridge-Desktop.exe` (one file, about 8 MB, no install). It opens in its own window using
 Microsoft Edge's app mode, which is built into Windows 10 and 11.
 
+![LocalAI Bridge Desktop on Windows](screenshot.png)
+
 ## Connect
 
 - **On the PC that runs the server:** start the exe and click **Connect to the server on this PC**.

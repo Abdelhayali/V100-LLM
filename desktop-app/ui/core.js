@@ -16,6 +16,12 @@ const h = (tag, attrs = {}, ...kids) => {
   return el;
 };
 
+// replaceChildren / append print null and arrays as text: skip empty parts and flatten lists (used everywhere here)
+for (const fn of ['replaceChildren', 'append']) {
+  const orig = Element.prototype[fn];
+  Element.prototype[fn] = function (...kids) { return orig.apply(this, kids.flat(Infinity).filter(k => k != null && k !== false)); };
+}
+
 // ---------------------------------------------------------------- server (through the local proxy)
 class ApiError extends Error { constructor(code, msg) { super(msg); this.code = code; } }
 async function api(path, { method = 'GET', body, form, raw } = {}) {
