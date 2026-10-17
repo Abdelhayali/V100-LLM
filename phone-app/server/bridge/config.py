@@ -28,6 +28,7 @@ def _defaults() -> dict:
         "host": "127.0.0.1",          # keep on localhost; cloudflared reaches it locally
         "port": 8765,
         "llm_base_url": "http://127.0.0.1:8899",  # the model the V100-LLM launcher loads. "/v1" is added automatically
+        "openai_key": "",                         # key for <url>/openai/v1 (made / refreshed in the phone app; empty = off)
         "launcher_url": "http://127.0.0.1:7860",  # V100-LLM launcher API (load / unload models from the phone)
         "launcher_dir": _launcher_dir(),          # started automatically when the phone asks for the model list
         "default_model": "",

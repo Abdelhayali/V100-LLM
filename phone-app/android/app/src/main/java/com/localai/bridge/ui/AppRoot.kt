@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -188,6 +189,8 @@ fun MainShell(vm: MainViewModel) {
                     selected = vm.screen == Screen.TASKS, onClick = { go(Screen.TASKS) })
                 NavigationDrawerItem(label = { Text("Models (load / unload)") }, icon = { Icon(Icons.Default.Storage, null) },
                     selected = vm.screen == Screen.MODELS, onClick = { go(Screen.MODELS) })
+                NavigationDrawerItem(label = { Text("API (OpenAI URL + key)") }, icon = { Icon(Icons.Default.Key, null) },
+                    selected = vm.screen == Screen.API, onClick = { go(Screen.API) })
                 NavigationDrawerItem(label = { Text("Code agent (beta)") }, icon = { Icon(Icons.Default.Code, null) },
                     selected = vm.screen == Screen.AGENT, onClick = { go(Screen.AGENT) })
                 NavigationDrawerItem(label = { Text("Files on PC") }, icon = { Icon(Icons.Default.Folder, null) },
@@ -231,6 +234,7 @@ fun MainShell(vm: MainViewModel) {
             Screen.TASKS -> TasksScreen(vm, openDrawer)
             Screen.AGENT -> AgentScreen(vm, openDrawer)
             Screen.MODELS -> ModelsScreen(vm, openDrawer)
+            Screen.API -> ApiScreen(vm, openDrawer)
         }
     }
 

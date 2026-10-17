@@ -1042,6 +1042,12 @@ from . import models_ctl  # noqa: E402
 
 app.include_router(models_ctl.router, dependencies=[Auth])
 
+# ---------------------------------------------------------------- OpenAI-compatible API for the loaded model
+from . import openai_proxy  # noqa: E402
+
+app.include_router(openai_proxy.router)                          # protected by its own API key
+app.include_router(openai_proxy.manage, dependencies=[Auth])     # key management: phone app only
+
 
 @app.delete("/api/memory/{mid}", dependencies=[Auth])
 async def memory_delete(mid: int):

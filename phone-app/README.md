@@ -11,6 +11,7 @@ What this version adds:
   load, CPU and RAM**, refreshed every 3 s. Tap it to open the Models screen.
 - The chat's model list follows whatever is loaded on the PC.
 - **Choices:** when the model needs you to decide, it asks with buttons (one or several options, or your own answer) and its reply waits on the PC until you tap. Options it lists in plain text get tap-to-answer chips.
+- **OpenAI API for any app:** menu → *API* shows an OpenAI-compatible base URL (`<tunnel URL>/openai/v1`) and an API key made and refreshed in the app. It always serves the model loaded on the PC, so it keeps working when you switch models. Copy-ready curl and Python examples included.
 - **See exactly what it does:** a step list in the chat shows every action on the PC (run code with its first lines, read / write which file, search, ask you) with a live status (now, waiting for you, done, failed), or the model's own plan when it sends one. The status line names the current action.
 - The V100-LLM launcher is started on the PC automatically when the phone needs it.
 
