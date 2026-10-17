@@ -65,6 +65,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var streaming by mutableStateOf(false)
     var loadingSession by mutableStateOf(false)
     val approvals = mutableStateListOf<PendingApproval>()
+    val questions = mutableStateListOf<com.localai.bridge.data.PendingQuestion>()   // ask_user choices waiting on the phone
 
     val pendingAttachments = mutableStateListOf<AttachmentRef>()
     var uploading by mutableStateOf(false)
@@ -176,7 +177,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         currentTitle = "New chat"
         currentModel = info?.defaultModel.orEmpty()
         stats = null
-        items.clear(); approvals.clear()
+        items.clear(); approvals.clear(); questions.clear()
         screen = Screen.CHAT
     }
 
@@ -195,6 +196,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             prefs.lastSession = s.id
             items.clear(); items.addAll(toItems(s.messages, s.summaryUpto))
             approvals.clear(); approvals.addAll(s.pendingApprovals)
+        questions.clear(); questions.addAll(s.pendingQuestions)
+            questions.clear(); questions.addAll(s.pendingQuestions)
             if (s.running) {
                 // the reply is still generating on the PC: re-attach to its stream
                 trimToLastUser()
@@ -364,10 +367,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** The PC says the open chat waits for an approval but no dialog is showing: fetch and show it. */
     private suspend fun restoreMissingApprovals() {
         val sid = currentSessionId ?: return
-        val waiting = tasks?.runs?.any { it.sessionId == sid && it.waitingApproval } == true
-        if (!waiting || approvals.isNotEmpty() || loadingSession) return
-        val pending = runCatching { api!!.session(sid).pendingApprovals }.getOrNull() ?: return
-        if (sid == currentSessionId) pending.filter { p -> approvals.none { it.id == p.id } }.forEach { approvals += it }
+        val run = tasks?.runs?.firstOrNull { it.sessionId == sid } ?: return
+        val needA = run.waitingApproval && approvals.isEmpty()
+        val needQ = run.waitingQuestion && questions.isEmpty()
+        if (!(needA || needQ) || loadingSession) return
+        val s = runCatching { api!!.session(sid) }.getOrNull() ?: return
+        if (sid != currentSessionId) return
+        s.pendingApprovals.filter { p -> approvals.none { it.id == p.id } }.forEach { approvals += it }
+        s.pendingQuestions.filter { p -> questions.none { it.id == p.id } }.forEach { questions += it }
     }
 
     private fun startTaskPolling() {
@@ -458,6 +465,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         stats = s.stats ?: stats
         items.clear(); items.addAll(toItems(s.messages, s.summaryUpto))
         approvals.clear(); approvals.addAll(s.pendingApprovals)
+        questions.clear(); questions.addAll(s.pendingQuestions)
         if (s.running) {
             trimToLastUser()
             streamStartMs = System.currentTimeMillis(); phase = "prompt"
@@ -527,9 +535,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 if (approvals.none { it.id == id })
                     approvals += PendingApproval(id, str(ev, "name"), ev["args"]?.jsonObject ?: JsonObject(emptyMap()))
             }
+            "question_required" -> {
+                val id = str(ev, "id")
+                updateTool(id) { it.copy(status = "awaiting") }
+                if (questions.none { it.id == id }) runCatching {
+                    api!!.json.decodeFromJsonElement<com.localai.bridge.data.PendingQuestion>(ev)
+                }.getOrNull()?.let { questions += it }
+            }
+            "question_answered" -> questions.removeAll { it.id == str(ev, "id") }
             "tool_result" -> {
                 val id = str(ev, "id")
                 approvals.removeAll { it.id == id }
+                questions.removeAll { it.id == id }
                 val atts = runCatching {
                     api!!.json.decodeFromJsonElement<List<AttachmentRef>>(ev["attachments"]!!)
                 }.getOrDefault(emptyList())
@@ -555,9 +572,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         try { api?.approve(p.id, ok) } catch (e: Exception) { toast = e.message }
     }
 
+    /** Send the user's choice for an ask_user question; the reply on the PC continues with it. */
+    fun answerQuestion(q: com.localai.bridge.data.PendingQuestion, answer: String) = viewModelScope.launch {
+        if (answer.isBlank()) return@launch
+        questions.remove(q)
+        updateTool(q.id) { it.copy(status = "running") }
+        try { api?.answerQuestion(q.id, answer) } catch (e: Exception) { toast = e.message }
+    }
+
+    /** Tap on an option the model listed in plain text: send it as the next message. */
+    fun quickReply(text: String) { if (streaming) return; draft = text; send() }
+
     fun stop() = viewModelScope.launch {
         currentSessionId?.let { runCatching { api?.stop(it) } }
-        approvals.clear()
+        approvals.clear(); questions.clear()
     }
 
     // ---------------------------------------------------------------- edit / regenerate / theme

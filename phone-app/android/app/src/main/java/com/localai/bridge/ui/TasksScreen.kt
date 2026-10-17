@@ -49,6 +49,7 @@ fun phaseLabel(phase: String, tool: String): String = when (phase) {
     "tool_args" -> "Preparing a tool call"
     "tool" -> "Running ${tool.replace('_', ' ')}"
     "approval" -> "Waiting for approval (${tool.replace('_', ' ')})"
+    "question" -> "Waiting for your choice"
     "compressing" -> "Compressing the conversation"
     else -> "Starting"
 }

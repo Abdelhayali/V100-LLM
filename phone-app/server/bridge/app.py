@@ -310,6 +310,8 @@ class Run:
             self.tps = ev.get("tps") or self.tps
         elif t == "approval_required":
             self.phase, self.tool = "approval", ev.get("name", "")
+        elif t == "question_required":
+            self.phase, self.tool = "question", "ask_user"
         self.history.append(ev)
         for q in self.queues:
             q.put_nowait(ev)
@@ -317,6 +319,33 @@ class Run:
 
 runs: dict[str, Run] = {}
 approvals: dict[str, dict] = {}  # call_id -> {"future", "session_id", "name", "args"}
+questions: dict[str, dict] = {}  # call_id -> {"future", "session_id", "question", "options", "multiple", "allow_other"}
+
+
+def _question_view(k: str, v: dict) -> dict:
+    return {"id": k, "question": v["question"], "options": v["options"], "multiple": v["multiple"],
+            "allow_other": v["allow_other"]}
+
+
+async def ask_user(run: "Run", call_id: str, args: dict) -> str:
+    """The ask_user tool: show the choices on the phone and wait for the answer (the reply pauses meanwhile)."""
+    opts = [str(o).strip() for o in (args.get("options") or []) if str(o).strip()][:8]
+    q = {"future": asyncio.get_running_loop().create_future(), "session_id": run.sid,
+         "question": str(args.get("question") or "Choose an option").strip(), "options": opts,
+         "multiple": bool(args.get("multiple")), "allow_other": args.get("allow_other", True) is not False}
+    questions[call_id] = q
+    run.emit({"type": "question_required", **_question_view(call_id, q)})
+    run.emit({"type": "phase", "phase": "question", "name": "ask_user"})
+    try:
+        answer = await asyncio.wait_for(q["future"], 3600)
+    except asyncio.TimeoutError:
+        answer = None
+    finally:
+        questions.pop(call_id, None)
+    run.emit({"type": "question_answered", "id": call_id, "answer": answer or ""})
+    if not answer:
+        return "The user did not answer. Do not assume a choice: say that you are waiting for their answer."
+    return f"The user answered: {answer}"
 
 
 async def stream_completion(client, payload, run: Run):
@@ -440,7 +469,9 @@ async def chat_turn(run: Run, model: str | None):
                     except json.JSONDecodeError:
                         args = {}
                     run.emit({"type": "tool_call", "id": tc["id"], "name": name, "args": args})
-                    if name in tools.NEEDS_APPROVAL and config["require_tool_approval"] and not run.auto_approve:
+                    if name == "ask_user":
+                        result, atts = await ask_user(run, tc["id"], args), []
+                    elif name in tools.NEEDS_APPROVAL and config["require_tool_approval"] and not run.auto_approve:
                         fut = asyncio.get_running_loop().create_future()
                         approvals[tc["id"]] = {"future": fut, "session_id": sid, "name": name, "args": args}
                         run.emit({"type": "approval_required", "id": tc["id"], "name": name, "args": args})
@@ -586,7 +617,8 @@ async def sessions_get(sid: str):
                for k, v in approvals.items() if v["session_id"] == sid]
     summ = db.get_summary(sid)
     return {**s, "stats": db.get_stats(sid), "summary_upto": summ["upto_id"] if summ else None,
-            "running": sid in runs, "messages": db.get_messages(sid), "pending_approvals": pending}
+            "running": sid in runs, "messages": db.get_messages(sid), "pending_approvals": pending,
+            "pending_questions": [_question_view(k, v) for k, v in questions.items() if v["session_id"] == sid]}
 
 
 @app.patch("/api/sessions/{sid}", dependencies=[Auth])
@@ -678,6 +710,9 @@ async def chat_stop(sid: str):
         for k, v in list(approvals.items()):
             if v["session_id"] == sid and not v["future"].done():
                 v["future"].set_result(False)
+        for v in list(questions.values()):
+            if v["session_id"] == sid and not v["future"].done():
+                v["future"].set_result(None)
     return {"ok": True}
 
 
@@ -728,7 +763,8 @@ async def tasks_list():
         s = db.get_session(sid)
         out.append({"session_id": sid, "title": s["title"] if s else "?", "phase": r.phase, "tool": r.tool,
                     "tokens": r.tokens, "tps": r.tps, "elapsed": round(now - r.started),
-                    "waiting_approval": any(v["session_id"] == sid for v in approvals.values())})
+                    "waiting_approval": any(v["session_id"] == sid for v in approvals.values()),
+                    "waiting_question": any(v["session_id"] == sid for v in questions.values())})
     return {"runs": out, "processes": tools.list_procs(), "llm_busy": await llm_busy(),
             "agents": await agent.busy_sessions()}
 
@@ -739,6 +775,9 @@ def _hard_stop(sid: str):
     for v in list(approvals.values()):
         if v["session_id"] == sid and not v["future"].done():
             v["future"].set_result(False)
+    for v in list(questions.values()):
+        if v["session_id"] == sid and not v["future"].done():
+            v["future"].set_result(None)
     if r:
         r.stopped = True
         if r.task and not r.task.done():
@@ -775,6 +814,21 @@ async def approve(call_id: str, body: ApprovalIn):
         raise HTTPException(404, "No pending approval")
     if not a["future"].done():
         a["future"].set_result(body.approve)
+    return {"ok": True}
+
+
+class AnswerIn(BaseModel):
+    answer: str
+
+
+@app.post("/api/questions/{call_id}", dependencies=[Auth])
+async def answer_question(call_id: str, body: AnswerIn):
+    """The user's choice for an ask_user question; the paused reply continues with it."""
+    q = questions.get(call_id)
+    if not q:
+        raise HTTPException(404, "No pending question")
+    if not q["future"].done():
+        q["future"].set_result(body.answer.strip())
     return {"ok": True}
 
 

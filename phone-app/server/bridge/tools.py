@@ -310,6 +310,14 @@ def tool_schemas(web: bool = False):
             {"content": {"type": "string"}}, ["content"]),
         _fn("search_memory", "Search saved long-term memories.",
             {"query": {"type": "string"}}, ["query"]),
+        _fn("ask_user", "Ask the user to choose before you continue. Use it whenever you would otherwise end your reply "
+            "with a list of options or a question the user must answer first (which approach, which file, yes/no...). "
+            "The phone shows the options as buttons; the user's choice is returned to you and you continue.",
+            {"question": {"type": "string", "description": "Short question shown above the buttons"},
+             "options": {"type": "array", "items": {"type": "string"}, "description": "2-6 short choices"},
+             "multiple": {"type": "boolean", "description": "true if several options may be picked"},
+             "allow_other": {"type": "boolean", "description": "let the user type their own answer (default true)"}},
+            ["question", "options"]),
     ]
     if config["enable_code_exec"]:
         s.insert(0, _fn("run_code",

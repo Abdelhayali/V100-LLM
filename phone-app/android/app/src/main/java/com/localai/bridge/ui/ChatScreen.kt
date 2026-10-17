@@ -188,9 +188,12 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                     items(vm.items, key = { it.key }) { item ->
                         when (item) {
                             is ChatItem.User -> UserBubble(vm, item)
-                            is ChatItem.Assistant -> AssistantBubble(vm, item,
-                                isLast = item === vm.items.lastOrNull { it is ChatItem.Assistant } &&
-                                    vm.items.last() !is ChatItem.User)
+                            is ChatItem.Assistant -> {
+                                val last = item === vm.items.lastOrNull { it is ChatItem.Assistant } && vm.items.last() !is ChatItem.User
+                                AssistantBubble(vm, item, isLast = last)
+                                if (last && item === vm.items.last() && !vm.streaming && vm.questions.isEmpty())
+                                    QuickReplies(remember(item.text) { suggestedReplies(item.text) }, vm)
+                            }
                             is ChatItem.Tool -> ToolCard(vm, item)
                             is ChatItem.Notice -> Text(item.text, style = MaterialTheme.typography.bodySmall,
                                 color = if (item.error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
@@ -214,6 +217,9 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                     if (vm.uploading) item { CircularProgressIndicator(Modifier.size(24.dp).padding(4.dp), strokeWidth = 2.dp) }
                 }
             }
+
+            // ---- the model asks the user to choose (ask_user): reply paused until a choice is tapped
+            vm.questions.firstOrNull()?.let { QuestionCard(it, vm) }
 
             // ---- live status while the PC is working
             if (vm.streaming) LiveStatus(vm)
@@ -357,6 +363,7 @@ private fun LiveStatus(vm: MainViewModel) {
         "tool_args" -> "Preparing a tool call… ${vm.liveTokens} tokens$speed"
         "tool" -> "Running ${vm.phaseTool.replace('_', ' ')}…"
         "approval" -> "Waiting for your approval"
+        "question" -> "Waiting for your choice (see the options below)"
         "compressing" -> "Compressing the conversation…"
         else -> "Working…"
     }
@@ -496,7 +503,7 @@ private fun ToolCard(vm: MainViewModel, item: ChatItem.Tool) {
                     maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 when (item.status) {
                     "running" -> CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
-                    "awaiting" -> Text("needs approval", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                    "awaiting" -> Text(if (item.name == "ask_user") "waiting for your choice" else "needs approval", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                     else -> Text(if (open) "hide" else "details", style = MaterialTheme.typography.labelSmall)
                 }
             }
