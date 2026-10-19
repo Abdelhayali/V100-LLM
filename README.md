@@ -83,7 +83,8 @@ forwarding), from anywhere:
 | ⏰ **Scheduled tasks** | Drawer → Schedules & alerts: a prompt the PC runs by itself (daily at a time, or every N minutes), e.g. "summarize my unread email" at 8:00, in its own chat with the access you give it; a notification when it is done |
 | 🌡 **Temperature alerts** | Your own GPU / CPU limits; a notification when one is passed (checked every 30 s on the PC) |
 | 🎤 **Voice chat** | Mic button in the chat: speak (Arabic or English), the reply is read aloud; a **Stop reading** button while it talks |
-| 🚗 **Driving mode** | Hands-free: tap the car icon (or the "Driving mode" app shortcut) once, then it listens, sends, reads the short spoken answer and listens again - no touching. Say "new chat" or "stop" (also in Arabic). Screen stays on |
+| 🚗 **Driving mode** | Hands-free: tap the car icon (or the "Driving mode" app shortcut) once, then it listens, sends, reads the short spoken answer and listens again - no touching. Say "new chat" or "stop" (also in Arabic); "stop" while it reads cuts the reading short. **Translate mode** ("translate mode" / «وضع الترجمة»): speak Arabic, hear English, and the reverse. Screen stays on |
+| 📷 **Ask about a photo** | 📎 → Ask about a photo: take a picture, ask your question by voice, hear the answer (vision model or OCR) |
 | 📤 **Share to the app** | Share a photo, screenshot, PDF, link or text from any app straight into a chat |
 | 🧩 **Home-screen widget** | GPU status (model, VRAM, GPU / CPU temperature) with Ask and Voice buttons |
 | 🛡 **Sandbox for code** | Per chat (📎 menu → Run code in sandbox): the AI's code runs in a Windows AppContainer - no network, no access to your files, 4 GB memory cap, killed at the time limit. Packages already installed (numpy, matplotlib) work, and sandboxed code needs no approval. No admin rights or installs |

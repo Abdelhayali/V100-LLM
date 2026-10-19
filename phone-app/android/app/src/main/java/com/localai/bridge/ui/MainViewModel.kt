@@ -114,7 +114,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         s.onState = { on ->
             speaking = on
             if (!on) speakingKey = null
-            if (driving) { if (on) driveState = "speaking" else if (!streaming) drive.listen(400) }   // reply read: listen again
+            if (driving) {
+                if (on) { driveState = "speaking"; drive.listenForInterrupt() }   // say "stop" to cut the reading short
+                else if (!streaming) drive.listen(400)                             // reply read: listen again
+            }
         }
         s.onMissingVoice = { lang -> toast = "No $lang voice on this phone: install it in Android Settings > Text-to-speech" }
     }
@@ -369,7 +372,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val org = organizerAccess || onceOrganizer
                 onceEmail = false; onceOrganizer = false
                 consume(a.chat(sid, text, atts.map { it.id }, currentModel.ifBlank { null }, webSearch, autoApprove,
-                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = thinking, ocr = ocr, sandbox = sandbox, voice = voiceTurn))
+                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = if (translating && voiceTurn) "off" else thinking, ocr = ocr, sandbox = sandbox, voice = voiceTurn,
+                    translate = translating && voiceTurn))
             } catch (e: com.localai.bridge.data.ApiException) {
                 if (e.code == 409) {
                     // the PC is still finishing the previous reply (e.g. the phone was off): show it instead of failing
@@ -497,6 +501,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             when (cmd) {
                 "stop" -> stopDriving(say = true)
                 "new" -> { newChat(); speaker.speak(if (voiceLang.startsWith("ar")) "محادثة جديدة" else "New chat") }
+                "interrupt" -> speaker.stop()          // stop reading; onState(false) starts listening again
+                "translate" -> toggleTranslate()
             }
         }
         override fun onQuestion(text: String) {
@@ -516,9 +522,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         drive.start()
     }
 
+    /** Translate mode: what you say is translated (Arabic <-> English) and read aloud in the other language. */
+    var translating by mutableStateOf(false)
+    fun toggleTranslate() {
+        translating = !translating
+        if (translating) newChat()
+        speaker.speak(if (translating) "Translation on. تكلم بالعربية أو بالإنجليزية." else "Translation off. تم إيقاف الترجمة.")
+    }
+
+    /** Camera + voice: take a photo, then ask about it by voice; the answer is read aloud. */
+    fun photoQuestion(uri: Uri) = viewModelScope.launch {
+        attach(listOf(uri), "photo_${System.currentTimeMillis()}.jpg").join()
+        if (pendingAttachments.isNotEmpty()) pendingVoice = true
+    }
+
     fun stopDriving(say: Boolean = false) {
         drive.stop()
         driving = false
+        translating = false
         driveState = ""
         if (say) speaker.speak(if (voiceLang.startsWith("ar")) "تم إيقاف وضع القيادة" else "Driving mode off") else speaker.stop()
     }

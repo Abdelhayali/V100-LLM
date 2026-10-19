@@ -3,6 +3,7 @@ package com.localai.bridge.ui
 import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Shield
 import android.Manifest
 import android.content.pm.PackageManager
@@ -151,8 +152,13 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) vm.attach(uris)
     }
+    var photoVoice by rememberSaveable { mutableStateOf(false) }   // camera + voice: ask about the photo by speaking
     val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
-        cameraUri?.let { if (ok) vm.attach(listOf(Uri.parse(it)), "photo_${System.currentTimeMillis()}.jpg") }
+        cameraUri?.let {
+            if (ok && photoVoice) vm.photoQuestion(Uri.parse(it))
+            else if (ok) vm.attach(listOf(Uri.parse(it)), "photo_${System.currentTimeMillis()}.jpg")
+        }
+        photoVoice = false
     }
     fun launchCamera() {
         val f = File(ctx.cacheDir, "camera_${System.currentTimeMillis()}.jpg")
@@ -369,6 +375,12 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                         DropdownMenuItem(text = { Text("OCR: " + (OCR_MODES.firstOrNull { it.first == vm.ocr }?.second ?: vm.ocr)) },
                             leadingIcon = { Icon(Icons.Default.DocumentScanner, null) },
                             onClick = { attachMenu = false; ocrMenu = true })
+                        DropdownMenuItem(text = { Text("Ask about a photo (camera + voice)") }, leadingIcon = { Icon(Icons.Default.PhotoCamera, null) },
+                            onClick = {
+                                attachMenu = false; photoVoice = true
+                                if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) launchCamera()
+                                else camPermission.launch(Manifest.permission.CAMERA)
+                            })
                         DropdownMenuItem(text = { Text("Driving mode (hands-free)") }, leadingIcon = { Icon(Icons.Default.DirectionsCar, null) },
                             onClick = { attachMenu = false; driveOn() })
                         DropdownMenuItem(text = { Text("Run code in sandbox") }, leadingIcon = { Icon(Icons.Default.Shield, null) },
@@ -718,11 +730,16 @@ private fun DrivingOverlay(vm: MainViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
             Text(com.localai.bridge.data.Speaker.clean(answer).takeLast(600), style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f), overflow = TextOverflow.Ellipsis)
-            Text("Say \"new chat\" for a fresh chat, \"stop\" to end.  قل \"توقف\" للإنهاء",
+            if (vm.translating) Text("Translation: Arabic ⇄ English", style = MaterialTheme.typography.titleMedium,
+                color = Color(0xFF7B4DD8))
+            Text("Say \"new chat\", \"translate mode\", or \"stop\" (while it reads: stops reading; else ends).  " +
+                "قل \"محادثة جديدة\" أو \"وضع الترجمة\" أو \"توقف\"",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = { vm.newChat(); vm.speaker.speak("New chat") }, Modifier.weight(1f).height(72.dp)) {
                     Text("New chat", style = MaterialTheme.typography.titleMedium) }
+                OutlinedButton(onClick = { vm.toggleTranslate() }, Modifier.weight(1f).height(72.dp)) {
+                    Text(if (vm.translating) "Translate: ON" else "Translate", style = MaterialTheme.typography.titleMedium) }
                 if (vm.speaking) OutlinedButton(onClick = { vm.speaker.stop() }, Modifier.weight(1f).height(72.dp)) {
                     Text("Skip reading", style = MaterialTheme.typography.titleMedium) }
             }
