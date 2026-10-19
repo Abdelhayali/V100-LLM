@@ -323,8 +323,9 @@ async def compress_turn(run, model: str | None):
 class Run:
     """A chat turn running in the background; survives phone disconnects."""
 
-    def __init__(self, sid, web=False, auto_approve=False, compress_at=0.0, email=False, organizer=False):
+    def __init__(self, sid, web=False, auto_approve=False, compress_at=0.0, email=False, organizer=False, thinking="auto"):
         self.sid = sid
+        self.thinking = thinking
         self.compress_at = compress_at
         self.web = web
         self.email, self.organizer = email, organizer      # access switches from the phone (off = no such tools)
@@ -486,6 +487,25 @@ async def stream_completion(client, payload, run: Run):
     return content, reasoning, tool_calls, stats
 
 
+# Thinking effort chosen in the apps: off, or on with a token budget (llama.cpp ends the thinking at the budget and
+# the model answers). Effort = how many tokens the model may think before it must act.
+THINKING = {"off": 0, "low": 1024, "medium": 4096, "high": 16384, "max": -1}
+THINK_STOP = "\n\nI have thought enough about this; now I will act or answer.\n"
+
+
+def apply_thinking(payload: dict, mode: str):
+    """Add llama.cpp's per-request thinking options; 'auto' leaves the model's default."""
+    if mode not in THINKING:
+        return
+    budget = THINKING[mode]
+    payload["chat_template_kwargs"] = {"enable_thinking": budget != 0}
+    if budget > 0:
+        payload["reasoning_budget_tokens"] = budget
+        payload["reasoning_budget_message"] = THINK_STOP
+    if budget != 0 and payload.get("max_tokens"):   # room for the thinking AND the answer
+        payload["max_tokens"] += budget if budget > 0 else 32768
+
+
 async def chat_turn(run: Run, model: str | None):
     sid = run.sid
     tools.current_session.set(sid)
@@ -510,6 +530,7 @@ async def chat_turn(run: Run, model: str | None):
                     payload["stream_options"] = {"include_usage": True}
                 if config.data.get("max_tokens"):
                     payload["max_tokens"] = int(config["max_tokens"])
+                apply_thinking(payload, run.thinking)
                 if use_tools:
                     payload["tools"] = tools.tool_schemas(web=run.web, email=run.email, organizer_access=run.organizer)
                 try:
@@ -685,6 +706,7 @@ class ChatIn(BaseModel):
     organizer: bool = False      # allow tasks, notes and calendar tools
     auto_approve: bool = False   # run code / write files without asking the phone
     compress_at: float = 0.0     # e.g. 0.75 = summarize old messages when 75% of the context is used; 0 = off
+    thinking: str = "auto"       # auto (model default) | off | low | medium | high | max  (see THINKING)
 
 
 class ApprovalIn(BaseModel):
@@ -754,7 +776,8 @@ async def chat(sid: str, body: ChatIn):
     if body.model and body.model != s["model"]:
         db.update_session(sid, model=body.model)
     run = Run(sid, web=body.web, auto_approve=body.auto_approve, compress_at=max(0.0, min(body.compress_at, 0.98)),
-              email=body.email, organizer=body.organizer)
+              email=body.email, organizer=body.organizer,
+              thinking=body.thinking if body.thinking in THINKING or body.thinking == "auto" else "auto")
     runs[sid] = run
     resp = sse_response(run)
     run.task = asyncio.create_task(chat_turn(run, model))

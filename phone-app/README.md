@@ -1,44 +1,14 @@
-# V100-LLM Phone App (LocalAI Bridge V100)
+# LocalAI Bridge V100
 
-**Control your V100 from your Android phone: switch models, load / unload them, watch the GPU, and chat with the
-loaded model from anywhere.** A version of [LocalAI Bridge](https://github.com/Abdelhayali/LocalAI-Bridge) wired to the
-V100-LLM launcher.
+> **This copy controls the V100-LLM launcher (`D:\V100-LLM`) from the phone.** Open the menu → **Models (load / unload)**:
+> see every model of the V100-LLM catalog, pick a preset, **Load**, **Switch**, **Reload** or **Unload**, and watch live
+> VRAM, GPU load, CPU and RAM, the same as the launcher GUI. The launcher is started on the PC automatically when needed.
+>
+> - Server: `server/bridge/models_ctl.py` (`/api/v100/status`, `/models`, `/load`, `/unload`), proxying the launcher API.
+> - Config (`server/config.json`): `launcher_url` (http://127.0.0.1:7860), `launcher_dir` (D:\V100-LLM), and
+>   `llm_base_url` = http://127.0.0.1:8899 (the model the launcher loads). Port **8766**, so it can run beside the original.
+> - App: `release/LocalAI-Bridge-V100.apk`, package `com.localai.bridge.v100`, so it installs next to the original app.
 
-What this version adds:
-- **Models screen** (menu → *Models (load / unload)*): every model of the V100-LLM catalog with its size, vision badge and
-  tuned presets. **Load**, **Switch to this**, **Reload** or **Unload** with one tap; the measured speed of each preset is shown.
-- **Live PC status bar** at the top of every chat and in the menu: loaded model (ready / loading / none), **VRAM, GPU
-  load, CPU and RAM**, refreshed every 3 s. Tap it to open the Models screen.
-- The chat's model list follows whatever is loaded on the PC.
-- **Choices:** when the model needs you to decide, it asks with buttons (one or several options, or your own answer) and its reply waits on the PC until you tap. Options it lists in plain text get tap-to-answer chips.
-- **OpenAI API for any app:** menu → *API* shows an OpenAI-compatible base URL (`<tunnel URL>/openai/v1`) and an API key made and refreshed in the app. It always serves the model loaded on the PC, so it keeps working when you switch models. Copy-ready curl and Python examples included.
-- **🔊 Read aloud in Arabic and English:** a speaker button on every reply, or Settings → *Read replies aloud* for every reply. The language is detected per sentence, so mixed replies switch voice; speed is adjustable. Uses the phone's own voices (offline).
-- **📝 Notes, tasks & calendar** (menu → *Notes, tasks & calendar*): stored on the PC and shared with the model, so you can say "remind me to call Sara on Friday" or ask "what tasks do I have?" / "what's on my calendar tomorrow?" in English or Arabic.
-- **📧 Gmail + Google Calendar (optional):** connect your Google account once (your own OAuth client, login kept on the PC). The model can read email, write draft replies, list and add Google events. **Sending an email or adding a Google event always asks you first**, showing the full email, even with auto-approve on.
-- **📬 Tasks from email:** the *From email* tab lets the AI read your recent Gmail and suggest tasks (deadlines, replies, payments). Each one waits for you: **Add to my tasks** or **Dismiss**. Already-read emails are skipped next time. Drafts can be edited by hand or by the AI, and sent after a confirm step.
-- **🔒 Access switches:** *Email access* and *Tasks & calendar access* in the chat's paperclip menu, both **off by default**. When off, the model gets no such tools and the server refuses them. An *Ask the AI* button turns on only what it needs, for that one request.
-- **✉ Replies from email:** the email scan also finds emails where someone is waiting for your answer (*Needs your reply*); once added to your tasks, tapping one asks the AI to draft the reply.
-- **🧠 Strong memory (personal assistant):** mem0-style long-term memory on the PC. After each reply the AI keeps lasting facts about you and updates or removes ones that changed (no duplicates). Recall works by meaning in Arabic and English (free *multilingual-e5-large* embeddings, CPU), and every chat gets the memories related to your message. The AI can also search your earlier chats. The Memory screen has search, categories, editing and an auto-remember switch.
-- **See exactly what it does:** a step list in the chat shows every action on the PC (run code with its first lines, read / write which file, search, ask you) with a live status (now, waiting for you, done, failed), or the model's own plan when it sends one. The status line names the current action.
-- The V100-LLM launcher is started on the PC automatically when the phone needs it.
-
-How it fits together:
-```
-Android app ──HTTPS──► Cloudflare tunnel ──► bridge server (this folder, 127.0.0.1:8765)
-                                               ├─ /api/v100/*  ──► V100-LLM launcher (127.0.0.1:7860): models, load, unload, GPU/CPU/RAM
-                                               └─ chat / tools ──► loaded model (127.0.0.1:8899, OpenAI API)
-```
-
-Setup:
-1. Run `START-GUI.bat` in the V100-LLM folder once (or let the bridge start the launcher itself).
-2. Run `phone-app\Start-Server.bat` (needs Python 3.10+ on the PC; it creates its own environment on first run).
-3. Install `release/LocalAI-Bridge-V100.apk` on the phone (Android 8+) and scan the pairing QR the server shows.
-
-Settings live in `server/config.json` (created on first run): `launcher_url`, `launcher_dir` (found automatically when
-this folder is inside V100-LLM) and `llm_base_url` (`http://127.0.0.1:8899`). The app's package is
-`com.localai.bridge.v100`, so it installs next to the original LocalAI Bridge app.
-
----
 **Use the AI model running on your Windows PC from your Android phone, from anywhere.**
 
 LocalAI Bridge connects an Android app to a local LLM (llama.cpp, Ollama, LM Studio...) through an

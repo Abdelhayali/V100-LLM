@@ -71,7 +71,7 @@ const S = {
   approvals: [], questions: [], plan: [], stats: null, phase: '', phaseTool: '', liveTokens: 0, liveTps: null,
   streamStart: 0, pending: [], pc: null, abort: null, editId: null,
   prefs: { theme: 'system', web: false, autoApprove: false, email: false, organizer: false, autoRead: false, rate: 1,
-           autoCompress: true, compressAt: 75 },
+           autoCompress: true, compressAt: 75, thinking: 'auto' },
 };
 async function savePrefs() { try { await fetch('/local/prefs', { method: 'POST', body: JSON.stringify(S.prefs) }); } catch {} }
 

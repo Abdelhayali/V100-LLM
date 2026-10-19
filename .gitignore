@@ -11,3 +11,6 @@ user-params.json
 __pycache__/
 
 eval/results_hard/_edge/
+
+# coding duel: the agents' scratch project folders
+eval/coding_duel/work/

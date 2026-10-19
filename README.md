@@ -30,7 +30,7 @@ Real-time screen recordings (not sped up) of the `fast-128k` preset: official Op
 | # | Model | Kernel | Size (GB) | Context (scored) | Max context on V100 | Gen tok/s | Prompt tok/s (short) | Coding | Reasoning | Instructions | Web search | Agent | Vision | Long context | Overall |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1 | Qwen3.8-27B HauhauCS Aggressive IQ3_XS | fastmtp | 13.1 | 24k | 120k | 42.2 | 387 | 88 | 95 | 50 | 100 | 100 | 88 | 100 | **88.6** |
-| 2 | Qwen3.8-27B Unsloth UD-IQ3_S (MTP) | llamacpp | 13.4 | 32k | 192k | 52.1 | 460 | 94 | 100 | 50 | 100 | 100 | 75 | 100 | **88.4** |
+| 2 | Qwen3.8-27B Unsloth UD-IQ3_S (MTP) | llamacpp | 13.4 | 32k | 262k | 52.1 | 460 | 94 | 100 | 50 | 100 | 100 | 75 | 100 | **88.4** |
 | 3 | MiniCPM-V 4.7 35B-A3B Q3 mix (official mix_q3gud_im) | llamacpp | 15.5 | 128k | 262k | 93.4 | 467 | 88 | 100 | 50 | 88 | 100 | 88 | 100 | **87.5** |
 | 4 | Qwen3.8-27B Ridge 3.7bpw (MTP) | llamacpp | 12.6 | 32k | 192k | 49.6 | 478 | 88 | 95 | 42 | 100 | 100 | 88 | 100 | **87.4** |
 | 5 | MiniCPM-V 4.7 35B-A3B IQ3_XS | llamacpp | 14.5 | 192k | 262k | 84.4 | 535 | 94 | 100 | 42 | 88 | 100 | 88 | 100 | **87.2** |
@@ -43,11 +43,12 @@ Real-time screen recordings (not sped up) of the `fast-128k` preset: official Op
 | 12 | Qwen3.8-27B Huihui abliterated GSQ-RCO-IQ3_S (MTP) | llamacpp | 12.1 | 32k | 192k | 50.2 | 471 | 69 | 100 | 50 | 100 | 100 | 88 | 50 | **79.5** |
 | 13 | NVIDIA Nemotron-3.5-Bolt-74B-A9B (2-bit) | llamacpp | 22.0 | 262k | 262k | 16.7 | 277 | 75 | 85 | 58 | 100 | 100 | 88 | 50 | **79.4** |
 | 14 | Qwen3.8-27B HauhauCS Aggressive Q2_K_P (long context) | llamacpp | 10.7 | 160k | 160k | 41.6 | 326 | 75 | 95 | 42 | 100 | 100 | 88 | 50 | **78.5** |
-| 15 | Ternary-Bonsai-2-27B Uncensored Heretic | prism | 7.2 | 262k | 262k | 39.5 | 363 | 56 | 100 | 42 | 100 | 100 | 88 | 50 | **76.5** |
-| 16 | Underdog Saluki 27B (Qwen3.8 2-bit, MTP) | llamacpp | 8.3 | 262k | 262k | 46.8 | 351 | 62 | 95 | 42 | 88 | 100 | 88 | 50 | **74.9** |
-| 17 | PXA-Fusion4-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 70.0 | 2384 | 38 | 90 | 25 | 88 | 100 | 75 | 100 | **73.6** |
-| 18 | Qwen3.8-27B PXQ3 | pxa | 12.4 | 8k | 8k | 19.8 | 573 | 75 | 95 | 42 | 100 | 100 | 88 | 0 | **71.3** |
-| 19 | Ornith-1.5-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 64.1 | 2333 | 50 | 85 | 33 | 100 | 83 | 75 | 0 | **60.9** |
+| 15 | Qwen3.8-27B Unsloth UD-Q3_K_XL (DFlash2) | llamacpp | 14.3 | 32k | 32k | 55.4 | 508 | 94 | 90 | 42 | 100 | 100 | 62 | 50 | **76.9** |
+| 16 | Ternary-Bonsai-2-27B Uncensored Heretic | prism | 7.2 | 262k | 262k | 39.5 | 363 | 56 | 100 | 42 | 100 | 100 | 88 | 50 | **76.5** |
+| 17 | Underdog Saluki 27B (Qwen3.8 2-bit, MTP) | llamacpp | 8.3 | 262k | 262k | 46.8 | 351 | 62 | 95 | 42 | 88 | 100 | 88 | 50 | **74.9** |
+| 18 | PXA-Fusion4-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 70.0 | 2384 | 38 | 90 | 25 | 88 | 100 | 75 | 100 | **73.6** |
+| 19 | Qwen3.8-27B PXQ3 | pxa | 12.4 | 8k | 8k | 19.8 | 573 | 75 | 95 | 42 | 100 | 100 | 88 | 0 | **71.3** |
+| 20 | Ornith-1.5-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 64.1 | 2333 | 50 | 85 | 33 | 100 | 83 | 75 | 0 | **60.9** |
 
 Notes:
 - Long context is a ~14k-token text with three facts hidden in different places that have to be combined. Qwen3.8-27B PXQ3 runs with an 8k context preset, so the text does not fit; Ornith runs with 16k and still answered wrong.
@@ -74,6 +75,7 @@ forwarding), from anywhere:
 | 🔊 **Read aloud** | Replies spoken in Arabic and English (detected per sentence), per reply or automatically |
 | 📝 **Notes, tasks & calendar** | Stored on the PC and used by the model: "what tasks do I have?", "remind me…", "what's tomorrow?" |
 | 📧 **Gmail & Google Calendar** | Read email, draft replies, list / add events; sending always waits for your approval |
+| 🧠 **Thinking effort** | Off / Low / Medium / High / Max per chat (a llama.cpp thinking budget: 1k / 4k / 16k tokens / unlimited), so a reply never spends all its tokens thinking |
 | 🔑 **OpenAI API anywhere** | An OpenAI-format URL + API key (made and refreshed in the app) for the loaded model; same URL after switching models |
 | ❓ **Choices** | When the model needs a decision it asks with buttons and waits; listed options become tap-to-answer chips |
 | 👁️ **See every step** | A live step list of what the model does on the PC (code, files, search, questions) with now / waiting / done |
@@ -108,7 +110,8 @@ launcher for your own settings.
 |---|---|---|---|---|---|---|---|---|
 | **MiniCPM-V 4.7 35B-A3B Q3 mix** (official mix_q3gud_im) | llama.cpp | 15.5 GB | **128k** / 262k | **93 tok/s** at 128k, 70 at 262k | 120k ✓ | CPU | ~2 GB (128k: all experts on GPU) | **best all-rounder** |
 | **Qwen3.8-27B HauhauCS IQ3_XS** + FastMTP | FastMTP | 12.2 GB | 24k / 80k / 120k | 40-53 tok/s | 118k ✓ | GPU (80k) / CPU (120k) | ~2 GB | top score, uncensored |
-| **Qwen3.8-27B Unsloth UD-IQ3_S** + MTP draft (official) | llama.cpp | 12.0 GB (+1.4 GB MTP) | 32k / 96k / 192k | **53 tok/s** at 32k, 51 at 96k, 28 at 192k (no MTP) | not run yet | CPU | ~2 GB | official 27B, fast MTP |
+| **Qwen3.8-27B Unsloth UD-IQ3_S** + MTP / DFlash2 (official) | llama.cpp (V100 patch) / kvstream | 12.0 GB (+1.1-1.4 GB drafter) | 32k / 96k / 192k / **262k** | **55 tok/s** at 32k (MTP), **58** at 96k (DFlash2, code ~73), 31 at 192k; full 262k: 12 / 9 / 6 tok/s at a filled 99k / 185k / 257k | 257k ✓ (streaming) | CPU | ~2 GB (+ KV in RAM for 262k) | official 27B, fast MTP, **full context** |
+| Qwen3.8-27B Unsloth UD-Q3_K_XL + DFlash2 (official) | llama.cpp | 13.2 GB (+1.1 GB drafter) | 32k | 55 tok/s (DFlash2, code ~70) | not run yet | CPU | ~2 GB | same speed as IQ3_S, lower score (76.9) |
 | **Qwen3.8-27B Ridge 3.7bpw** (empero-ai, built-in MTP) | llama.cpp | 12.6 GB | 32k / 96k / 192k | 50 tok/s at 32k, 48 at 96k, 27 at 192k (no MTP) | not run yet | CPU | ~2 GB | official, balanced (87.4) |
 | Qwen3.8-27B ISTA-DASLab GSQ-RCO-IQ3_S (built-in MTP) | llama.cpp | 12.1 GB | 32k / 96k / 192k | 52 tok/s at 32k, 52 at 96k, 27 at 192k (no MTP) | not run yet | CPU | ~2 GB | official, coding 94 |
 | Qwen3.8-27B Huihui abliterated GSQ-RCO-IQ3_S (built-in MTP) | llama.cpp | 12.1 GB | 32k / 96k / 192k | 52 tok/s at 32k, 51 at 96k, 29 at 192k (no MTP) | not run yet | CPU | ~2 GB | uncensored |
@@ -138,6 +141,35 @@ RAM, and their speed depends on the CPU and memory.
 Some of these models are "uncensored" / "abliterated" fine-tunes with their safety tuning removed (Fusion4, HauhauCS, Bonsai
 Heretic). Their model cards say so.
 
+## V100 tuning notes
+
+**Decode kernel patch** ([`patches/llamacpp-f336359-v100-mmvq.patch`](patches/llamacpp-f336359-v100-mmvq.patch), built into
+the `llamacpp` kernel). On a V100 the 3-bit and 2-bit i-quant GEMV kernels were limited by their codebook lookups (30-40% of
+the 900 GB/s), not by memory. The patch, active only on sm_70 and only for dense matrices (MoE experts keep the stock code):
+
+- stages the IQ3_S / IQ3_XXS / IQ2_S / IQ2_XS / IQ2_XXS codebooks in shared memory (also for the fused gate projection);
+- uses 4 rows per block for these types, Q3_K and IQ4_XS;
+- decodes each weight block once for all 2-8 tokens of a speculative-decoding verify step (bit-identical results);
+- runs ffn gate and up as two tuned launches instead of the fused kernel, which needs too many registers on Volta.
+
+| Qwen3.8-27B UD-IQ3_S, one V100-SXM2-16GB | stock llama.cpp | patched |
+|---|---|---|
+| decode, no speculation | 30.6 tok/s | **33.7 tok/s** (+10%) |
+| verify 4 / 8 tokens | 81 / 121 tok/s | 87 / 129 tok/s |
+| IQ3_S GEMV 17408 x 5120 | 107 us (357 GB/s) | 81 us (471 GB/s) |
+
+`test-backend-ops`: 16,562 tests OK, 0 failures (MUL_MAT, MUL_MAT_ID and the other ops). Dense Qwen3.8-27B quants gain about
+8-12%, models whose weights are mostly MoE experts (MiniCPM-V, Nemotron) are unchanged.
+
+**Full 262k context with KV streaming** (`kvstream` kernel, preset `full-262k-stream`). Decode with a really filled
+context, q4_0 K/V, 3,500 MiB arena: 12.3 tok/s at 99k, 8.9 at 185k, 6.4 at 257k, with correct recall at every depth. Plain
+llama.cpp is ~10% faster up to 192k (14.1 / 9.7 tok/s at 99k / 185k) but cannot start the model at 262k. q4_0 K is 2.3x
+faster than q8_0 K at 257k because less KV crosses PCIe 3.0 every token.
+
+**Clocks.** Under load this card runs at ~1,140 MHz (max 1,530) because of its 200 W power limit and ~82 C thermal
+slowdown (`nvidia-smi` throttle reasons 0x4 and 0x20). The 3-bit kernels are compute-bound, so better cooling and a higher
+power limit (if the adapter allows it) speed up every model.
+
 ## Folder layout
 
 ```
@@ -164,7 +196,8 @@ NTFS.
 |---|---|---|
 | `pxa` | [PXA](https://github.com/poisonxa16/pxa) ported to Windows/MSVC (PXQ models) | `136f7ac` + `tools/patches/pxa-windows.patch`, CUDA 12.9, sm_70 |
 | `fastmtp` | llama.cpp + [HauhauCS FastMTP](https://huggingface.co/HauhauCS/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-MTP-GGUF) patch | `4df29be` + patch, CUDA 12.9, sm_70 |
-| `llamacpp` | upstream [llama.cpp](https://github.com/ggml-org/llama.cpp) (Nemotron-H, MiniCPM-V 4.7, draft-mtp) | `f336359`, CUDA 12.9, sm_70 |
+| `llamacpp` | upstream [llama.cpp](https://github.com/ggml-org/llama.cpp) (Nemotron-H, MiniCPM-V 4.7, draft-mtp, DFlash2) with the **V100 decode patch** (see below) | `f336359` + [`patches/llamacpp-f336359-v100-mmvq.patch`](patches/llamacpp-f336359-v100-mmvq.patch), CUDA 12.9, sm_70 |
+| `kvstream` | [llama.cpp adaptive KV streaming](https://github.com/RaymondHuang210129/llama.cpp-adaptive-kv-streaming): KV cache in system RAM, streamed through a VRAM arena, so Qwen3.8-27B runs the **full 262k context** on 16 GB | `db8fd5d`, CUDA 12.9, sm_70, FA pairs f16/q8_0-q4_0/q4_0-q4_0/q8_0-q8_0 |
 | `prism` | [Prism ML llama.cpp](https://github.com/PrismML-Eng/llama.cpp) (ternary PQ2_0/PTQ1_0 kernels) | official release `prism-b10777`, CUDA 12.4 |
 | `strata` | [Strata](https://github.com/niko1221/strata) 0.1.44.1 + its Python server | experimental CUDA 12 engine for Volta (`STRATA_EXPERIMENTAL_SM60`), sm_70 |
 

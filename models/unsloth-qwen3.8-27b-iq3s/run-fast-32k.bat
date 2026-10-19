@@ -1,6 +1,6 @@
 @echo off
-rem Qwen3.8-27B Unsloth UD-IQ3_S (MTP) - FAST: 32k context, MTP 4 (53 tok/s) (kernel: llamacpp)
-rem 53.4 tok/s (code 63.7 / chat 43.2), draft accepted 65%, 15.3 GB VRAM; image ok
+rem Qwen3.8-27B Unsloth UD-IQ3_S (MTP) - FAST: 32k context, MTP 4 (55 tok/s) (kernel: llamacpp)
+rem 54.8 tok/s mean of code+chat (code 65 / chat 44) with the V100 kernel; 15.3 GB VRAM; image ok
 rem Open http://127.0.0.1:%PORT% (default 8899). Extra arguments are passed to llama-server.
 if not defined PORT set "PORT=8899"
 if not defined HOST set "HOST=127.0.0.1"

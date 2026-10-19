@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -62,6 +63,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -107,6 +109,16 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
     val ctx = LocalContext.current
     val listState = rememberLazyListState()
     var attachMenu by remember { mutableStateOf(false) }
+    var thinkMenu by remember { mutableStateOf(false) }
+    if (thinkMenu) AlertDialog(onDismissRequest = { thinkMenu = false },
+        title = { Text("Thinking effort") },
+        text = { Column { THINKING_MODES.forEach { (id, label, tip) ->
+            Row(Modifier.fillMaxWidth().clickable { vm.updateThinking(id); thinkMenu = false }.padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                RadioButton(selected = vm.thinking == id, onClick = { vm.updateThinking(id); thinkMenu = false })
+                Column { Text(label); Text(tip, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            } } } },
+        confirmButton = { TextButton(onClick = { thinkMenu = false }) { Text("Close") } })
     var confirmAuto by remember { mutableStateOf(false) }
     var modelMenu by remember { mutableStateOf(false) }
     var cameraUri by rememberSaveable { mutableStateOf<String?>(null) }
@@ -244,20 +256,25 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             }
 
             // ---- active modes (tap to turn off) - kept out of the input row so the text field stays wide
-            if (vm.webSearch || vm.autoApprove || vm.emailAccess || vm.organizerAccess) {
-                Row(Modifier.padding(start = 12.dp, top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (vm.webSearch || vm.autoApprove || vm.emailAccess || vm.organizerAccess || vm.thinking != "auto") {
+                // one line that scrolls sideways: several chips must never squeeze each other into tall columns
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(start = 12.dp, end = 12.dp, top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (vm.thinking != "auto") InputChip(selected = vm.thinking != "off", onClick = { thinkMenu = true },
+                        label = { Text("Thinking: " + (THINKING_MODES.firstOrNull { it.first == vm.thinking }?.second ?: vm.thinking), maxLines = 1, softWrap = false) },
+                        leadingIcon = { Icon(Icons.Default.Psychology, null, Modifier.size(16.dp)) })
                     if (vm.emailAccess) InputChip(selected = true, onClick = { vm.toggleEmailAccess() },
-                        label = { Text("Email") }, leadingIcon = { Icon(Icons.Default.Email, null, Modifier.size(16.dp)) },
+                        label = { Text("Email", maxLines = 1, softWrap = false) }, leadingIcon = { Icon(Icons.Default.Email, null, Modifier.size(16.dp)) },
                         trailingIcon = { Icon(Icons.Default.Close, "Turn off", Modifier.size(14.dp)) })
                     if (vm.organizerAccess) InputChip(selected = true, onClick = { vm.toggleOrganizerAccess() },
-                        label = { Text("Tasks") }, leadingIcon = { Icon(Icons.Default.EventNote, null, Modifier.size(16.dp)) },
+                        label = { Text("Tasks", maxLines = 1, softWrap = false) }, leadingIcon = { Icon(Icons.Default.EventNote, null, Modifier.size(16.dp)) },
                         trailingIcon = { Icon(Icons.Default.Close, "Turn off", Modifier.size(14.dp)) })
                     if (vm.webSearch) InputChip(selected = true, onClick = { vm.toggleWebSearch() },
-                        label = { Text("Web search") },
+                        label = { Text("Web search", maxLines = 1, softWrap = false) },
                         leadingIcon = { Icon(Icons.Default.Public, null, Modifier.size(16.dp)) },
                         trailingIcon = { Icon(Icons.Default.Close, "Turn off", Modifier.size(14.dp)) })
                     if (vm.autoApprove) InputChip(selected = true, onClick = { vm.updateAutoApprove(false) },
-                        label = { Text("Auto-approve", color = MaterialTheme.colorScheme.error) },
+                        label = { Text("Auto-approve", color = MaterialTheme.colorScheme.error, maxLines = 1, softWrap = false) },
                         leadingIcon = { Icon(Icons.Default.Bolt, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error) },
                         trailingIcon = { Icon(Icons.Default.Close, "Turn off", Modifier.size(14.dp)) })
                 }
@@ -286,6 +303,9 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                             enabled = !vm.streaming && vm.currentSessionId != null,
                             onClick = { attachMenu = false; vm.compressNow() })
                         HorizontalDivider()
+                        DropdownMenuItem(text = { Text("Thinking: " + (THINKING_MODES.firstOrNull { it.first == vm.thinking }?.second ?: vm.thinking)) },
+                            leadingIcon = { Icon(Icons.Default.Psychology, null) },
+                            onClick = { attachMenu = false; thinkMenu = true })
                         DropdownMenuItem(text = { Text("Web search") }, leadingIcon = { Icon(Icons.Default.Public, null) },
                             trailingIcon = { Switch(checked = vm.webSearch, onCheckedChange = null) },
                             onClick = { vm.toggleWebSearch() })

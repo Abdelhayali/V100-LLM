@@ -46,6 +46,13 @@ sealed interface ChatItem {
     data class Notice(override val key: String, val text: String, val error: Boolean = false) : ChatItem
 }
 
+/** Thinking effort: id, label, what it does (the server turns it into a llama.cpp thinking budget). */
+val THINKING_MODES = listOf(
+    Triple("auto", "Auto", "model default"), Triple("off", "Off", "no thinking, fastest"),
+    Triple("low", "Low", "thinks up to ~1k tokens"), Triple("medium", "Medium", "up to ~4k tokens"),
+    Triple("high", "High", "up to ~16k tokens"), Triple("max", "Max", "as long as it needs, slow"),
+)
+
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     val prefs = Prefs(app)
     var api: Api? = if (prefs.isPaired) Api(prefs.serverUrl, prefs.token) else null
@@ -74,6 +81,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var editingMessageId by mutableStateOf<Long?>(null)
     var themeMode by mutableStateOf(prefs.themeMode)   // system | light | dark
     var webSearch by mutableStateOf(prefs.webSearch)   // give the model internet search
+    var thinking by mutableStateOf(prefs.thinking)     // thinking effort: auto/off/low/medium/high/max
     var emailAccess by mutableStateOf(prefs.emailAccess)          // Gmail tools in chats (off by default)
     var organizerAccess by mutableStateOf(prefs.organizerAccess)  // tasks / notes / calendar tools (off by default)
     // one request may get access it needs (an "Ask the AI" button the user tapped), without changing the switches
@@ -330,7 +338,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val org = organizerAccess || onceOrganizer
                 onceEmail = false; onceOrganizer = false
                 consume(a.chat(sid, text, atts.map { it.id }, currentModel.ifBlank { null }, webSearch, autoApprove,
-                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org))
+                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = thinking))
             } catch (e: com.localai.bridge.data.ApiException) {
                 if (e.code == 409) {
                     // the PC is still finishing the previous reply (e.g. the phone was off): show it instead of failing
@@ -652,6 +660,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val last = items.lastOrNull { it is ChatItem.User } as? ChatItem.User ?: return
         startEdit(last)
         if (editingMessageId != null) send()
+    }
+
+    fun updateThinking(mode: String) {
+        thinking = mode
+        prefs.thinking = mode
+        toast = "Thinking: " + (THINKING_MODES.firstOrNull { it.first == mode }?.let { "${it.second} (${it.third})" } ?: mode)
     }
 
     fun toggleWebSearch() {

@@ -1,6 +1,6 @@
 @echo off
-rem Qwen3.8-27B Unsloth UD-IQ3_S (MTP) - 192k context, no MTP, q4 KV (28 tok/s) (kernel: llamacpp)
-rem 27.9 tok/s, 15.5 GB VRAM; image ok (262k does not fit)
+rem Qwen3.8-27B Unsloth UD-IQ3_S (MTP) - 192k context, no MTP, q4 KV (31 tok/s; 14 at a filled 99k, 10 at 185k) (kernel: llamacpp)
+rem ~31 tok/s on short prompts with the V100 kernel; decode at a filled context: 14.1 tok/s at 99k, 9.7 at 185k; image ok
 rem Open http://127.0.0.1:%PORT% (default 8899). Extra arguments are passed to llama-server.
 if not defined PORT set "PORT=8899"
 if not defined HOST set "HOST=127.0.0.1"

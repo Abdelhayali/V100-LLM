@@ -61,6 +61,16 @@
    "desc": "EXL3 models via TabbyAPI. Built locally for sm_70 with PyTorch 2.14.1+cu126; two Volta graph-capture fixes applied.",
    "exe": "tabbyAPI\\main.py",
    "download": []
+  },
+  "kvstream": {
+   "name": "llama.cpp adaptive KV streaming (db8fd5d, sm_70)",
+   "desc": "RaymondHuang210129/llama.cpp-adaptive-kv-streaming: KV cache in system RAM, streamed through a VRAM arena, so Qwen3.8-27B runs the full 262k context on a 16 GB card. Qwen3.8 dense only.",
+   "exe": "llama-server.exe",
+   "download": [
+    {
+     "url": "https://github.com/Abdelhayali/V100-LLM/releases/download/kernels-v1/kernel-kvstream.zip"
+    }
+   ]
   }
  },
  "models": [
@@ -2783,6 +2793,10 @@
     [
      "unsloth/Qwen3.8-27B-GGUF",
      "mmproj-F16.gguf"
+    ],
+    [
+     "incoai/Qwen3.8-27B-DFlash2-GGUF",
+     "Qwen3.8-27B-DFlash2-Q4_K_M.gguf"
     ]
    ],
    "model": "Qwen3.8-27B-UD-IQ3_S.gguf",
@@ -2790,12 +2804,12 @@
    "presets": [
     {
      "id": "fast-32k",
-     "name": "FAST: 32k context, MTP 4 (53 tok/s)",
+     "name": "FAST: 32k context, MTP 4 (55 tok/s)",
      "kernel": "llamacpp",
      "kernels": [
       "llamacpp"
      ],
-     "bench": "53.4 tok/s (code 63.7 / chat 43.2), draft accepted 65%, 15.3 GB VRAM; image ok",
+     "bench": "54.8 tok/s mean of code+chat (code 65 / chat 44) with the V100 kernel; 15.3 GB VRAM; image ok",
      "params": [
       [
        "--no-mmproj-offload",
@@ -2860,6 +2874,122 @@
       [
        "-ub",
        "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "long-96k-dflash",
+     "name": "96k context, DFlash2 drafter (58 tok/s, code ~73)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "~58 tok/s mean of code+chat (code ~73 / chat ~42), draft accepted 59%, with the V100 kernel; 15.5 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-dflash",
+       "DFlash2 block-diffusion drafter"
+      ],
+      [
+       "--spec-draft-model",
+       "{model:Qwen3.8-27B-DFlash2-Q4_K_M.gguf}",
+       ""
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "5",
+       "tokens drafted per step (5 is fastest here)"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "98304",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
        ""
       ],
       [
@@ -3022,12 +3152,12 @@
     },
     {
      "id": "max-192k",
-     "name": "192k context, no MTP, q4 KV (28 tok/s)",
+     "name": "192k context, no MTP, q4 KV (31 tok/s; 14 at a filled 99k, 10 at 185k)",
      "kernel": "llamacpp",
      "kernels": [
       "llamacpp"
      ],
-     "bench": "27.9 tok/s, 15.5 GB VRAM; image ok (262k does not fit)",
+     "bench": "~31 tok/s on short prompts with the V100 kernel; decode at a filled context: 14.1 tok/s at 99k, 9.7 at 185k; image ok",
      "params": [
       [
        "--no-mmproj-offload",
@@ -3083,6 +3213,102 @@
        "--cache-ram",
        "2048",
        "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "full-262k-stream",
+     "name": "FULL 262k context, KV streaming (6-12 tok/s)",
+     "kernel": "kvstream",
+     "kernels": [
+      "kvstream"
+     ],
+     "bench": "decode at a filled context: 12.3 tok/s at 99k, 8.9 at 185k, 6.4 at 257k (q4_0 KV, 3500 MiB arena, PCIe 3.0); text only; use max-192k or long-96k-dflash when 192k is enough (faster)",
+     "params": [
+      [
+       "--no-mmproj",
+       "",
+       "text only (vision not tested with streaming)"
+      ],
+      [
+       "--spec-type",
+       "none",
+       ""
+      ],
+      [
+       "-ngl",
+       "999",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       "full context"
+      ],
+      [
+       "--shared-device-memory-mib",
+       "3500",
+       "VRAM arena the KV cache streams through (5000 runs out of memory)"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "q4_0 K: 2.3x faster than q8_0 at 257k (less PCIe traffic)"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-b",
+       "256",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
       ],
       [
        "--jinja",
@@ -4043,6 +4269,275 @@
       [
        "-ub",
        "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "unsloth-qwen3.8-27b-q3kxl",
+   "name": "Qwen3.8-27B Unsloth UD-Q3_K_XL (DFlash2)",
+   "desc": "Official Qwen3.8-27B in Unsloth's dynamic UD-Q3_K_XL K-quant (13.2 GB), with the DFlash2 drafter (1.1 GB) or the MTP draft. Vision on the CPU.",
+   "files": [
+    [
+     "unsloth/Qwen3.8-27B-GGUF",
+     "Qwen3.8-27B-UD-Q3_K_XL.gguf"
+    ],
+    [
+     "incoai/Qwen3.8-27B-DFlash2-GGUF",
+     "Qwen3.8-27B-DFlash2-Q4_K_M.gguf"
+    ],
+    [
+     "unsloth/Qwen3.8-27B-GGUF",
+     "MTP/mtp-Qwen3.8-27B-Q4_0.gguf"
+    ],
+    [
+     "unsloth/Qwen3.8-27B-GGUF",
+     "mmproj-F16.gguf"
+    ]
+   ],
+   "model": "Qwen3.8-27B-UD-Q3_K_XL.gguf",
+   "mmproj": "mmproj-F16.gguf",
+   "presets": [
+    {
+     "id": "dflash-32k",
+     "name": "32k context, DFlash2 drafter (55 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "54.5 tok/s (code 69.7 / chat 39.2), draft accepted 58%, 15.4 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-dflash",
+       "DFlash2 block-diffusion drafter"
+      ],
+      [
+       "--spec-draft-model",
+       "{model:Qwen3.8-27B-DFlash2-Q4_K_M.gguf}",
+       ""
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "5",
+       "tokens drafted per step (5 is fastest here)"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "32768",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "mtp-32k",
+     "name": "32k context, MTP 4 (52 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "51.7 tok/s (code 62.9 / chat 40.4), draft accepted 62%, 15.0 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "MTP draft model"
+      ],
+      [
+       "--spec-draft-model",
+       "{model:MTP/mtp-Qwen3.8-27B-Q4_0.gguf}",
+       ""
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "4",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "--spec-draft-type-k",
+       "q4_0",
+       ""
+      ],
+      [
+       "--spec-draft-type-v",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "32768",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
        ""
       ],
       [

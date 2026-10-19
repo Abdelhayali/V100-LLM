@@ -45,6 +45,11 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean("web_search", false)
         set(v) = prefs.edit().putBoolean("web_search", v).apply()
 
+    /** Thinking effort sent with each message: auto, off, low, medium, high or max. */
+    var thinking: String
+        get() = prefs.getString("thinking", "auto") ?: "auto"
+        set(v) = prefs.edit().putString("thinking", v).apply()
+
     var autoApprove: Boolean
         get() = prefs.getBoolean("auto_approve", false)
         set(v) = prefs.edit().putBoolean("auto_approve", v).apply()

@@ -185,3 +185,5 @@ img.full { max-width: 100%; max-height: 80vh; display: block; margin: auto; }
 .pair .big { width: 72px; }
 .pair h1 { margin: 0; }
 @media (max-width: 1100px) { .chatbody { grid-template-columns: 1fr; } .chatside { display: none; } .msgs, .composer-wrap, .question, .live { padding-left: 3%; padding-right: 3%; } }
+
+select.toggle.think { cursor: pointer; padding: 3px 8px; }

@@ -1,0 +1,953 @@
+From 6f7e9e2854388bd76459ea56bbefbeab6ca0f560 Mon Sep 17 00:00:00 2001
+From: Abdelhayali <273542685+Abdelhayali@users.noreply.github.com>
+Date: Sun, 18 Oct 2026 22:34:30 +0300
+Subject: [PATCH 1/2] CUDA MMVQ: Tesla V100 (sm_70) tuning for i-quant decode /
+ speculative verify
+
+- Volta parameter table (MMVQ_PARAMETERS_VOLTA): Turing values plus per-type overrides in mmvq-v100.cuh.
+- IQ3_S/IQ3_XXS/IQ2_S/IQ2_XS/IQ2_XXS: codebook staged in shared memory (global lookups were the bottleneck,
+  ~30-40% of DRAM bandwidth), also for the fused gate projection; 4 rows per block (Q3_K too).
+- IQ3_S/IQ3_XXS 2-8 token verify: decode each weight block once, reuse for every token column (bit-identical).
+- Only for dense matrices (template flag v100_dense); MoE expert matrices keep the stock kernel.
+- test-backend-ops perf cases at Qwen3.8-27B ffn shapes.
+
+Measured on one V100-SXM2-16GB, Qwen3.8-27B UD-IQ3_S: tg 30.6 -> 33.1 t/s (+8%), pp4 +7.5%, pp8 +6.5%;
+IQ3_S GEMV 107 -> 81 us. test-backend-ops MUL_MAT + MUL_MAT_ID: 3376/3376 passed.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ ggml/src/ggml-cuda/mmvq-v100-params.h |  22 +++
+ ggml/src/ggml-cuda/mmvq-v100.cuh      |  43 ++++
+ ggml/src/ggml-cuda/mmvq.cu            | 242 ++++++++++++++++++-----
+ ggml/src/ggml-cuda/vecdotq.cuh        | 269 ++++++++++++++++++++++++++
+ tests/test-backend-ops.cpp            |   8 +
+ 5 files changed, 533 insertions(+), 51 deletions(-)
+ create mode 100644 ggml/src/ggml-cuda/mmvq-v100-params.h
+ create mode 100644 ggml/src/ggml-cuda/mmvq-v100.cuh
+
+diff --git a/ggml/src/ggml-cuda/mmvq-v100-params.h b/ggml/src/ggml-cuda/mmvq-v100-params.h
+new file mode 100644
+index 0000000..d68c827
+--- /dev/null
++++ b/ggml/src/ggml-cuda/mmvq-v100-params.h
+@@ -0,0 +1,22 @@
++#pragma once
++// V100 (sm_70) values, measured with test-backend-ops perf at the Qwen3.8-27B ffn shapes (see mmvq-v100.cuh)
++#define V100_SMEM_GRID   1
++#define V100_RPB_IQ3_N1  4
++#define V100_RPB_IQ3_N4  4
++#define V100_RPB_IQ3_N8  4
++#define V100_NW_IQ3_N1   4
++#define V100_NW_IQ3_N4   4
++#define V100_NW_IQ3_N8   2
++#define V100_SMEM_GRID_IQ2 1
++#define V100_RPB_IQ2_N1  4
++#define V100_RPB_IQ2_N4  4
++#define V100_RPB_IQ2_N8  4
++#define V100_NW_IQ2_N1   4
++#define V100_NW_IQ2_N4   4
++#define V100_NW_IQ2_N8   2
++#define V100_RPB_Q3K_N1  4
++#define V100_RPB_Q3K_N4  4
++#define V100_RPB_Q3K_N8  4
++#define V100_NW_Q3K_N1   4
++#define V100_NW_Q3K_N4   4
++#define V100_NW_Q3K_N8   2
+diff --git a/ggml/src/ggml-cuda/mmvq-v100.cuh b/ggml/src/ggml-cuda/mmvq-v100.cuh
+new file mode 100644
+index 0000000..21b0d81
+--- /dev/null
++++ b/ggml/src/ggml-cuda/mmvq-v100.cuh
+@@ -0,0 +1,43 @@
++#pragma once
++// Tesla V100 (sm_70) tuning for the MMVQ decode / speculative-verify GEMV.
++// The 3-bit/2-bit i-quants are limited by their codebook lookups on Volta (~30-40% of DRAM bandwidth with the stock
++// kernel), so their codebook is staged in shared memory and each block works on several rows, which shares the
++// staging cost and gives wider, coalesced weight reads. Values in mmvq-v100-params.h were measured with
++// test-backend-ops perf at the Qwen3.8-27B ffn shapes.
++
++#include "ggml.h"
++#include "mmvq-v100-params.h"
++
++static constexpr __host__ __device__ bool v100_is_iq3(ggml_type type) {
++    return type == GGML_TYPE_IQ3_S || type == GGML_TYPE_IQ3_XXS;
++}
++static constexpr __host__ __device__ bool v100_is_iq2(ggml_type type) {
++    return type == GGML_TYPE_IQ2_S || type == GGML_TYPE_IQ2_XS || type == GGML_TYPE_IQ2_XXS;
++}
++
++// rows per CUDA block, by type and number of tokens (dst columns); 0 = keep the Turing default
++static constexpr __host__ __device__ int v100_rows_per_block(ggml_type type, int ncols_dst) {
++    return v100_is_iq3(type) ? (ncols_dst == 1 ? V100_RPB_IQ3_N1 : (ncols_dst <= 4 ? V100_RPB_IQ3_N4 : V100_RPB_IQ3_N8))
++         : v100_is_iq2(type) ? (ncols_dst == 1 ? V100_RPB_IQ2_N1 : (ncols_dst <= 4 ? V100_RPB_IQ2_N4 : V100_RPB_IQ2_N8))
++         : type == GGML_TYPE_Q3_K ? (ncols_dst == 1 ? V100_RPB_Q3K_N1 : (ncols_dst <= 4 ? V100_RPB_Q3K_N4 : V100_RPB_Q3K_N8))
++         : 0;
++}
++
++// warps per CUDA block; 0 = keep the Turing default
++static constexpr __host__ __device__ int v100_nwarps(ggml_type type, int ncols_dst) {
++    return v100_is_iq3(type) ? (ncols_dst == 1 ? V100_NW_IQ3_N1 : (ncols_dst <= 4 ? V100_NW_IQ3_N4 : V100_NW_IQ3_N8))
++         : v100_is_iq2(type) ? (ncols_dst == 1 ? V100_NW_IQ2_N1 : (ncols_dst <= 4 ? V100_NW_IQ2_N4 : V100_NW_IQ2_N8))
++         : type == GGML_TYPE_Q3_K ? (ncols_dst == 1 ? V100_NW_Q3K_N1 : (ncols_dst <= 4 ? V100_NW_Q3K_N4 : V100_NW_Q3K_N8))
++         : 0;
++}
++
++// stage the codebook of these types in shared memory
++static constexpr __host__ __device__ bool v100_smem_grid(ggml_type type) {
++    return (V100_SMEM_GRID && v100_is_iq3(type)) || (V100_SMEM_GRID_IQ2 && v100_is_iq2(type));
++}
++
++// codebook entries (uint32 for IQ3, uint64 for IQ2)
++static constexpr __host__ __device__ int v100_grid_n(ggml_type type) {
++    return type == GGML_TYPE_IQ3_S ? 512 : type == GGML_TYPE_IQ3_XXS ? 256 :
++           type == GGML_TYPE_IQ2_S ? 1024 : type == GGML_TYPE_IQ2_XS ? 512 : type == GGML_TYPE_IQ2_XXS ? 256 : 1;
++}
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 8068ba3..97fb415 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -1,4 +1,5 @@
+ #include "mmvq.cuh"
++#include "mmvq-v100.cuh"
+ #include "quantize.cuh"
+ #include "unary.cuh"
+ #include "vecdotq.cuh"
+@@ -100,7 +101,8 @@ enum mmvq_parameter_table_id {
+     MMVQ_PARAMETERS_RDNA2,
+     MMVQ_PARAMETERS_RDNA3_0,
+     MMVQ_PARAMETERS_RDNA4,
+-    MMVQ_PARAMETERS_GB10
++    MMVQ_PARAMETERS_GB10,
++    MMVQ_PARAMETERS_VOLTA   // Tesla V100: Turing values plus mmvq-v100.cuh overrides
+ };
+ 
+ static constexpr __device__ mmvq_parameter_table_id get_device_table_id() {
+@@ -112,6 +114,8 @@ static constexpr __device__ mmvq_parameter_table_id get_device_table_id() {
+     return MMVQ_PARAMETERS_RDNA2;
+ #elif defined(GCN) || defined(CDNA)
+     return MMVQ_PARAMETERS_GCN;
++#elif __CUDA_ARCH__ == GGML_CUDA_CC_VOLTA
++    return MMVQ_PARAMETERS_VOLTA;
+ #elif __CUDA_ARCH__ >= GGML_CUDA_CC_VOLTA && __CUDA_ARCH__ < GGML_CUDA_CC_AMPERE
+     return MMVQ_PARAMETERS_TURING;
+ #elif __CUDA_ARCH__ == GGML_CUDA_CC_DGX_SPARK
+@@ -134,6 +138,9 @@ static __host__ mmvq_parameter_table_id get_device_table_id(int cc) {
+     if (GGML_CUDA_CC_IS_GCN(cc) || GGML_CUDA_CC_IS_CDNA(cc)) {
+         return MMVQ_PARAMETERS_GCN;
+     }
++    if (GGML_CUDA_CC_IS_NVIDIA(cc) && ggml_cuda_highest_compiled_arch(cc) == GGML_CUDA_CC_VOLTA) {
++        return MMVQ_PARAMETERS_VOLTA;
++    }
+     if (GGML_CUDA_CC_IS_NVIDIA(cc) && ggml_cuda_highest_compiled_arch(cc) >= GGML_CUDA_CC_VOLTA && ggml_cuda_highest_compiled_arch(cc) < GGML_CUDA_CC_AMPERE) {
+         return MMVQ_PARAMETERS_TURING;
+     }
+@@ -449,7 +456,11 @@ static constexpr __device__ int get_mmvq_mmid_max_batch_for_device() {
+ #endif
+ }
+ 
+-static constexpr __host__ __device__ int calc_nwarps(ggml_type type, int ncols_dst, mmvq_parameter_table_id table_id, bool small_k = false, bool halve_iters = false) {
++static constexpr __host__ __device__ int calc_nwarps(ggml_type type, int ncols_dst, mmvq_parameter_table_id table_id, bool small_k = false, bool halve_iters = false, bool v100_dense = false) {
++    if (table_id == MMVQ_PARAMETERS_VOLTA) {
++        return v100_dense && v100_nwarps(type, ncols_dst) && !small_k ? v100_nwarps(type, ncols_dst)
++                                                       : calc_nwarps(type, ncols_dst, MMVQ_PARAMETERS_TURING, small_k, halve_iters);
++    }
+     if (table_id == MMVQ_PARAMETERS_GENERIC) {
+         switch (ncols_dst) {
+             case 1:
+@@ -596,8 +607,37 @@ static constexpr __host__ __device__ int calc_rows_per_block(int ncols_dst, int
+     return 1;
+ }
+ 
+-template <ggml_type type, int ncols_dst, bool has_fusion, bool small_k = false, bool halve_iters = false>
+-__launch_bounds__(calc_nwarps(type, ncols_dst, get_device_table_id(), small_k, halve_iters)*ggml_cuda_get_physical_warp_size(), 1)
++static constexpr __host__ __device__ int calc_rows_per_block_t(ggml_type type, int ncols_dst, int table_id, bool small_k = false, int nwarps = 1, bool v100_dense = false) {
++    if (table_id == MMVQ_PARAMETERS_VOLTA) {
++        return v100_dense && v100_rows_per_block(type, ncols_dst) && !small_k ? v100_rows_per_block(type, ncols_dst)
++                                                               : calc_rows_per_block(ncols_dst, MMVQ_PARAMETERS_TURING, small_k, nwarps);
++    }
++    return calc_rows_per_block(ncols_dst, table_id, small_k, nwarps);
++}
++
++// V100: vec_dot that reads the i-quant codebook from shared memory when it is staged there (smem_grid)
++template <ggml_type type, bool smem_grid, typename grid_t>
++static __device__ __forceinline__ float v100_vec_dot(const void * __restrict__ vx, const block_q8_1 * __restrict__ y,
++                                                     const int kbx, const int kqs, const grid_t * __restrict__ g) {
++    if constexpr (smem_grid && type == GGML_TYPE_IQ3_S) {
++        return vec_dot_iq3_s_q8_1_g(vx, y, kbx, kqs, reinterpret_cast<const uint32_t *>(g));
++    } else if constexpr (smem_grid && type == GGML_TYPE_IQ3_XXS) {
++        return vec_dot_iq3_xxs_q8_1_g(vx, y, kbx, kqs, reinterpret_cast<const uint32_t *>(g));
++    } else if constexpr (smem_grid && type == GGML_TYPE_IQ2_S) {
++        return vec_dot_iq2_s_q8_1_g(vx, y, kbx, kqs, reinterpret_cast<const uint64_t *>(g));
++    } else if constexpr (smem_grid && type == GGML_TYPE_IQ2_XS) {
++        return vec_dot_iq2_xs_q8_1_g(vx, y, kbx, kqs, reinterpret_cast<const uint64_t *>(g));
++    } else if constexpr (smem_grid && type == GGML_TYPE_IQ2_XXS) {
++        return vec_dot_iq2_xxs_q8_1_g(vx, y, kbx, kqs, reinterpret_cast<const uint64_t *>(g));
++    } else {
++        constexpr vec_dot_q_cuda_t vec_dot = get_vec_dot_q_cuda(type);
++        return vec_dot(vx, y, kbx, kqs);
++    }
++}
++
++// v100_dense: use the mmvq-v100.cuh tuning (dense matrices on a V100); false for MoE experts and other GPUs
++template <ggml_type type, int ncols_dst, bool has_fusion, bool small_k = false, bool halve_iters = false, bool v100_dense = false>
++__launch_bounds__(calc_nwarps(type, ncols_dst, get_device_table_id(), small_k, halve_iters, v100_dense)*ggml_cuda_get_physical_warp_size(), 1)
+ static __global__ void mul_mat_vec_q(
+         const void * vx_ptr, const void * vy_ptr, const int32_t * ids_ptr, const ggml_cuda_mm_fusion_args_device fusion, float * dst_ptr,
+         const uint32_t ncols_x, const uint3 nchannels_y, const uint32_t stride_row_x, const uint32_t stride_col_y,
+@@ -614,8 +654,8 @@ static __global__ void mul_mat_vec_q(
+     constexpr int qi  = ggml_cuda_type_traits<type>::qi;
+     constexpr int vdr = get_vdr_mmvq(type);
+     constexpr mmvq_parameter_table_id table_id = get_device_table_id();
+-    constexpr int nwarps = calc_nwarps(type, ncols_dst, table_id, small_k, halve_iters);
+-    constexpr int rows_per_cuda_block = calc_rows_per_block(ncols_dst, table_id, small_k, nwarps);
++    constexpr int nwarps = calc_nwarps(type, ncols_dst, table_id, small_k, halve_iters, v100_dense);
++    constexpr int rows_per_cuda_block = calc_rows_per_block_t(type, ncols_dst, table_id, small_k, nwarps, v100_dense);
+     constexpr int warp_size = ggml_cuda_get_physical_warp_size();
+ 
+     constexpr vec_dot_q_cuda_t vec_dot_q_cuda = get_vec_dot_q_cuda(type);
+@@ -711,6 +751,22 @@ static __global__ void mul_mat_vec_q(
+         }
+     }
+ 
++    // V100: stage the i-quant codebook in shared memory (its global-memory lookups are the bottleneck on Volta)
++    constexpr bool smem_grid = v100_dense && !small_k && table_id == MMVQ_PARAMETERS_VOLTA && v100_smem_grid(type);
++    constexpr int  grid_n    = v100_grid_n(type);
++    using grid_t = std::conditional_t<v100_is_iq2(type), uint64_t, uint32_t>;
++    __shared__ grid_t s_grid[smem_grid ? grid_n : 1];
++    if constexpr (smem_grid) {
++        for (int i = tid; i < grid_n; i += nwarps*warp_size) {
++            if constexpr (type == GGML_TYPE_IQ3_S)   { s_grid[i] = iq3s_grid[i]; }
++            if constexpr (type == GGML_TYPE_IQ3_XXS) { s_grid[i] = iq3xxs_grid[i]; }
++            if constexpr (type == GGML_TYPE_IQ2_S)   { s_grid[i] = iq2s_grid[i]; }
++            if constexpr (type == GGML_TYPE_IQ2_XS)  { s_grid[i] = iq2xs_grid[i]; }
++            if constexpr (type == GGML_TYPE_IQ2_XXS) { s_grid[i] = iq2xxs_grid[i]; }
++        }
++        __syncthreads();
++    }
++
+     // partial sum for each thread
+     float tmp[ncols_dst][rows_per_cuda_block] = {{0.0f}};
+     float tmp_gate[ncols_dst][rows_per_cuda_block] = {{0.0f}};
+@@ -744,16 +800,30 @@ static __global__ void mul_mat_vec_q(
+         }
+ #endif
+ 
++        // V100 multi-token (speculative verify): decode each IQ3 weight block once, reuse it for every token column
++        if constexpr (smem_grid && ncols_dst > 1 && !has_fusion && (type == GGML_TYPE_IQ3_S || type == GGML_TYPE_IQ3_XXS)) {
++#pragma unroll
++            for (int i = 0; i < rows_per_cuda_block; ++i) {
++                const iq3_dec w = type == GGML_TYPE_IQ3_S
++                    ? decode_iq3_s  (vx, kbx_offset + i*stride_row_x + kbx, kqs, s_grid)
++                    : decode_iq3_xxs(vx, kbx_offset + i*stride_row_x + kbx, kqs, s_grid);
++#pragma unroll
++                for (int j = 0; j < ncols_dst; ++j) {
++                    tmp[j][i] += type == GGML_TYPE_IQ3_S ? dot_iq3_s_dec  (w, &y[j*stride_col_y + kby], kqs)
++                                                         : dot_iq3_xxs_dec(w, &y[j*stride_col_y + kby], kqs);
++                }
++            }
++            continue;
++        }
++
+ #pragma unroll
+         for (int j = 0; j < ncols_dst; ++j) {
+ #pragma unroll
+             for (int i = 0; i < rows_per_cuda_block; ++i) {
+-                tmp[j][i] += vec_dot_q_cuda(
+-                    vx, &y[j*stride_col_y + kby], kbx_offset + i*stride_row_x + kbx, kqs);
++                tmp[j][i] += v100_vec_dot<type, smem_grid>(vx, &y[j*stride_col_y + kby], kbx_offset + i*stride_row_x + kbx, kqs, s_grid);
+                 if constexpr (has_fusion) {
+                     if (use_gate) {
+-                        tmp_gate[j][i] += vec_dot_q_cuda(
+-                            vgate, &y[j*stride_col_y + kby], kbx_offset + i*stride_row_x + kbx, kqs);
++                        tmp_gate[j][i] += v100_vec_dot<type, smem_grid>(vgate, &y[j*stride_col_y + kby], kbx_offset + i*stride_row_x + kbx, kqs, s_grid);
+                     }
+                 }
+             }
+@@ -1011,16 +1081,17 @@ static __global__ void mul_mat_vec_q_moe(
+ template<ggml_type type>
+ static std::pair<dim3, dim3> calc_launch_params(
+         const int ncols_dst, const int nrows_x, const int nchannels_dst, const int nsamples_or_ntokens,
+-        const int warp_size, const mmvq_parameter_table_id table_id, const bool small_k = false, const bool halve_iters = false) {
+-    const int nwarps = calc_nwarps(type, ncols_dst, table_id, small_k, halve_iters);
+-    const int rpb = calc_rows_per_block(ncols_dst, table_id, small_k, nwarps);
++        const int warp_size, const mmvq_parameter_table_id table_id, const bool small_k = false, const bool halve_iters = false,
++        const bool v100_dense = false) {
++    const int nwarps = calc_nwarps(type, ncols_dst, table_id, small_k, halve_iters, v100_dense);
++    const int rpb = calc_rows_per_block_t(type, ncols_dst, table_id, small_k, nwarps, v100_dense);
+     const int64_t nblocks = (nrows_x + rpb - 1) / rpb;
+     const dim3 block_nums(nblocks, nchannels_dst, nsamples_or_ntokens);
+     const dim3 block_dims(warp_size, nwarps, 1);
+     return {block_nums, block_dims};
+ }
+ 
+-template<ggml_type type, int c_ncols_dst, bool small_k = false, bool halve_iters = false>
++template<ggml_type type, int c_ncols_dst, bool small_k = false, bool halve_iters = false, bool v100_dense = false>
+ static void mul_mat_vec_q_switch_fusion(
+         const void * vx, const void * vy, const int32_t * ids, const ggml_cuda_mm_fusion_args_device fusion, float * dst,
+         const uint32_t ncols_x, const uint3 nchannels_y, const uint32_t stride_row_x, const uint32_t stride_col_y,
+@@ -1035,7 +1106,7 @@ static void mul_mat_vec_q_switch_fusion(
+     if constexpr (c_ncols_dst == 1) {
+         if (has_fusion) {
+             const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(block_nums, block_dims, nbytes_shared, stream);
+-            ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, true, small_k, halve_iters>, launch_params,
++            ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, true, small_k, halve_iters, v100_dense>, launch_params,
+                  vx, vy, ids, fusion, dst, ncols_x, nchannels_y, stride_row_x, stride_col_y, stride_col_dst,
+                  channel_ratio, stride_channel_x, stride_channel_y, stride_channel_dst,
+                  sample_ratio, stride_sample_x, stride_sample_y, stride_sample_dst, ids_stride);
+@@ -1046,7 +1117,7 @@ static void mul_mat_vec_q_switch_fusion(
+     GGML_ASSERT(!has_fusion && "fusion only supported for ncols_dst=1");
+ 
+     const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(block_nums, block_dims, nbytes_shared, stream);
+-    ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, false, small_k, halve_iters>, launch_params,
++    ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, false, small_k, halve_iters, v100_dense>, launch_params,
+         vx, vy, ids, fusion, dst, ncols_x, nchannels_y, stride_row_x, stride_col_y, stride_col_dst,
+         channel_ratio, stride_channel_x, stride_channel_y, stride_channel_dst,
+         sample_ratio, stride_sample_x, stride_sample_y, stride_sample_dst, ids_stride);
+@@ -1175,6 +1246,9 @@ static void mul_mat_vec_q_switch_ncols_dst(
+         return idle * 8 <= iters_wide * 2;
+     };
+ 
++    // V100: tuned kernel for dense matrices only (MoE expert matrices are small; they keep the stock kernel)
++    const bool v100_dense = table_id == MMVQ_PARAMETERS_VOLTA && !has_ids && v100_rows_per_block(type, 1) != 0;
++
+     if (has_ids && ncols_dst > 1) {
+         // Multi-token MUL_MAT_ID path - dedicated MoE kernel
+         mul_mat_vec_q_moe_launch<type>(
+@@ -1200,6 +1274,16 @@ static void mul_mat_vec_q_switch_ncols_dst(
+ 
+                 constexpr bool c_halve_iters = decltype(halve_iters_tag)::value && c_promoted;
+ 
++                if (v100_dense && !c_small_k) {
++                    const std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst + (fusion.shared_up != nullptr),
++                                                                                  nsamples_dst, warp_size, table_id, c_small_k, c_halve_iters, true);
++                    mul_mat_vec_q_switch_fusion<type, c_ncols_dst, c_small_k, c_halve_iters, true>(
++                        vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                        channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst, sample_ratio_fd,
++                        stride_sample_x, stride_sample_y, stride_sample_dst, dims.first, dims.second, 0, ids_stride,
++                        stream);
++                    return;
++                }
+                 const std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst + (fusion.shared_up != nullptr),
+                                                                               nsamples_dst, warp_size, table_id, c_small_k, c_halve_iters);
+                 mul_mat_vec_q_switch_fusion<type, c_ncols_dst, c_small_k, c_halve_iters>(
+@@ -1219,59 +1303,115 @@ static void mul_mat_vec_q_switch_ncols_dst(
+         } break;
+         case 2: {
+             constexpr int c_ncols_dst = 2;
+-            std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
+-            mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
+-                 channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
+-                 sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
+-                 dims.first, dims.second, 0, ids_stride, stream);
++            if (v100_dense) {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id, false, false, true);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst, false, false, true>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            } else {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            }
+         } break;
+         case 3: {
+             constexpr int c_ncols_dst = 3;
+-            std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
+-            mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
+-                 channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
+-                 sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
+-                 dims.first, dims.second, 0, ids_stride, stream);
++            if (v100_dense) {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id, false, false, true);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst, false, false, true>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            } else {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            }
+         } break;
+         case 4: {
+             constexpr int c_ncols_dst = 4;
+-            std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
+-            mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
+-                 channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
+-                 sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
+-                 dims.first, dims.second, 0, ids_stride, stream);
++            if (v100_dense) {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id, false, false, true);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst, false, false, true>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            } else {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            }
+         } break;
+         case 5: {
+             constexpr int c_ncols_dst = 5;
+-            std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
+-            mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
+-                 channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
+-                 sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
+-                 dims.first, dims.second, 0, ids_stride, stream);
++            if (v100_dense) {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id, false, false, true);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst, false, false, true>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            } else {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            }
+         } break;
+         case 6: {
+             constexpr int c_ncols_dst = 6;
+-            std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
+-            mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
+-                 channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
+-                 sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
+-                 dims.first, dims.second, 0, ids_stride, stream);
++            if (v100_dense) {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id, false, false, true);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst, false, false, true>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            } else {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            }
+         } break;
+         case 7: {
+             constexpr int c_ncols_dst = 7;
+-            std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
+-            mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
+-                 channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
+-                 sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
+-                 dims.first, dims.second, 0, ids_stride, stream);
++            if (v100_dense) {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id, false, false, true);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst, false, false, true>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            } else {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            }
+         } break;
+         case 8: {
+             constexpr int c_ncols_dst = 8;
+-            std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
+-            mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
+-                 channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
+-                 sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
+-                 dims.first, dims.second, 0, ids_stride, stream);
++            if (v100_dense) {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id, false, false, true);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst, false, false, true>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            } else {
++                std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            }
+         } break;
+         default:
+             GGML_ABORT("fatal error");
+diff --git a/ggml/src/ggml-cuda/vecdotq.cuh b/ggml/src/ggml-cuda/vecdotq.cuh
+index f65fe53..4c2ae85 100644
+--- a/ggml/src/ggml-cuda/vecdotq.cuh
++++ b/ggml/src/ggml-cuda/vecdotq.cuh
+@@ -1077,6 +1077,39 @@ static __device__ __forceinline__ float vec_dot_iq2_xxs_q8_1(
+     return d * sumi;
+ }
+ 
++// same, with the codebook read from `grid` (e.g. staged in shared memory)
++static __device__ __forceinline__ float vec_dot_iq2_xxs_q8_1_g(
++    const void * __restrict__ vbq, const block_q8_1 * __restrict__ bq8_1, const int & kbx, const int & iqs, const uint64_t * __restrict__ grid) {
++
++    const block_iq2_xxs * bq2 = (const block_iq2_xxs *) vbq + kbx;
++
++    const int q2 = get_int_b2(bq2->qs, iqs);
++    const uint8_t * aux8 = (const uint8_t *) &q2;
++    const uint32_t aux32 = get_int_b2(bq2->qs, iqs + 1);
++
++    int sumi = 0;
++#pragma unroll
++    for (int k0 = 0; k0 < 8; k0 += 2) {
++        const uint2 grid_pos = ((const uint2*)grid)[aux8[k0/2]];
++        const uint32_t signs = unpack_ksigns(aux32 >> (7 * k0 / 2));
++
++        const int signs0 = __vcmpne4(signs & 0x08040201, 0);
++        const int grid0 = __vsub4(grid_pos.x ^ signs0, signs0);
++        const int u0 = get_int_b4(bq8_1[iqs/2].qs, k0 + 0);
++        sumi = ggml_cuda_dp4a(grid0, u0, sumi);
++
++        const int signs1 = __vcmpne4(signs & 0x80402010, 0);
++        const int grid1 = __vsub4(grid_pos.y ^ signs1, signs1);
++        const int u1 = get_int_b4(bq8_1[iqs/2].qs, k0 + 1);
++        sumi = ggml_cuda_dp4a(grid1, u1, sumi);
++    }
++
++    const int ls = aux32 >> 27 | 1; // (scale * 2 + 1)
++    sumi = sumi * ls / 8;           // (sumi * scale + sumi / 2) / 4
++    const float d = __half2float(bq2->d) * __low2float(bq8_1[iqs/2].ds);
++    return d * sumi;
++}
++
+ #define VDR_IQ2_XS_Q8_1_MMVQ 2
+ #define VDR_IQ2_XS_Q8_1_MMQ  2
+ 
+@@ -1118,6 +1151,45 @@ static __device__ __forceinline__ float vec_dot_iq2_xs_q8_1(
+     return d * sumi;
+ }
+ 
++// same, with the codebook read from `grid` (e.g. staged in shared memory)
++static __device__ __forceinline__ float vec_dot_iq2_xs_q8_1_g(
++    const void * __restrict__ vbq, const block_q8_1 * __restrict__ bq8_1, const int & kbx, const int & iqs, const uint64_t * __restrict__ grid) {
++
++    const block_iq2_xs * bq2 = (const block_iq2_xs *) vbq + kbx;
++
++    const int2 q2_packed = make_int2(get_int_b2(bq2->qs, iqs + 0), get_int_b2(bq2->qs, iqs + 1));
++    const uint16_t * q2 = (const uint16_t *) &q2_packed;
++    const int ls0 = bq2->scales[iqs/2] & 0x0F;
++    const int ls1 = bq2->scales[iqs/2] >> 4;
++
++    int sumi0 = 0;
++    int sumi1 = 0;
++#pragma unroll
++    for (int l0 = 0; l0 < 8; l0 += 2) {
++        const uint2 grid_pos = ((const uint2*)grid)[q2[l0/2] & 0x1FF];
++        const uint32_t signs = unpack_ksigns(q2[l0/2] >> 9);
++
++        const int signs0 = __vcmpne4(signs & 0x08040201, 0);
++        const int grid_l = __vsub4(grid_pos.x ^ signs0, signs0);
++        const int u0 = get_int_b4(bq8_1[iqs/2].qs, l0 + 0);
++
++        const int signs1 = __vcmpne4(signs & 0x80402010, 0);
++        const int grid_h = __vsub4(grid_pos.y ^ signs1, signs1);
++        const int u1 = get_int_b4(bq8_1[iqs/2].qs, l0 + 1);
++
++        if (l0 < 4) {
++            sumi0 = ggml_cuda_dp4a(grid_l, u0, sumi0);
++            sumi0 = ggml_cuda_dp4a(grid_h, u1, sumi0);
++        } else {
++            sumi1 = ggml_cuda_dp4a(grid_l, u0, sumi1);
++            sumi1 = ggml_cuda_dp4a(grid_h, u1, sumi1);
++        }
++    }
++    const int sumi = (sumi0*ls0 + sumi1*ls1 + (sumi0 + sumi1)/2)/4;
++    const float d = __half2float(bq2->d) * __low2float(bq8_1[iqs/2].ds);
++    return d * sumi;
++}
++
+ #define VDR_IQ2_S_Q8_1_MMVQ 2
+ #define VDR_IQ2_S_Q8_1_MMQ  2
+ 
+@@ -1166,6 +1238,52 @@ static __device__ __forceinline__ float vec_dot_iq2_s_q8_1(
+     return d * sumi;
+ }
+ 
++// same, with the codebook read from `grid` (e.g. staged in shared memory)
++static __device__ __forceinline__ float vec_dot_iq2_s_q8_1_g(
++    const void * __restrict__ vbq, const block_q8_1 * __restrict__ bq8_1, const int & kbx, const int & iqs, const uint64_t * __restrict__ grid) {
++
++    const block_iq2_s * bq2 = (const block_iq2_s *) vbq + kbx;
++
++    const int       qs_packed = get_int_b2(bq2->qs, iqs/2);
++    const uint8_t * qs        = (const uint8_t *) &qs_packed;
++
++    const int qh = bq2->qh[iqs/2];
++
++    const int       signs_packed_32 = get_int_b2(bq2->qs, QK_K/32 + iqs/2);
++    const uint8_t * signs_packed_8  = (const uint8_t *) &signs_packed_32;
++
++    const int ls0 = bq2->scales[iqs/2] & 0x0F;
++    const int ls1 = bq2->scales[iqs/2] >> 4;
++
++    int sumi0 = 0;
++    int sumi1 = 0;
++#pragma unroll
++    for (int l0 = 0; l0 < 8; l0 += 2) {
++        const int * grid_pos = (const int *)(grid + (qs[l0/2] | ((qh << (8-l0)) & 0x300)));
++
++        const int signs0 = __vcmpne4(((signs_packed_8[l0/2] & 0x03) << 7) | ((signs_packed_8[l0/2] & 0x0C) << 21), 0x00000000);
++        const int signs1 = __vcmpne4(((signs_packed_8[l0/2] & 0x30) << 3) | ((signs_packed_8[l0/2] & 0xC0) << 17), 0x00000000);
++
++        const int grid_l = __vsub4(grid_pos[0] ^ signs0, signs0);
++        const int grid_h = __vsub4(grid_pos[1] ^ signs1, signs1);
++
++        const int u0 = get_int_b4(bq8_1[iqs/2].qs, l0 + 0);
++        const int u1 = get_int_b4(bq8_1[iqs/2].qs, l0 + 1);
++
++        if (l0 < 4) {
++            sumi0 = ggml_cuda_dp4a(grid_l, u0, sumi0);
++            sumi0 = ggml_cuda_dp4a(grid_h, u1, sumi0);
++        } else {
++            sumi1 = ggml_cuda_dp4a(grid_l, u0, sumi1);
++            sumi1 = ggml_cuda_dp4a(grid_h, u1, sumi1);
++        }
++    }
++    const int sumi = (sumi0*ls0 + sumi1*ls1 + (sumi0 + sumi1)/2)/4;
++
++    const float d = __half2float(bq2->d) * __low2float(bq8_1[iqs/2].ds);
++    return d * sumi;
++}
++
+ #define VDR_IQ3_XXS_Q8_1_MMVQ 2
+ #define VDR_IQ3_XXS_Q8_1_MMQ  2
+ 
+@@ -1204,6 +1322,42 @@ static __device__ __forceinline__ float vec_dot_iq3_xxs_q8_1(
+     return d * sumi;
+ }
+ 
++// same, with the codebook read from `grid` (e.g. staged in shared memory)
++static __device__ __forceinline__ float vec_dot_iq3_xxs_q8_1_g(
++    const void * __restrict__ vbq, const block_q8_1 * __restrict__ bq8_1, const int & kbx, const int & iqs, const uint32_t * __restrict__ grid) {
++
++    const block_iq3_xxs * bq3 = (const block_iq3_xxs *) vbq + kbx;
++
++    const int2 q3_packed = make_int2(get_int_b2(bq3->qs, iqs), get_int_b2(bq3->qs, iqs+1));
++    const uint8_t * q3 = (const uint8_t *) &q3_packed;
++    const uint32_t aux32 = get_int_b2(bq3->qs, QK_K/16 + iqs/2);
++
++    int sumi = 0;
++#pragma unroll
++    for (int l0 = 0; l0 < 8; l0 += 2) {
++        const int2 grid_pos = make_int2(grid[q3[l0 + 0]], grid[q3[l0 + 1]]);
++        const uint32_t signs = unpack_ksigns(aux32 >> (7*l0/2));
++
++        const int signs0 = __vcmpne4(signs & 0x08040201, 0);
++        const int grid_l = __vsub4(grid_pos.x ^ signs0, signs0);
++
++        const int u0 = get_int_b4(bq8_1[iqs/2].qs, l0 + 0);
++
++        const int signs1 = __vcmpne4(signs & 0x80402010, 0);
++        const int grid_h = __vsub4(grid_pos.y ^ signs1, signs1);
++
++        const int u1 = get_int_b4(bq8_1[iqs/2].qs, l0 + 1);
++
++        sumi = ggml_cuda_dp4a(grid_l, u0, sumi);
++        sumi = ggml_cuda_dp4a(grid_h, u1, sumi);
++    }
++
++    const int ls = aux32 >> 28;
++    sumi = (ls*sumi + sumi/2)/2;
++    const float d = __half2float(bq3->d) * __low2float(bq8_1[iqs/2].ds);
++    return d * sumi;
++}
++
+ #define VDR_IQ3_S_Q8_1_MMVQ 2
+ #define VDR_IQ3_S_Q8_1_MMQ  2
+ 
+@@ -1247,6 +1401,121 @@ static __device__ __forceinline__ float vec_dot_iq3_s_q8_1(
+     return d * sumi;
+ }
+ 
++// Decode-once helpers for multi-token GEMV (speculative verify): unpack one IQ3 weight block into 8 signed int8x4 words,
++// then dot it with any number of q8_1 columns. Same integer/float operation order as vec_dot_iq3_*_q8_1.
++struct iq3_dec {
++    int   g[8];   // signed codebook values, 4 x int8 each
++    int   sc;     // IQ3_S: integer block scale; IQ3_XXS: 4-bit ls
++    float d;      // fp16 block scale as float
++};
++
++static __device__ __forceinline__ iq3_dec decode_iq3_s(const void * __restrict__ vbq, const int & kbx, const int & iqs,
++                                                       const uint32_t * __restrict__ grid) {
++    const block_iq3_s * bq3 = (const block_iq3_s *) vbq + kbx;
++    const int2      qs_packed = make_int2(get_int_b2(bq3->qs, iqs + 0), get_int_b2(bq3->qs, iqs + 1));
++    const uint8_t * qs        = (const uint8_t *) &qs_packed;
++    const int qh = bq3->qh[iqs/2];
++    const int       signs_packed_32 = get_int_b2(bq3->signs, iqs/2);
++    const uint8_t * signs_packed_8  = (const uint8_t *) &signs_packed_32;
++    iq3_dec w;
++#pragma unroll
++    for (int l0 = 0; l0 < 8; l0 += 2) {
++        const int2 grid_pos = make_int2(
++            grid[qs[l0 + 0] | ((qh << (8 - l0)) & 0x100)],
++            grid[qs[l0 + 1] | ((qh << (7 - l0)) & 0x100)]);
++        const int signs0 = __vcmpne4(((signs_packed_8[l0/2] & 0x03) << 7) | ((signs_packed_8[l0/2] & 0x0C) << 21), 0x00000000);
++        const int signs1 = __vcmpne4(((signs_packed_8[l0/2] & 0x30) << 3) | ((signs_packed_8[l0/2] & 0xC0) << 17), 0x00000000);
++        w.g[l0 + 0] = __vsub4(grid_pos.x ^ signs0, signs0);
++        w.g[l0 + 1] = __vsub4(grid_pos.y ^ signs1, signs1);
++    }
++    w.sc = 1 + 2*((bq3->scales[iqs/4] >> ((iqs << 1) & 0x04)) & 0x0F);
++    w.d  = __half2float(bq3->d);
++    return w;
++}
++
++static __device__ __forceinline__ float dot_iq3_s_dec(const iq3_dec & w, const block_q8_1 * __restrict__ bq8_1, const int & iqs) {
++    int sumi = 0;
++#pragma unroll
++    for (int l = 0; l < 8; ++l) {
++        sumi = ggml_cuda_dp4a(w.g[l], get_int_b4(bq8_1[iqs/2].qs, l), sumi);
++    }
++    sumi *= w.sc;
++    const float d = w.d * __low2float(bq8_1[iqs/2].ds);
++    return d * sumi;
++}
++
++static __device__ __forceinline__ iq3_dec decode_iq3_xxs(const void * __restrict__ vbq, const int & kbx, const int & iqs,
++                                                         const uint32_t * __restrict__ grid) {
++    const block_iq3_xxs * bq3 = (const block_iq3_xxs *) vbq + kbx;
++    const int2 q3_packed = make_int2(get_int_b2(bq3->qs, iqs), get_int_b2(bq3->qs, iqs+1));
++    const uint8_t * q3 = (const uint8_t *) &q3_packed;
++    const uint32_t aux32 = get_int_b2(bq3->qs, QK_K/16 + iqs/2);
++    iq3_dec w;
++#pragma unroll
++    for (int l0 = 0; l0 < 8; l0 += 2) {
++        const int2 grid_pos = make_int2(grid[q3[l0 + 0]], grid[q3[l0 + 1]]);
++        const uint32_t signs = unpack_ksigns(aux32 >> (7*l0/2));
++        const int signs0 = __vcmpne4(signs & 0x08040201, 0);
++        const int signs1 = __vcmpne4(signs & 0x80402010, 0);
++        w.g[l0 + 0] = __vsub4(grid_pos.x ^ signs0, signs0);
++        w.g[l0 + 1] = __vsub4(grid_pos.y ^ signs1, signs1);
++    }
++    w.sc = aux32 >> 28;
++    w.d  = __half2float(bq3->d);
++    return w;
++}
++
++static __device__ __forceinline__ float dot_iq3_xxs_dec(const iq3_dec & w, const block_q8_1 * __restrict__ bq8_1, const int & iqs) {
++    int sumi = 0;
++#pragma unroll
++    for (int l = 0; l < 8; ++l) {
++        sumi = ggml_cuda_dp4a(w.g[l], get_int_b4(bq8_1[iqs/2].qs, l), sumi);
++    }
++    sumi = (w.sc*sumi + sumi/2)/2;
++    const float d = w.d * __low2float(bq8_1[iqs/2].ds);
++    return d * sumi;
++}
++
++// same, with the codebook read from `grid` (e.g. staged in shared memory)
++static __device__ __forceinline__ float vec_dot_iq3_s_q8_1_g(
++    const void * __restrict__ vbq, const block_q8_1 * __restrict__ bq8_1, const int & kbx, const int & iqs, const uint32_t * __restrict__ grid) {
++
++    const block_iq3_s * bq3 = (const block_iq3_s *) vbq + kbx;
++
++    const int2      qs_packed = make_int2(get_int_b2(bq3->qs, iqs + 0), get_int_b2(bq3->qs, iqs + 1));
++    const uint8_t * qs        = (const uint8_t *) &qs_packed;
++
++    const int qh = bq3->qh[iqs/2];
++
++    const int       signs_packed_32 = get_int_b2(bq3->signs, iqs/2);
++    const uint8_t * signs_packed_8  = (const uint8_t *) &signs_packed_32;
++
++    int sumi = 0;
++#pragma unroll
++    for (int l0 = 0; l0 < 8; l0 += 2) {
++        const int2 grid_pos = make_int2(
++            grid[qs[l0 + 0] | ((qh << (8 - l0)) & 0x100)],
++            grid[qs[l0 + 1] | ((qh << (7 - l0)) & 0x100)]);
++
++        const int signs0 = __vcmpne4(((signs_packed_8[l0/2] & 0x03) << 7) | ((signs_packed_8[l0/2] & 0x0C) << 21), 0x00000000);
++        const int signs1 = __vcmpne4(((signs_packed_8[l0/2] & 0x30) << 3) | ((signs_packed_8[l0/2] & 0xC0) << 17), 0x00000000);
++
++        const int grid_l = __vsub4(grid_pos.x ^ signs0, signs0);
++        const int grid_h = __vsub4(grid_pos.y ^ signs1, signs1);
++
++        const int u0 = get_int_b4(bq8_1[iqs/2].qs, l0 + 0);
++        const int u1 = get_int_b4(bq8_1[iqs/2].qs, l0 + 1);
++
++        sumi = ggml_cuda_dp4a(grid_l, u0, sumi);
++        sumi = ggml_cuda_dp4a(grid_h, u1, sumi);
++    }
++
++    sumi *= 1 + 2*((bq3->scales[iqs/4] >> ((iqs << 1) & 0x04)) & 0x0F);
++
++    const float d = __half2float(bq3->d) * __low2float(bq8_1[iqs/2].ds);
++    return d * sumi;
++}
++
+ #define VDR_IQ1_S_Q8_1_MMVQ 1
+ #define VDR_IQ1_S_Q8_1_MMQ  1
+ 
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index b503646..737c948 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -12048,6 +12048,14 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+ static std::vector<std::unique_ptr<test_case>> make_test_cases_perf() {
+     std::vector<std::unique_ptr<test_case>> test_cases;
+ 
++    // V100 decode GEMV: Qwen3.8-27B ffn up/gate (17408 x 5120) and down (5120 x 17408), 1-8 tokens (decode + speculative verify)
++    for (ggml_type type : {GGML_TYPE_IQ3_S, GGML_TYPE_IQ4_XS, GGML_TYPE_IQ3_XXS, GGML_TYPE_Q5_K, GGML_TYPE_Q3_K, GGML_TYPE_IQ2_S, GGML_TYPE_Q4_K}) {
++        for (int n : {1, 2, 4, 6, 8}) {
++            test_cases.emplace_back(new test_mul_mat(type, GGML_TYPE_F32, 17408, n, 5120, {1, 1}, {1, 1}));
++            test_cases.emplace_back(new test_mul_mat(type, GGML_TYPE_F32, 5120, n, 17408, {1, 1}, {1, 1}));
++        }
++    }
++
+     // SWIGLU at a 27B-class FFN width, fused [gate|up] vs split operands
+     // note: same bytes either way, so a backend that indexes them differently shows it here
+     for (ggml_type type : {GGML_TYPE_F16, GGML_TYPE_F32, GGML_TYPE_BF16}) {
+-- 
+2.54.0.windows.1
+
+
+From cbcc65ffe662aca3318f72a12146d72e1105f7cc Mon Sep 17 00:00:00 2001
+From: Abdelhayali <273542685+Abdelhayali@users.noreply.github.com>
+Date: Mon, 19 Oct 2026 00:13:20 +0300
+Subject: [PATCH 2/2] CUDA V100: split fused gate+up for smem-codebook
+ i-quants, IQ4_XS 4 rows per block
+
+On Volta the fused gate+up MMVQ kernel needs twice the registers and is slower than two tuned launches for
+IQ3_S/IQ3_XXS/IQ2_* (IQ3_S 184 us fused vs 2 x 81 us). IQ4_XS: 4 rows per block, 3-8% faster per GEMV.
+Qwen3.8-27B UD-IQ3_S on one V100: tg 30.6 (stock) -> 33.7 t/s. test-backend-ops: 16562 tests OK, 0 FAIL
+(one FLASH_ATTN_EXT mma config has no sm_70 code, pre-existing).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ ggml/src/ggml-cuda/ggml-cuda.cu       | 24 ++++++++++++++++++++----
+ ggml/src/ggml-cuda/mmvq-v100-params.h |  2 ++
+ ggml/src/ggml-cuda/mmvq-v100.cuh      |  2 ++
+ tests/test-backend-ops.cpp            |  6 ++++++
+ 4 files changed, 30 insertions(+), 4 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index 6fa2228..fc72882 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -1872,6 +1872,21 @@ static bool ggml_cuda_should_fuse_mul_mat_vec_f(const ggml_tensor * tensor) {
+     return use_mul_mat_vec_f;
+ }
+ 
++// V100: the fused gate+up MMVQ kernel needs twice the registers and is slower on Volta than two tuned launches for the
++// i-quants with a shared-memory codebook (IQ3_S 184 us fused vs 2 x 81 us split at 17408x5120), so keep them apart there.
++static bool ggml_cuda_v100_split_gate(const ggml_tensor * up) {
++    const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
++    if (cc != GGML_CUDA_CC_VOLTA || up->op != GGML_OP_MUL_MAT) {
++        return false;
++    }
++    switch (up->src[0]->type) {
++        case GGML_TYPE_IQ3_S: case GGML_TYPE_IQ3_XXS: case GGML_TYPE_IQ2_S: case GGML_TYPE_IQ2_XS: case GGML_TYPE_IQ2_XXS:
++            return true;
++        default:
++            return false;
++    }
++}
++
+ static bool ggml_cuda_should_fuse_mul_mat_vec_q(const ggml_tensor * tensor) {
+     ggml_tensor *       src0 = tensor->src[0];
+     ggml_tensor *       src1 = tensor->src[1];
+@@ -4029,7 +4044,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+                 fusion_data.glu_op     = ggml_get_glu_op(glu);
+                 fusion_data.glu_limit  = ggml_get_op_params_f32(glu, 3);
+ 
+-                if (ggml_cuda_should_fuse_mul_mat_vec_q(up_n)) {
++                if (ggml_cuda_should_fuse_mul_mat_vec_q(up_n) && !ggml_cuda_v100_split_gate(up_n)) {
+                     ggml_cuda_mul_mat_vec_q(*cuda_ctx, src0, src1, ids, cgraph->nodes[glu_idx], &fusion_data);
+                     fused_mul_mat_vec = true;
+                     fused_node_count  = n_ops;
+@@ -4123,7 +4138,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+                 fusion_data.glu_op     = ggml_get_glu_op(glu);
+                 fusion_data.glu_limit  = ggml_get_op_params_f32(glu, 3);
+ 
+-                if (ggml_cuda_should_fuse_mul_mat_vec_q(up_n)) {
++                if (ggml_cuda_should_fuse_mul_mat_vec_q(up_n) && !ggml_cuda_v100_split_gate(up_n)) {
+                     ggml_cuda_mul_mat_vec_q(*cuda_ctx, src0, src1, ids, cgraph->nodes[glu_idx], &fusion_data);
+                     fused_mul_mat_vec = true;
+                     fused_node_count  = n_ops;
+@@ -4186,7 +4201,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+                 break;
+             }
+ 
+-            if (ggml_cuda_should_fuse_mul_mat_vec_q(up_n)) {
++            if (ggml_cuda_should_fuse_mul_mat_vec_q(up_n) && !ggml_cuda_v100_split_gate(up_n)) {
+                 ggml_cuda_mm_fusion_args_host fusion_data{};
+                 fusion_data.gate      = gate_n->src[0];
+                 fusion_data.x_bias    = up_bias_tensor;
+@@ -4227,7 +4242,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+                 break;
+             }
+ 
+-            if (ggml_cuda_should_fuse_mul_mat_vec_q(up)) {
++            if (ggml_cuda_should_fuse_mul_mat_vec_q(up) && !ggml_cuda_v100_split_gate(up)) {
+                 ggml_cuda_mm_fusion_args_host fusion_data{};
+                 fusion_data.gate      = gate->src[0];
+                 fusion_data.glu_op    = ggml_get_glu_op(glu);
+@@ -4452,6 +4467,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+     return 0;
+ }
+ 
++
+ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, const bool use_cuda_graph, const bool cuda_graph_update_required, const void * graph_key) {
+     bool graph_evaluated_or_captured = false;
+ 
+diff --git a/ggml/src/ggml-cuda/mmvq-v100-params.h b/ggml/src/ggml-cuda/mmvq-v100-params.h
+index d68c827..de6e7f1 100644
+--- a/ggml/src/ggml-cuda/mmvq-v100-params.h
++++ b/ggml/src/ggml-cuda/mmvq-v100-params.h
+@@ -20,3 +20,5 @@
+ #define V100_NW_Q3K_N1   4
+ #define V100_NW_Q3K_N4   4
+ #define V100_NW_Q3K_N8   2
++#define V100_RPB_IQ4_N1  4
++#define V100_NW_IQ4_N1   4
+diff --git a/ggml/src/ggml-cuda/mmvq-v100.cuh b/ggml/src/ggml-cuda/mmvq-v100.cuh
+index 21b0d81..705d8fc 100644
+--- a/ggml/src/ggml-cuda/mmvq-v100.cuh
++++ b/ggml/src/ggml-cuda/mmvq-v100.cuh
+@@ -20,6 +20,7 @@ static constexpr __host__ __device__ int v100_rows_per_block(ggml_type type, int
+     return v100_is_iq3(type) ? (ncols_dst == 1 ? V100_RPB_IQ3_N1 : (ncols_dst <= 4 ? V100_RPB_IQ3_N4 : V100_RPB_IQ3_N8))
+          : v100_is_iq2(type) ? (ncols_dst == 1 ? V100_RPB_IQ2_N1 : (ncols_dst <= 4 ? V100_RPB_IQ2_N4 : V100_RPB_IQ2_N8))
+          : type == GGML_TYPE_Q3_K ? (ncols_dst == 1 ? V100_RPB_Q3K_N1 : (ncols_dst <= 4 ? V100_RPB_Q3K_N4 : V100_RPB_Q3K_N8))
++         : (type == GGML_TYPE_IQ4_XS && ncols_dst == 1) ? V100_RPB_IQ4_N1
+          : 0;
+ }
+ 
+@@ -28,6 +29,7 @@ static constexpr __host__ __device__ int v100_nwarps(ggml_type type, int ncols_d
+     return v100_is_iq3(type) ? (ncols_dst == 1 ? V100_NW_IQ3_N1 : (ncols_dst <= 4 ? V100_NW_IQ3_N4 : V100_NW_IQ3_N8))
+          : v100_is_iq2(type) ? (ncols_dst == 1 ? V100_NW_IQ2_N1 : (ncols_dst <= 4 ? V100_NW_IQ2_N4 : V100_NW_IQ2_N8))
+          : type == GGML_TYPE_Q3_K ? (ncols_dst == 1 ? V100_NW_Q3K_N1 : (ncols_dst <= 4 ? V100_NW_Q3K_N4 : V100_NW_Q3K_N8))
++         : (type == GGML_TYPE_IQ4_XS && ncols_dst == 1) ? V100_NW_IQ4_N1
+          : 0;
+ }
+ 
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 737c948..b5a1413 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -12049,6 +12049,12 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_perf() {
+     std::vector<std::unique_ptr<test_case>> test_cases;
+ 
+     // V100 decode GEMV: Qwen3.8-27B ffn up/gate (17408 x 5120) and down (5120 x 17408), 1-8 tokens (decode + speculative verify)
++    // V100 decode GEMV at the attention / DeltaNet shapes of Qwen3.8-27B, 1 token
++    for (ggml_type type : {GGML_TYPE_IQ4_XS, GGML_TYPE_IQ3_S, GGML_TYPE_IQ3_XXS, GGML_TYPE_Q4_K, GGML_TYPE_Q8_0}) {
++        for (auto mk : std::vector<std::pair<int, int>>{{6144, 5120}, {10240, 5120}, {12288, 5120}, {5120, 6144}, {48, 5120}}) {
++            test_cases.emplace_back(new test_mul_mat(type, GGML_TYPE_F32, mk.first, 1, mk.second, {1, 1}, {1, 1}));
++        }
++    }
+     for (ggml_type type : {GGML_TYPE_IQ3_S, GGML_TYPE_IQ4_XS, GGML_TYPE_IQ3_XXS, GGML_TYPE_Q5_K, GGML_TYPE_Q3_K, GGML_TYPE_IQ2_S, GGML_TYPE_Q4_K}) {
+         for (int n : {1, 2, 4, 6, 8}) {
+             test_cases.emplace_back(new test_mul_mat(type, GGML_TYPE_F32, 17408, n, 5120, {1, 1}, {1, 1}));
+-- 
+2.54.0.windows.1
+

@@ -1,0 +1,71 @@
+{
+ "scale": "0 = no usable PDF, 1 = Arabic unreadable, 2-3 = readable letters but wrong line order / layout, 4 = good with small flaws, 5 = correct",
+ "unsloth-off": {
+  "story_run1": [
+   0,
+   "only a leftover test page (Test: English + one Arabic line); the real PDF was never made"
+  ],
+  "story_run2": [
+   1,
+   "Arabic reversed (letters and words backwards), unreadable"
+  ],
+  "menu_run1": [
+   4,
+   "clean bilingual table, correct Arabic; drawn as an image (no text layer); small text clipped at the page edges"
+  ],
+  "menu_run2": [
+   0,
+   "no PDF"
+  ],
+  "letter_run1": [
+   3,
+   "correct connected Arabic, but wrapped lines in reverse order inside paragraphs"
+  ],
+  "letter_run2": [
+   5,
+   "correct: connected, right to left, right-aligned, proper line order, English summary"
+  ],
+  "water_run1": [
+   0,
+   "no PDF"
+  ],
+  "water_run2": [
+   2,
+   "correct letters but wrapped lines in reverse order; Arabic placed on page 1 instead of page 2"
+  ]
+ },
+ "minicpm-off": {
+  "story_run1": [
+   1,
+   "Arabic letters in wrong order, English words mixed in, unreadable"
+  ],
+  "story_run2": [
+   1,
+   "whole Arabic translation is black boxes (Helvetica, no Arabic font)"
+  ],
+  "menu_run1": [
+   1,
+   "Arabic title as boxes, drink names reversed and disconnected"
+  ],
+  "menu_run2": [
+   1,
+   "Arabic names written backwards"
+  ],
+  "letter_run1": [
+   1,
+   "whole Arabic letter is black boxes"
+  ],
+  "letter_run2": [
+   4,
+   "connected, right to left, readable; a few small glyph errors"
+  ],
+  "water_run1": [
+   3,
+   "readable connected Arabic, but 1 page instead of 2, no page numbers, repeated word"
+  ],
+  "water_run2": [
+   3,
+   "readable Arabic, but 'Page 1 / Page 2' are labels on a single page"
+  ]
+ }
+}

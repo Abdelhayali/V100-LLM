@@ -103,7 +103,7 @@ async function send(text = null, { email = false, organizer = false } = {}) {
   render(); scrollDown(true);
   const body = { content: text, attachments: atts.map(a => a.id), model: S.model || null, web: S.prefs.web, auto_approve: S.prefs.autoApprove,
                  compress_at: S.prefs.autoCompress ? S.prefs.compressAt / 100 : 0,
-                 email: S.prefs.email || email, organizer: S.prefs.organizer || organizer };
+                 email: S.prefs.email || email, organizer: S.prefs.organizer || organizer, thinking: S.prefs.thinking || 'auto' };
   const sid = S.sid;
   startStream();
   try { await sse(`/api/sessions/${sid}/chat`, { method: 'POST', body, signal: S.abort.signal }, onEvent); }
@@ -408,6 +408,17 @@ function renderComposerChips() {
 }
 function renderChatParts() { renderMessages(); renderStatus(); renderSidePanel(); renderQuestion(); renderComposerChips(); renderApproval(); renderHeader(); }
 
+// Thinking effort: how long the model may think before it acts (Off = fastest, Max = no limit)
+const THINKING = [['auto', '🧠 Auto', 'Model default'], ['off', '🧠 Off', 'No thinking: fastest replies'],
+  ['low', '🧠 Low', 'Thinks up to ~1k tokens'], ['medium', '🧠 Medium', 'Thinks up to ~4k tokens'],
+  ['high', '🧠 High', 'Thinks up to ~16k tokens'], ['max', '🧠 Max', 'Thinks as long as it needs (slow)']];
+function thinkingSelect(p) {
+  const cur = THINKING.find(x => x[0] === (p.thinking || 'auto')) || THINKING[0];
+  return h('select', { class: 'toggle think' + (cur[0] !== 'off' && cur[0] !== 'auto' ? ' on' : ''), title: 'Thinking: ' + cur[2],
+    onchange: e => { p.thinking = e.target.value; savePrefs(); const x = THINKING.find(y => y[0] === p.thinking);
+      toast('Thinking: ' + x[1].replace('🧠 ', '') + ' (' + x[2] + ')'); renderHeader(); } },
+    ...THINKING.map(([v, label, tip]) => h('option', { value: v, selected: v === cur[0], title: tip }, label)));
+}
 function toggleChip(label, key, on, onToggle) {
   return h('button', { class: 'toggle' + (on ? ' on' : ''), onclick: onToggle, title: label }, label);
 }
@@ -420,6 +431,7 @@ function renderHeader() {
   const flip = async (k, msg) => { p[k] = !p[k]; savePrefs(); toast(msg(p[k])); renderHeader(); };
   el.replaceChildren(h('div', { class: 'ttl' }, h('div', { class: 'title', dir: 'auto' }, S.title), sel),
     h('div', { class: 'toggles' },
+      thinkingSelect(p),
       toggleChip('🌐 Web', 'web', p.web, () => flip('web', v => 'Web search ' + (v ? 'ON' : 'OFF'))),
       toggleChip('✉ Email', 'email', p.email, () => flip('email', v => v ? 'Email access ON: the AI can read mail and write drafts (sending asks you)' : 'Email access OFF')),
       toggleChip('📅 Tasks', 'organizer', p.organizer, () => flip('organizer', v => 'Tasks & calendar access ' + (v ? 'ON' : 'OFF'))),
