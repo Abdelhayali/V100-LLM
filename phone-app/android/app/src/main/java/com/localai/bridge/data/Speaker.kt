@@ -10,17 +10,66 @@ import java.util.Locale
  * Arabic and English are detected per sentence, so a mixed reply switches voice in the middle.
  */
 class Speaker(context: Context) {
+    /** One voice the phone can speak with. */
+    data class VoiceInfo(val name: String, val label: String, val quality: Int, val online: Boolean)
+
     private var ready = false
+    /** Chosen voices by name ("" = the best one found automatically). */
+    var arabicVoice = ""
+    var englishVoice = ""
+    var onReady: () -> Unit = {}
     private var pending: String? = null
     var rate = 1.0f
     var onState: (speaking: Boolean) -> Unit = {}
     var onMissingVoice: (lang: String) -> Unit = {}
     private var lastId = ""
 
-    private val tts: TextToSpeech = TextToSpeech(context.applicationContext) { status ->
-        ready = status == TextToSpeech.SUCCESS
-        pending?.let { pending = null; speak(it) }
+    // Google's engine usually has the most natural Arabic voices: use it when installed, else the phone's default
+    private val engine: String? = GOOGLE_TTS.takeIf {
+        runCatching { context.packageManager.getPackageInfo(it, 0) }.isSuccess
     }
+    private val tts: TextToSpeech = TextToSpeech(context.applicationContext, { status ->
+        ready = status == TextToSpeech.SUCCESS
+        if (ready) onReady()
+        pending?.let { pending = null; speak(it) }
+    }, engine)
+
+    /** Voices for a language ("ar" / "en"), best first: highest quality, offline before online. */
+    fun voices(lang: String): List<VoiceInfo> {
+        if (!ready) return emptyList()
+        val vs = runCatching { tts.voices.orEmpty() }.getOrDefault(emptySet())
+            .filter { it.locale.language == lang && !it.features.orEmpty().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED) }
+            .sortedWith(compareByDescending<android.speech.tts.Voice> { it.quality }.thenBy { it.isNetworkConnectionRequired }.thenBy { it.name })
+        val n = mutableMapOf<String, Int>()
+        return vs.map { v ->
+            val country = v.locale.displayCountry.ifBlank { v.locale.country }
+            val k = n.merge(country, 1, Int::plus)!!
+            VoiceInfo(v.name, "${v.locale.displayLanguage}${if (country.isNotBlank()) " ($country)" else ""} · voice $k" +
+                (if (v.isNetworkConnectionRequired) " · online" else " · offline") +
+                (if (v.quality >= android.speech.tts.Voice.QUALITY_HIGH) " · high quality" else ""), v.quality, v.isNetworkConnectionRequired)
+        }
+    }
+
+    private fun pick(arabic: Boolean): android.speech.tts.Voice? {
+        val want = if (arabic) arabicVoice else englishVoice
+        val all = runCatching { tts.voices.orEmpty() }.getOrDefault(emptySet())
+        all.firstOrNull { it.name == want }?.let { return it }
+        val best = voices(if (arabic) "ar" else "en").firstOrNull { !it.online } ?: voices(if (arabic) "ar" else "en").firstOrNull()
+        return best?.let { b -> all.firstOrNull { it.name == b.name } }
+    }
+
+    /** Say a short sample with a given voice (Settings > voice list). */
+    fun test(voiceName: String, arabic: Boolean) {
+        if (!ready) return
+        tts.stop()
+        runCatching { tts.voices.firstOrNull { it.name == voiceName } }.getOrNull()?.let { tts.voice = it }
+        tts.setSpeechRate(rate)
+        lastId = "test"
+        tts.speak(if (arabic) "مرحباً، هذا صوت المساعد. كيف يمكنني مساعدتك اليوم؟" else "Hello, this is your assistant's voice. How can I help you today?",
+            TextToSpeech.QUEUE_FLUSH, null, "test")
+    }
+
+    fun engineName(): String = engine?.let { "Google" } ?: (runCatching { tts.defaultEngine }.getOrNull() ?: "phone default")
 
     init {
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -41,7 +90,8 @@ class Speaker(context: Context) {
         var warned = false
         parts.forEachIndexed { i, (arabic, s) ->
             val loc = if (arabic) Locale("ar") else Locale.US
-            val r = tts.setLanguage(loc)
+            val voice = pick(arabic)
+            val r = if (voice != null) { tts.voice = voice; TextToSpeech.LANG_AVAILABLE } else tts.setLanguage(loc)
             if ((r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) && !warned) {
                 warned = true; onMissingVoice(if (arabic) "Arabic" else "English")
             }
@@ -55,6 +105,7 @@ class Speaker(context: Context) {
     fun shutdown() = tts.shutdown()
 
     companion object {
+        const val GOOGLE_TTS = "com.google.android.tts"
         private val arabicChar = Regex("[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]")
         private val latinChar = Regex("[A-Za-z]")
 

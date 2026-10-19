@@ -109,6 +109,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     // read replies aloud (phone TTS, Arabic + English)
     val speaker: com.localai.bridge.data.Speaker = com.localai.bridge.data.Speaker(app).also { s ->
         s.rate = prefs.speechRate
+        s.arabicVoice = prefs.arabicVoice
+        s.englishVoice = prefs.englishVoice
         s.onState = { on ->
             speaking = on
             if (!on) speakingKey = null
@@ -685,6 +687,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun updateAutoCompress(on: Boolean) { autoCompress = on; prefs.autoCompress = on }
     fun updateAutoRead(on: Boolean) { autoRead = on; prefs.autoRead = on; if (!on) speaker.stop() }
+    var arabicVoice by mutableStateOf(prefs.arabicVoice)
+    var englishVoice by mutableStateOf(prefs.englishVoice)
+    fun chooseVoice(arabic: Boolean, name: String) {
+        if (arabic) { arabicVoice = name; prefs.arabicVoice = name; speaker.arabicVoice = name }
+        else { englishVoice = name; prefs.englishVoice = name; speaker.englishVoice = name }
+        speaker.test(name, arabic)
+    }
+
     fun updateSpeechRate(r: Float) { speechRate = r; prefs.speechRate = r; speaker.rate = r }
     /** Read one reply aloud, or stop if it is the one being read. */
     fun toggleSpeak(key: String, text: String) {

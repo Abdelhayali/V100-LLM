@@ -66,6 +66,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.material3.RadioButton
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -385,6 +386,7 @@ fun SettingsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                 }
                 Switch(checked = vm.soundDone, onCheckedChange = { vm.updateSoundDone(it) })
             }
+            VoicePicker(vm)
             Text("Voice language (mic and driving mode)", style = MaterialTheme.typography.bodyMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("" to "Phone default", "ar-EG" to "العربية", "en-US" to "English").forEach { (k, label) ->
@@ -448,5 +450,49 @@ fun SettingsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             }
             OutlinedButton(onClick = { vm.unpair() }, modifier = Modifier.fillMaxWidth()) { Text("Disconnect / re-pair") }
         }
+    }
+}
+
+
+/** Choose the read-aloud voices: the best installed one is used automatically; tap one to hear it and keep it. */
+@Composable
+private fun VoicePicker(vm: MainViewModel) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var open by remember { mutableStateOf(false) }
+    var ar by remember { mutableStateOf(emptyList<com.localai.bridge.data.Speaker.VoiceInfo>()) }
+    var en by remember { mutableStateOf(emptyList<com.localai.bridge.data.Speaker.VoiceInfo>()) }
+    fun load() { ar = vm.speaker.voices("ar"); en = vm.speaker.voices("en") }
+    OutlinedButton(onClick = { load(); open = !open }, modifier = Modifier.fillMaxWidth()) {
+        Text(if (open) "Hide voices" else "Choose the reading voice (Arabic / English) · engine: ${vm.speaker.engineName()}")
+    }
+    if (!open) return
+    @Composable
+    fun list(title: String, items: List<com.localai.bridge.data.Speaker.VoiceInfo>, chosen: String, arabic: Boolean) {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        if (items.isEmpty()) Text("No ${if (arabic) "Arabic" else "English"} voice installed - use \"Install voices\" below.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { vm.chooseVoice(arabic, "") }) {
+            RadioButton(selected = chosen.isBlank(), onClick = { vm.chooseVoice(arabic, "") })
+            Text("Automatic (best quality)", style = MaterialTheme.typography.bodyMedium)
+        }
+        items.forEach { v ->
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { vm.chooseVoice(arabic, v.name) }) {
+                RadioButton(selected = chosen == v.name, onClick = { vm.chooseVoice(arabic, v.name) })
+                Text(v.label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                TextButton(onClick = { vm.speaker.test(v.name, arabic) }) { Text("▶") }
+            }
+        }
+    }
+    list("Arabic voice", ar, vm.arabicVoice, true)
+    list("English voice", en, vm.englishVoice, false)
+    Text("Online voices sound best but need internet (in the car: mobile data). Google's voices are the most natural; " +
+        "if your phone uses another engine, install \"Speech Recognition and Synthesis from Google\" from the Play Store.",
+        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = { runCatching { ctx.startActivity(android.content.Intent(android.speech.tts.TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA)
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }.onFailure { vm.toast = "Open Android Settings > Text-to-speech" } }) { Text("Install voices") }
+        OutlinedButton(onClick = { runCatching { ctx.startActivity(android.content.Intent("com.android.settings.TTS_SETTINGS")
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }.onFailure { vm.toast = "Open Android Settings > Text-to-speech" } }) { Text("TTS settings") }
+        OutlinedButton(onClick = { load() }) { Text("Refresh") }
     }
 }

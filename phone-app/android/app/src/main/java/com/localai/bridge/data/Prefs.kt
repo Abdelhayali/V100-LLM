@@ -80,6 +80,14 @@ class Prefs(context: Context) {
         get() = prefs.getString("voice_lang", "") ?: ""
         set(v) = prefs.edit().putString("voice_lang", v).apply()
 
+    /** Read-aloud voices by name ("" = best one found automatically). */
+    var arabicVoice: String
+        get() = prefs.getString("ar_voice", "") ?: ""
+        set(v) = prefs.edit().putString("ar_voice", v).apply()
+    var englishVoice: String
+        get() = prefs.getString("en_voice", "") ?: ""
+        set(v) = prefs.edit().putString("en_voice", v).apply()
+
     var autoApprove: Boolean
         get() = prefs.getBoolean("auto_approve", false)
         set(v) = prefs.edit().putBoolean("auto_approve", v).apply()
