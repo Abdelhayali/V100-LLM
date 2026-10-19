@@ -36,6 +36,35 @@ def remove_det(raw: str) -> str:
     return "\n\n".join("\n".join(b) for b in blocks if b).strip()
 
 
+def fuse_moe(model):
+    """Faster decode for the DeepSeek-V2 MoE layers. The original moe_infer loops over the experts in Python and syncs
+    with the CPU in every layer for every token; here the expert weights are stacked once (the expert modules then use
+    views of the stack, so no extra memory) and a few tokens are computed with one gather + batched matmul."""
+    import torch
+    n = 0
+    for mod in model.modules():
+        if type(mod).__name__ != "DeepseekV2MoE" or not hasattr(mod, "experts"):
+            continue
+        ex = mod.experts
+        for name in ("gate_proj", "up_proj", "down_proj"):
+            st = torch.stack([getattr(e, name).weight.data for e in ex])        # [E, out, in]
+            for i, e in enumerate(ex):
+                getattr(e, name).weight.data = st[i]
+            setattr(mod, "_w_" + name, st)
+        act, orig = ex[0].act_fn, mod.moe_infer
+
+        def fast(x, topk_ids, topk_weight, mod=mod, act=act, orig=orig):
+            if x.shape[0] > 8:                                                 # prefill: original path
+                return orig(x, topk_ids, topk_weight)
+            g = torch.einsum("tkih,th->tki", mod._w_gate_proj[topk_ids], x)
+            u = torch.einsum("tkih,th->tki", mod._w_up_proj[topk_ids], x)
+            y = torch.einsum("tkhi,tki->tkh", mod._w_down_proj[topk_ids], act(g) * u)
+            return (y * topk_weight.unsqueeze(-1).to(y.dtype)).sum(1).to(x.dtype)
+        mod.moe_infer = fast
+        n += 1
+    return n
+
+
 def page_range(spec, n):
     if not spec:
         return list(range(n))
@@ -105,6 +134,8 @@ def main():
         model = AutoModel.from_pretrained(str(MODEL), trust_remote_code=True, use_safetensors=True,
                                           torch_dtype=dtype, attn_implementation="eager")
         model = model.eval().to(a.device)
+        if not os.environ.get("OCR_NO_FUSE"):
+            fuse_moe(model)
         res["load_seconds"] = round(time.time() - t0, 1)
 
         common = dict(max_length=32768, no_repeat_ngram_size=35, temperature=0.0)
