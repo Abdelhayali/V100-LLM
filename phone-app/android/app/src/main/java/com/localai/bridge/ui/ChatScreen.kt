@@ -91,6 +91,14 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
@@ -167,6 +175,14 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
         runCatching { listen.launch(i) }.onFailure { vm.toast = "No speech recognizer on this phone (install Google app)" }
     }
     LaunchedEffect(vm.pendingVoice) { if (vm.pendingVoice) { vm.pendingVoice = false; startListening() } }
+    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) vm.startDriving() else vm.toast = "Driving mode needs the microphone permission"
+    }
+    fun driveOn() {
+        if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) vm.startDriving()
+        else micPermission.launch(Manifest.permission.RECORD_AUDIO)
+    }
+    if (vm.driving) { DrivingOverlay(vm); return }
     val inputFocus = remember { androidx.compose.ui.focus.FocusRequester() }
     LaunchedEffect(vm.focusInput) { if (vm.focusInput) { vm.focusInput = false; runCatching { inputFocus.requestFocus() } } }
 
@@ -199,6 +215,7 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                         }
                     }
                 },
+                actions = { IconButton(onClick = { driveOn() }) { Icon(Icons.Default.DirectionsCar, "Driving mode (hands-free)") } },
             )
         },
     ) { pad ->
@@ -286,6 +303,11 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                 }
             }
 
+            if (vm.speaking) Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.Center) {
+                Button(onClick = { vm.speaker.stop() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
+                    Icon(Icons.Default.VolumeOff, null, Modifier.size(18.dp)); Spacer(Modifier.size(6.dp)); Text("Stop reading")
+                }
+            }
             // ---- active modes (tap to turn off) - kept out of the input row so the text field stays wide
             if (vm.webSearch || vm.autoApprove || vm.emailAccess || vm.organizerAccess || vm.thinking != "auto" || vm.ocr != "off" || vm.sandbox) {
                 // one line that scrolls sideways: several chips must never squeeze each other into tall columns
@@ -347,6 +369,8 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                         DropdownMenuItem(text = { Text("OCR: " + (OCR_MODES.firstOrNull { it.first == vm.ocr }?.second ?: vm.ocr)) },
                             leadingIcon = { Icon(Icons.Default.DocumentScanner, null) },
                             onClick = { attachMenu = false; ocrMenu = true })
+                        DropdownMenuItem(text = { Text("Driving mode (hands-free)") }, leadingIcon = { Icon(Icons.Default.DirectionsCar, null) },
+                            onClick = { attachMenu = false; driveOn() })
                         DropdownMenuItem(text = { Text("Run code in sandbox") }, leadingIcon = { Icon(Icons.Default.Shield, null) },
                             trailingIcon = { Switch(checked = vm.sandbox, onCheckedChange = null) },
                             onClick = { vm.toggleSandbox() })
@@ -377,7 +401,7 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                 if (vm.streaming) {
                     FilledIconButton(onClick = { vm.stop() }) { Icon(Icons.Default.Stop, "Stop") }
                 } else if (vm.draft.isBlank() && vm.pendingAttachments.isEmpty()) {
-                    FilledIconButton(onClick = { startListening() }) { Icon(Icons.Default.Mic, "Speak") }
+                    FilledIconButton(onClick = { vm.speaker.stop(); startListening() }) { Icon(Icons.Default.Mic, "Speak") }
                 } else {
                     FilledIconButton(onClick = { vm.send() },
                         enabled = (vm.draft.isNotBlank() || vm.pendingAttachments.isNotEmpty()) && !vm.uploading) {
@@ -665,4 +689,47 @@ private fun ApprovalDialog(p: PendingApproval, vm: MainViewModel) {
         confirmButton = { TextButton(onClick = { vm.respondApproval(p, true) }) { Text("Approve") } },
         dismissButton = { TextButton(onClick = { vm.respondApproval(p, false) }) { Text("Deny") } },
     )
+}
+
+
+/** Full-screen, glanceable driving view: what the app is doing, what it heard, the answer, and big buttons. */
+@Composable
+private fun DrivingOverlay(vm: MainViewModel) {
+    val view = androidx.compose.ui.platform.LocalView.current
+    DisposableEffect(Unit) { view.keepScreenOn = true; onDispose { view.keepScreenOn = false } }
+    androidx.activity.compose.BackHandler { vm.stopDriving() }
+    val (label, color) = when {
+        vm.streaming && vm.phase.isNotBlank() && vm.phase != "writing" -> "Thinking…" to Color(0xFFC27C0E)
+        vm.driveState == "speaking" || vm.speaking -> "Speaking…" to Color(0xFF2E7DD7)
+        vm.streaming -> "Writing the answer…" to Color(0xFFC27C0E)
+        vm.driveState == "listening" -> "Listening… speak now" to Color(0xFF2E9D57)
+        else -> "Getting ready…" to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val answer = (vm.items.lastOrNull { it is ChatItem.Assistant } as? ChatItem.Assistant)?.text.orEmpty()
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+        Column(Modifier.fillMaxSize().systemBarsPadding().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.DirectionsCar, null, Modifier.size(28.dp))
+                Spacer(Modifier.size(8.dp))
+                Text("Driving mode", style = MaterialTheme.typography.titleLarge)
+            }
+            Text(label, style = MaterialTheme.typography.displaySmall, color = color)
+            if (vm.driveHeard.isNotBlank()) Text("“${vm.driveHeard}”", style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Text(com.localai.bridge.data.Speaker.clean(answer).takeLast(600), style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f), overflow = TextOverflow.Ellipsis)
+            Text("Say \"new chat\" for a fresh chat, \"stop\" to end.  قل \"توقف\" للإنهاء",
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = { vm.newChat(); vm.speaker.speak("New chat") }, Modifier.weight(1f).height(72.dp)) {
+                    Text("New chat", style = MaterialTheme.typography.titleMedium) }
+                if (vm.speaking) OutlinedButton(onClick = { vm.speaker.stop() }, Modifier.weight(1f).height(72.dp)) {
+                    Text("Skip reading", style = MaterialTheme.typography.titleMedium) }
+            }
+            Button(onClick = { vm.stopDriving() }, Modifier.fillMaxWidth().height(96.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
+                Text("STOP", style = MaterialTheme.typography.headlineMedium)
+            }
+        }
+    }
 }

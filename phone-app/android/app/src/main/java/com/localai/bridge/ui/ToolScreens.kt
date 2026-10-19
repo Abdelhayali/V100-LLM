@@ -385,6 +385,12 @@ fun SettingsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                 }
                 Switch(checked = vm.soundDone, onCheckedChange = { vm.updateSoundDone(it) })
             }
+            Text("Voice language (mic and driving mode)", style = MaterialTheme.typography.bodyMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("" to "Phone default", "ar-EG" to "العربية", "en-US" to "English").forEach { (k, label) ->
+                    FilterChip(selected = vm.voiceLang == k, onClick = { vm.updateVoiceLang(k) }, label = { Text(label) })
+                }
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Read replies aloud")

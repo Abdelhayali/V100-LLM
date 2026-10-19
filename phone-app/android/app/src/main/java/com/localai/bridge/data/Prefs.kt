@@ -75,6 +75,11 @@ class Prefs(context: Context) {
         get() = prefs.getInt("last_notify_id", 0)
         set(v) = prefs.edit().putInt("last_notify_id", v).apply()
 
+    /** Language for speech recognition: "" = phone default, "ar-EG", "en-US"... */
+    var voiceLang: String
+        get() = prefs.getString("voice_lang", "") ?: ""
+        set(v) = prefs.edit().putString("voice_lang", v).apply()
+
     var autoApprove: Boolean
         get() = prefs.getBoolean("auto_approve", false)
         set(v) = prefs.edit().putBoolean("auto_approve", v).apply()

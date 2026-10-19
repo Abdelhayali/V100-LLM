@@ -107,9 +107,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var autoCompress by mutableStateOf(prefs.autoCompress)
     var compressAt by mutableStateOf(prefs.compressAt)       // percent of the context
     // read replies aloud (phone TTS, Arabic + English)
-    val speaker = com.localai.bridge.data.Speaker(app).also { s ->
+    val speaker: com.localai.bridge.data.Speaker = com.localai.bridge.data.Speaker(app).also { s ->
         s.rate = prefs.speechRate
-        s.onState = { on -> speaking = on; if (!on) speakingKey = null }
+        s.onState = { on ->
+            speaking = on
+            if (!on) speakingKey = null
+            if (driving) { if (on) driveState = "speaking" else if (!streaming) drive.listen(400) }   // reply read: listen again
+        }
         s.onMissingVoice = { lang -> toast = "No $lang voice on this phone: install it in Android Settings > Text-to-speech" }
     }
     var speaking by mutableStateOf(false)
@@ -363,7 +367,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val org = organizerAccess || onceOrganizer
                 onceEmail = false; onceOrganizer = false
                 consume(a.chat(sid, text, atts.map { it.id }, currentModel.ifBlank { null }, webSearch, autoApprove,
-                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = thinking, ocr = ocr, sandbox = sandbox))
+                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = thinking, ocr = ocr, sandbox = sandbox, voice = voiceTurn))
             } catch (e: com.localai.bridge.data.ApiException) {
                 if (e.code == 409) {
                     // the PC is still finishing the previous reply (e.g. the phone was off): show it instead of failing
@@ -404,7 +408,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             runCatching { loadSessions() }
         }
         if (turnCompleted) {
-            if (soundDone && backgroundAtMs == 0L) playDoneSound()   // reply finished while the chat is open
+            if (soundDone && backgroundAtMs == 0L && !driving) playDoneSound()   // reply finished while the chat is open
             syncFromServer()
         }
         else if (dropped || !turnEnded) {
@@ -478,6 +482,45 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var pendingVoice by mutableStateOf(false)   // the widget's Voice button: start listening when the chat shows
     var focusInput by mutableStateOf(false)     // the widget's Ask button: put the cursor in the message box
 
+    // ---------------------------------------------------------------- driving mode (hands-free)
+    var driving by mutableStateOf(false)
+    var driveState by mutableStateOf("")       // listening | thinking | speaking
+    var driveHeard by mutableStateOf("")
+    var voiceLang by mutableStateOf(prefs.voiceLang)
+    fun updateVoiceLang(l: String) { voiceLang = l; prefs.voiceLang = l; drive.language = l }
+    val drive: DriveMode = DriveMode(app, object : DriveMode.Events {
+        override fun onState(state: String) { driveState = state }
+        override fun onHeard(text: String) { driveHeard = text }
+        override fun onCommand(cmd: String) {
+            when (cmd) {
+                "stop" -> stopDriving(say = true)
+                "new" -> { newChat(); speaker.speak(if (voiceLang.startsWith("ar")) "محادثة جديدة" else "New chat") }
+            }
+        }
+        override fun onQuestion(text: String) {
+            if (streaming) { speaker.speak("Still working on the last question."); return }
+            sendVoice(text)
+        }
+        override fun onProblem(message: String) { toast = message }
+    }).also { it.language = prefs.voiceLang }
+
+    fun startDriving() {
+        if (!drive.available()) { toast = "No speech recognizer on this phone (install or update the Google app)"; return }
+        speaker.stop()
+        screen = Screen.CHAT
+        driving = true
+        driveHeard = ""
+        speaker.speak(if (voiceLang.startsWith("ar")) "وضع القيادة. تكلم بعد الصفارة." else "Driving mode. Speak after the beep.")
+        drive.start()
+    }
+
+    fun stopDriving(say: Boolean = false) {
+        drive.stop()
+        driving = false
+        driveState = ""
+        if (say) speaker.speak(if (voiceLang.startsWith("ar")) "تم إيقاف وضع القيادة" else "Driving mode off") else speaker.stop()
+    }
+
     fun sendVoice(text: String) {
         if (text.isBlank()) return
         draft = if (draft.isBlank()) text else draft.trimEnd() + " " + text
@@ -493,6 +536,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         when (intent.getStringExtra("widget_action")) {
             "ask" -> { newChat(); screen = Screen.CHAT; focusInput = true }
             "voice" -> { newChat(); screen = Screen.CHAT; pendingVoice = true }
+            "drive" -> { newChat(); startDriving() }
             "models" -> screen = Screen.MODELS
         }
         intent.removeExtra("widget_action")
@@ -511,6 +555,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         intent.action = null                     // handled: not again after a screen rotation
         if (!paired) { toast = "Pair with your PC first, then share again"; return }
         screen = Screen.CHAT
+        if (!streaming) newChat()                 // something shared: start a fresh chat for it
         if (text.isNotBlank()) draft = if (draft.isBlank()) text else draft.trimEnd() + "\n" + text
         if (uris.isNotEmpty()) { attach(uris); toast = "Shared ${uris.size} file(s) - add your question and send" }
         else focusInput = true
@@ -717,11 +762,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 if (autoRead || voiceTurn) (items.lastOrNull { it is ChatItem.Assistant } as? ChatItem.Assistant)
                     ?.takeIf { it.text.isNotBlank() }?.let { speakingKey = it.key; speaker.speak(it.text) }
                 voiceTurn = false
+                if (driving && (items.lastOrNull { it is ChatItem.Assistant } as? ChatItem.Assistant)?.text.isNullOrBlank())
+                    drive.listen(400)   // nothing to read: listen again
             }
             "compressed" -> items += ChatItem.Notice(nextKey(),
                 "Compressed ${str(ev, "messages")} earlier messages into a summary - context freed.")
             "notice" -> items += ChatItem.Notice(nextKey(), str(ev, "text"))
-            "error" -> { turnEnded = true; items += ChatItem.Notice(nextKey(), str(ev, "message"), error = true) }
+            "error" -> {
+                turnEnded = true; items += ChatItem.Notice(nextKey(), str(ev, "message"), error = true)
+                if (driving) { voiceTurn = false; speaker.speak("Sorry, that did not work. " + str(ev, "message").take(120)) }
+            }
         }
     }
 

@@ -182,9 +182,12 @@ db._conn.execute("CREATE TABLE IF NOT EXISTS message_context(message_id INTEGER 
 db._conn.commit()
 
 
-def attach_context(mid: int, content: str):
+def attach_context(mid: int, content: str, voice: bool = False):
     """Sent-time + memories related to this message, stored once with the message."""
     parts = [f"sent {time.strftime('%Y-%m-%d %H:%M (%A)')}"]
+    if voice:   # read aloud to the user (maybe while driving): spoken style, short
+        parts.append("asked by voice and your reply is read aloud (the user may be driving): answer in a few short, "
+                     "plain spoken sentences in the user's language; no tables, code, lists or links unless asked")
     mem = memory.context(content, recent=False)
     if mem:
         parts.append(mem)
@@ -770,6 +773,7 @@ class ChatIn(BaseModel):
     thinking: str = "auto"       # auto (model default) | off | low | medium | high | max  (see THINKING)
     ocr: str = "off"             # OCR sub-model (Unlimited-OCR): off | gpu (swap with the chat model) | cpu
     sandbox: bool = False        # run_code in a Windows AppContainer: no network, no access to the user's files
+    voice: bool = False          # asked by voice (mic / driving mode): the reply is read aloud, so keep it short
 
 
 class ApprovalIn(BaseModel):
@@ -829,7 +833,7 @@ async def chat(sid: str, body: ChatIn):
             atts.append({"id": a["id"], "filename": a["filename"], "kind": a["kind"], "mime": a["mime"]})
     mid = db.add_message(sid, "user", body.content, attachments=atts or None)
     try:
-        await asyncio.to_thread(attach_context, mid, body.content)
+        await asyncio.to_thread(attach_context, mid, body.content, body.voice)
     except Exception:
         pass   # memory is optional: the chat goes on without it
     if s["title"] == "New chat":  # name the chat right away, not after the reply

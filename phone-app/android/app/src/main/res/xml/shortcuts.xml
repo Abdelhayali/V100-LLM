@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="driving"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_drive_short"
+        android:shortcutLongLabel="@string/shortcut_drive_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.localai.bridge.v100"
+            android:targetClass="com.localai.bridge.MainActivity">
+            <extra android:name="widget_action" android:value="drive" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="voice"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_voice_short"
+        android:shortcutLongLabel="@string/shortcut_voice_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.localai.bridge.v100"
+            android:targetClass="com.localai.bridge.MainActivity">
+            <extra android:name="widget_action" android:value="voice" />
+        </intent>
+    </shortcut>
+</shortcuts>

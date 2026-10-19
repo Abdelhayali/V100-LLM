@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">LocalAI Bridge V100</string>
+    <string name="shortcut_drive_short">Driving mode</string>
+    <string name="shortcut_drive_long">Driving mode (hands-free)</string>
+    <string name="shortcut_voice_short">Voice question</string>
+    <string name="shortcut_voice_long">Ask by voice</string>
 </resources>
