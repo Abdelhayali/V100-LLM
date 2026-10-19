@@ -103,7 +103,7 @@ async function send(text = null, { email = false, organizer = false } = {}) {
   render(); scrollDown(true);
   const body = { content: text, attachments: atts.map(a => a.id), model: S.model || null, web: S.prefs.web, auto_approve: S.prefs.autoApprove,
                  compress_at: S.prefs.autoCompress ? S.prefs.compressAt / 100 : 0,
-                 email: S.prefs.email || email, organizer: S.prefs.organizer || organizer, thinking: S.prefs.thinking || 'auto', ocr: S.prefs.ocr || 'off' };
+                 email: S.prefs.email || email, organizer: S.prefs.organizer || organizer, thinking: S.prefs.thinking || 'auto', ocr: S.prefs.ocr || 'off', sandbox: !!S.prefs.sandbox };
   const sid = S.sid;
   startStream();
   try { await sse(`/api/sessions/${sid}/chat`, { method: 'POST', body, signal: S.abort.signal }, onEvent); }
@@ -445,6 +445,7 @@ function renderHeader() {
       thinkingSelect(p),
       ocrSelect(p),
       toggleChip('🌐 Web', 'web', p.web, () => flip('web', v => 'Web search ' + (v ? 'ON' : 'OFF'))),
+      toggleChip('🛡 Sandbox', 'sandbox', p.sandbox, () => flip('sandbox', v => v ? 'Sandbox ON: code runs without network and without access to your files' : 'Sandbox OFF')),
       toggleChip('✉ Email', 'email', p.email, () => flip('email', v => v ? 'Email access ON: the AI can read mail and write drafts (sending asks you)' : 'Email access OFF')),
       toggleChip('📅 Tasks', 'organizer', p.organizer, () => flip('organizer', v => 'Tasks & calendar access ' + (v ? 'ON' : 'OFF'))),
       toggleChip('🔊 Read', 'autoRead', p.autoRead, () => { flip('autoRead', v => 'Read replies aloud ' + (v ? 'ON' : 'OFF')); if (p.autoRead) Speech.stop(); }),

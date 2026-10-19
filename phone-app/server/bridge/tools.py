@@ -17,6 +17,7 @@ MAX_OUT = 20_000
 
 # Which chat session the current tool call belongs to (asyncio.to_thread copies context variables)
 current_session: ContextVar[str | None] = ContextVar("current_session", default=None)
+current_sandbox: ContextVar[bool] = ContextVar("current_sandbox", default=False)   # run_code in the AppContainer
 # Running code processes: pid -> info (shown in the app's "Running tasks" screen)
 PROCS: dict[int, dict] = {}
 _procs_lock = threading.Lock()
@@ -341,7 +342,15 @@ def tool_schemas(web: bool = False, email: bool = False, organizer_access: bool 
              "allow_other": {"type": "boolean", "description": "let the user type their own answer (default true)"}},
             ["question", "options"]),
     ]
-    if config["enable_code_exec"]:
+    if config["enable_code_exec"] and current_sandbox.get():
+        s.insert(0, _fn("run_code",
+                        "Execute code in a SANDBOX on the user's PC: no network, no access to the user's files or other "
+                        "folders; the working directory is an empty scratch folder (save results there). Python packages "
+                        "already installed work (numpy, matplotlib, ...); pip install does not (no network). Returns stdout, "
+                        "stderr and exit code. Any image the code saves is shown to the user - never call plt.show().",
+                        {"language": {"type": "string", "enum": ["python", "powershell", "cmd"]},
+                         "code": {"type": "string"}}, ["language", "code"]))
+    elif config["enable_code_exec"]:
         s.insert(0, _fn("run_code",
                         f"Execute code on the user's Windows PC. Working directory: {config['workspace']}. "
                         "Returns stdout, stderr and exit code. Use print() to show results. "
@@ -374,8 +383,14 @@ def execute_tool(name: str, args: dict) -> tuple[str, list[dict]]:
     try:
         if name == "run_code":
             start = time.time() - 1
-            r = run_code(args.get("language", "python"), args.get("code", ""))
-            atts = [share_file(p) for p in _recent_images(Path(config["workspace"]), start)]
+            if current_sandbox.get():
+                from . import sandbox
+                r = sandbox.run(args.get("code", ""), args.get("language", "python"), int(config["exec_timeout_sec"]))
+                atts = [share_file(p) for p in _recent_images(Path(r.get("sandbox_folder") or config["workspace"]), start)]
+                r["stdout"], r["stderr"] = truncate(r.get("stdout", "")), truncate(r.get("stderr", ""), 8000)
+            else:
+                r = run_code(args.get("language", "python"), args.get("code", ""))
+                atts = [share_file(p) for p in _recent_images(Path(config["workspace"]), start)]
             if atts:
                 r["images_displayed_to_user"] = [a["filename"] for a in atts]
                 r["note"] = "These images are shown to the user; you cannot see them, so don't describe their content."

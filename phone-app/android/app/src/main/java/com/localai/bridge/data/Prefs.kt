@@ -55,6 +55,21 @@ class Prefs(context: Context) {
         get() = prefs.getString("ocr", "off") ?: "off"
         set(v) = prefs.edit().putString("ocr", v).apply()
 
+    /** Notification "Reply ready" when a reply finishes while the app is in the background. */
+    var notifyDone: Boolean
+        get() = prefs.getBoolean("notify_done", true)
+        set(v) = prefs.edit().putBoolean("notify_done", v).apply()
+
+    /** Short sound when a reply finishes while the chat is open. */
+    var soundDone: Boolean
+        get() = prefs.getBoolean("sound_done", true)
+        set(v) = prefs.edit().putBoolean("sound_done", v).apply()
+
+    /** Run AI code in the Windows AppContainer sandbox: no network, no access to the PC's files. */
+    var sandbox: Boolean
+        get() = prefs.getBoolean("sandbox", false)
+        set(v) = prefs.edit().putBoolean("sandbox", v).apply()
+
     var autoApprove: Boolean
         get() = prefs.getBoolean("auto_approve", false)
         set(v) = prefs.edit().putBoolean("auto_approve", v).apply()

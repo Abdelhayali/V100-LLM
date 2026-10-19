@@ -334,10 +334,11 @@ async def compress_turn(run, model: str | None):
 class Run:
     """A chat turn running in the background; survives phone disconnects."""
 
-    def __init__(self, sid, web=False, auto_approve=False, compress_at=0.0, email=False, organizer=False, thinking="auto", ocr="off"):
+    def __init__(self, sid, web=False, auto_approve=False, compress_at=0.0, email=False, organizer=False, thinking="auto", ocr="off", sandbox=False):
         self.sid = sid
         self.thinking = thinking
         self.ocr = ocr if ocr in ocr_mod.MODES else "off"
+        self.sandbox = bool(sandbox)
         self.compress_at = compress_at
         self.web = web
         self.email, self.organizer = email, organizer      # access switches from the phone (off = no such tools)
@@ -521,6 +522,7 @@ def apply_thinking(payload: dict, mode: str):
 async def chat_turn(run: Run, model: str | None):
     sid = run.sid
     tools.current_session.set(sid)
+    tools.current_sandbox.set(run.sandbox)
     try:
         if run.ocr != "off":   # OCR on: read the attached images / PDFs first, whatever the chat model would do
             last_user = next((m for m in reversed(db.get_messages(sid)) if m["role"] == "user"), None)
@@ -602,7 +604,8 @@ async def chat_turn(run: Run, model: str | None):
                         done = sum(t["status"] == "done" for t in plan)
                         result, atts = f"Task list updated ({done}/{len(plan)} done). Continue with the work.", []
                     elif name in tools.ALWAYS_APPROVE or (name in tools.NEEDS_APPROVAL and config["require_tool_approval"]
-                                                          and not run.auto_approve):
+                                                          and not run.auto_approve
+                                                          and not (name == "run_code" and run.sandbox)):  # sandboxed: safe
                         fut = asyncio.get_running_loop().create_future()
                         approvals[tc["id"]] = {"future": fut, "session_id": sid, "name": name, "args": args}
                         run.emit({"type": "approval_required", "id": tc["id"], "name": name, "args": args})
@@ -717,6 +720,13 @@ async def info():
             "code_exec": config["enable_code_exec"], "require_approval": config["require_tool_approval"]}
 
 
+@app.post("/api/token/rotate", dependencies=[Auth])
+async def token_rotate():
+    """Change the access key from the phone: the old key stops working at once (other paired devices must re-pair).
+    With a named tunnel the address stays the same, so this is how to lock out a lost phone or a leaked QR."""
+    return {"token": config.regenerate_token()}
+
+
 @app.get("/pair", response_class=HTMLResponse)
 async def pair_page(req: Request):
     if not is_local_request(req):
@@ -759,6 +769,7 @@ class ChatIn(BaseModel):
     compress_at: float = 0.0     # e.g. 0.75 = summarize old messages when 75% of the context is used; 0 = off
     thinking: str = "auto"       # auto (model default) | off | low | medium | high | max  (see THINKING)
     ocr: str = "off"             # OCR sub-model (Unlimited-OCR): off | gpu (swap with the chat model) | cpu
+    sandbox: bool = False        # run_code in a Windows AppContainer: no network, no access to the user's files
 
 
 class ApprovalIn(BaseModel):
@@ -830,7 +841,7 @@ async def chat(sid: str, body: ChatIn):
     run = Run(sid, web=body.web, auto_approve=body.auto_approve, compress_at=max(0.0, min(body.compress_at, 0.98)),
               email=body.email, organizer=body.organizer,
               thinking=body.thinking if body.thinking in THINKING or body.thinking == "auto" else "auto",
-              ocr=body.ocr)
+              ocr=body.ocr, sandbox=body.sandbox)
     runs[sid] = run
     resp = sse_response(run)
     run.task = asyncio.create_task(chat_turn(run, model))
@@ -1203,6 +1214,9 @@ app.include_router(agent.router, dependencies=[Auth])
 from . import models_ctl  # noqa: E402
 
 app.include_router(models_ctl.router, dependencies=[Auth])
+from . import bench  # noqa: E402
+
+app.include_router(bench.router, dependencies=[Auth])
 
 # ---------------------------------------------------------------- OpenAI-compatible API for the loaded model
 from . import openai_proxy  # noqa: E402

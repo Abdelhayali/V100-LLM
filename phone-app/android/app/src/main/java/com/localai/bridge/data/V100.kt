@@ -37,6 +37,14 @@ data class V100Status(
     @SerialName("vram_used_mb") val vramUsedMb: Long = 0,
     @SerialName("vram_total_mb") val vramTotalMb: Long = 0,
     @SerialName("gpu_util") val gpuUtil: Int = 0,
+    @SerialName("gpu_temp") val gpuTemp: Double? = null,
+    @SerialName("gpu_power") val gpuPower: Double? = null,
+    @SerialName("gpu_power_limit") val gpuPowerLimit: Double? = null,
+    @SerialName("gpu_clock") val gpuClock: Double? = null,
+    @SerialName("gpu_clock_max") val gpuClockMax: Double? = null,
+    @SerialName("gpu_throttle") val gpuThrottle: List<String> = emptyList(),
+    @SerialName("cpu_temp") val cpuTemp: Double? = null,
+    @SerialName("cpu_temp_source") val cpuTempSource: String = "",
     val cpu: Double = 0.0,
     @SerialName("cpu_threads") val cpuThreads: Int = 0,
     @SerialName("ram_used") val ramUsed: Long = 0,
@@ -51,4 +59,29 @@ suspend fun Api.v100Load(id: String, preset: String): JsonObject =
     sendJson("POST", "/api/v100/load", buildJsonObject { put("id", id); put("preset", preset) })
 suspend fun Api.v100Unload(): JsonObject = sendJson("POST", "/api/v100/unload", JsonObject(emptyMap()))
 /** Unload the model, stop a running OCR and end leftover V100-LLM / OCR processes that still hold GPU memory. */
+/** New access key for this bridge; the old one stops working at once. */
+suspend fun Api.rotateToken(): String =
+    sendJson<JsonObject>("POST", "/api/token/rotate", JsonObject(emptyMap()))["token"].toString().trim('"')
 suspend fun Api.v100FreeGpu(): JsonObject = sendJson("POST", "/api/v100/free_gpu", JsonObject(emptyMap()))
+
+// ------------------------------------------------------------------ benchmark the loaded model from the phone
+@Serializable
+data class BenchState(
+    val running: Boolean = false,
+    val model: String = "",
+    @SerialName("model_name") val modelName: String = "",
+    @SerialName("preset_name") val presetName: String = "",
+    val log: List<String> = emptyList(),
+    val scores: Map<String, Double> = emptyMap(),
+    val speed: Map<String, Double> = emptyMap(),
+    val error: String = "",
+    val elapsed: Long = 0,
+)
+
+suspend fun Api.benchState(): BenchState = getJson("/api/v100/bench")
+suspend fun Api.benchStart(categories: List<String>, speed: Boolean): JsonObject =
+    sendJson("POST", "/api/v100/bench", buildJsonObject {
+        put("speed", speed)
+        put("categories", kotlinx.serialization.json.JsonArray(categories.map { kotlinx.serialization.json.JsonPrimitive(it) }))
+    })
+suspend fun Api.benchStop(): JsonObject = sendJson("POST", "/api/v100/bench/stop", JsonObject(emptyMap()))

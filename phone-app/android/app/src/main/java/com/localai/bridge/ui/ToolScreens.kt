@@ -371,6 +371,22 @@ fun SettingsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
+                    Text("Notify when a reply is ready")
+                    Text("If you leave the app while the PC is writing, you get a \"Reply ready\" notification.",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+                Switch(checked = vm.notifyDone, onCheckedChange = { vm.updateNotifyDone(it) })
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Sound when a reply finishes")
+                    Text("A short sound when the answer is complete while the chat is open.",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+                Switch(checked = vm.soundDone, onCheckedChange = { vm.updateSoundDone(it) })
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
                     Text("Read replies aloud")
                     Text("Every finished reply is spoken with the phone's voice, Arabic or English (detected per sentence). " +
                         "Any reply can also be read with its speaker button.", style = MaterialTheme.typography.bodySmall)
@@ -413,6 +429,17 @@ fun SettingsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             HorizontalDivider()
             Text("Quick tunnel URLs change every time the server restarts. Re-scan the QR after a restart, " +
                 "or configure a named Cloudflare tunnel for a fixed address.", style = MaterialTheme.typography.bodySmall)
+            run {
+                var confirmKey by remember { mutableStateOf(false) }
+                if (confirmKey) AlertDialog(onDismissRequest = { confirmKey = false },
+                    title = { Text("Change the access key?") },
+                    text = { Text("The PC makes a new key and this phone switches to it at once. The old key and old QR " +
+                        "stop working, so every other paired device (desktop app, other phones) must re-pair. Use it " +
+                        "if a QR or phone was lost or shared.") },
+                    confirmButton = { TextButton(onClick = { confirmKey = false; vm.changeKey() }) { Text("Change key") } },
+                    dismissButton = { TextButton(onClick = { confirmKey = false }) { Text("Cancel") } })
+                OutlinedButton(onClick = { confirmKey = true }, modifier = Modifier.fillMaxWidth()) { Text("Change access key") }
+            }
             OutlinedButton(onClick = { vm.unpair() }, modifier = Modifier.fillMaxWidth()) { Text("Disconnect / re-pair") }
         }
     }

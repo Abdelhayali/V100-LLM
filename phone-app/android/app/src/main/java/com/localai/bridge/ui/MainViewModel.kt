@@ -1,6 +1,7 @@
 package com.localai.bridge.ui
 
 import com.localai.bridge.data.v100Status
+import com.localai.bridge.data.rotateToken
 
 import android.app.Application
 import android.net.Uri
@@ -89,6 +90,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var editingMessageId by mutableStateOf<Long?>(null)
     var themeMode by mutableStateOf(prefs.themeMode)   // system | light | dark
     var webSearch by mutableStateOf(prefs.webSearch)   // give the model internet search
+    var sandbox by mutableStateOf(prefs.sandbox)          // run_code in the AppContainer sandbox
     var ocr by mutableStateOf(prefs.ocr)               // OCR sub-model: off/gpu/cpu
     var thinking by mutableStateOf(prefs.thinking)     // thinking effort: auto/off/low/medium/high/max
     var emailAccess by mutableStateOf(prefs.emailAccess)          // Gmail tools in chats (off by default)
@@ -165,6 +167,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun parsePairQr(text: String): PairPayload? =
         runCatching { Api("http://x", "").json.decodeFromString<PairPayload>(text) }.getOrNull()
+
+    /** Change the bridge's access key and keep this phone paired with the new one. */
+    fun changeKey() = viewModelScope.launch {
+        val a = api ?: return@launch
+        try {
+            val t = a.rotateToken()
+            require(t.length >= 20) { "the PC returned no key" }
+            prefs.token = t
+            api = Api(prefs.serverUrl, t)
+            info = api?.info()
+            toast = "Access key changed. Other devices (desktop app, other phones) must re-pair with the new QR."
+        } catch (e: Exception) { toast = "Could not change the key: ${e.message}" }
+    }
 
     fun unpair() {
         streamJob?.cancel()
@@ -348,7 +363,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val org = organizerAccess || onceOrganizer
                 onceEmail = false; onceOrganizer = false
                 consume(a.chat(sid, text, atts.map { it.id }, currentModel.ifBlank { null }, webSearch, autoApprove,
-                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = thinking, ocr = ocr))
+                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = thinking, ocr = ocr, sandbox = sandbox))
             } catch (e: com.localai.bridge.data.ApiException) {
                 if (e.code == 409) {
                     // the PC is still finishing the previous reply (e.g. the phone was off): show it instead of failing
@@ -388,7 +403,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             phase = ""; streamStartMs = 0L; liveTokens = 0; liveTps = null
             runCatching { loadSessions() }
         }
-        if (turnCompleted) syncFromServer()
+        if (turnCompleted) {
+            if (soundDone && backgroundAtMs == 0L) playDoneSound()   // reply finished while the chat is open
+            syncFromServer()
+        }
         else if (dropped || !turnEnded) {
             // phone slept / network changed: the PC keeps working, so reconnect and pick the reply up again
             items += ChatItem.Notice(nextKey(), "Connection lost - reconnecting…")
@@ -434,7 +452,26 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun onAppBackground() { tasksJob?.cancel(); pcJob?.cancel(); backgroundAtMs = System.currentTimeMillis() }
+    var notifyDone by mutableStateOf(prefs.notifyDone)
+    var soundDone by mutableStateOf(prefs.soundDone)
+    fun updateNotifyDone(on: Boolean) { notifyDone = on; prefs.notifyDone = on }
+    fun updateSoundDone(on: Boolean) { soundDone = on; prefs.soundDone = on; if (on) playDoneSound() }
+
+    /** Short "done" sound (the phone's notification sound). */
+    fun playDoneSound() {
+        runCatching {
+            val ctx = getApplication<Application>()
+            android.media.RingtoneManager.getRingtone(ctx,
+                android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION))?.play()
+        }
+    }
+
+    fun onAppBackground() {
+        tasksJob?.cancel(); pcJob?.cancel(); backgroundAtMs = System.currentTimeMillis()
+        val sid = currentSessionId
+        if (streaming && notifyDone && sid != null)   // keep watching the reply and say when it is ready
+            com.localai.bridge.ReplyWatchService.start(getApplication(), prefs.serverUrl, prefs.token, sid, currentTitle)
+    }
 
     private fun startPcPolling() {
         pcJob?.cancel()
@@ -484,6 +521,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Called when the app comes back to the foreground. */
     fun onAppForeground() {
+        com.localai.bridge.ReplyWatchService.stop(getApplication())
         if (paired) { startTaskPolling(); startPcPolling() }
         val away = backgroundAtMs > 0 && System.currentTimeMillis() - backgroundAtMs > 3_000
         backgroundAtMs = 0L
@@ -678,6 +716,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val last = items.lastOrNull { it is ChatItem.User } as? ChatItem.User ?: return
         startEdit(last)
         if (editingMessageId != null) send()
+    }
+
+    fun toggleSandbox() {
+        sandbox = !sandbox
+        prefs.sandbox = sandbox
+        toast = if (sandbox) "Sandbox ON: code runs without network and without access to your files (no approval needed)"
+                else "Sandbox OFF: code runs normally on the PC"
     }
 
     fun updateOcr(mode: String) {

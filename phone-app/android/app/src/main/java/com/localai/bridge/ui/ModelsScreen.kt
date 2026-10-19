@@ -132,6 +132,7 @@ fun ModelsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             StatusCard(status, busy, onUnload = { unload() }, onFreeGpu = { freeGpu() })
+            BenchCard(vm, modelReady = status?.health == "ready")
 
             Text("Models", style = MaterialTheme.typography.titleMedium)
             error?.let {
@@ -214,7 +215,14 @@ private fun StatusCard(s: V100Status?, busy: Boolean, onUnload: () -> Unit, onFr
             if (s.vramTotalMb > 0) Meter("$gpu VRAM", s.vramUsedMb.toFloat() / s.vramTotalMb,
                 "%.1f / %.1f GB".format(s.vramUsedMb / 1024.0, s.vramTotalMb / 1024.0))
             Meter("GPU load", s.gpuUtil / 100f, "${s.gpuUtil}%")
+            s.gpuTemp?.let { t -> Meter("GPU temperature", (t / 90.0).toFloat(), "%.0f °C".format(t) +
+                (s.gpuPower?.let { " · %.0f / %.0f W".format(it, s.gpuPowerLimit ?: 0.0) } ?: "")) }
+            s.gpuClock?.let { c -> Meter("GPU clock", (c / (s.gpuClockMax ?: c)).toFloat(), "%.0f / %.0f MHz".format(c, s.gpuClockMax ?: c) +
+                if (s.gpuThrottle.isNotEmpty()) " · slowed: " + s.gpuThrottle.joinToString() else "") }
             Meter("CPU", (s.cpu / 100).toFloat(), "%.0f%% of %d threads".format(s.cpu, s.cpuThreads))
+            if (s.cpuTemp != null) Meter("CPU temperature", (s.cpuTemp / 100.0).toFloat(), "%.0f °C".format(s.cpuTemp))
+            else Text("CPU temperature: n/a (run LibreHardwareMonitor as admin on the PC to show it)",
+                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (s.ramTotal > 0) Meter("RAM", s.ramUsed.toFloat() / s.ramTotal,
                 "${gib(s.ramUsed)} / ${gib(s.ramTotal)} GB" + if (s.modelRam > 0) " · model ${gib(s.modelRam)}" else "")
             FreeGpuButton(busy, onFreeGpu)

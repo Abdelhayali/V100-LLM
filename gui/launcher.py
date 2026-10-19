@@ -37,7 +37,8 @@ USER_PARAMS = ROOT / "user-params.json"
 UI_PORT = int(os.environ.get("LAUNCHER_PORT", "7860"))
 HOST = "127.0.0.1"
 
-state = {"proc": None, "model": None, "preset": None, "kernel": None, "port": None, "started": None, "cmd": None}
+state = {"proc": None, "model": None, "preset": None, "kernel": None, "port": None, "started": None, "cmd": None,
+         "want": None, "ready_once": False, "crashes": []}   # want: what the user started (for crash recovery)
 dl = {"active": False, "item": "", "done": 0, "total": 0, "error": "", "queue": []}
 log = deque(maxlen=500)
 lock = threading.Lock()
@@ -317,14 +318,45 @@ def download_worker(mid, k):
 
 
 # ---------------------------------------------------------------- server control
+CRASH_LIMIT = (3, 600)   # restart a crashed server at most 3 times in 10 minutes
+
+
 def reader(proc):
     for line in iter(proc.stdout.readline, ""):
         log.append(line.rstrip())
-    log.append(f"[launcher] server exited with code {proc.wait()}")
+    code = proc.wait()
+    log.append(f"[launcher] server exited with code {code}")
+    with lock:   # crash recovery: the server died by itself (not Stop / a new Start) after it had been ready
+        want = state["want"] if state["proc"] is proc else None
+        was_ready = state["ready_once"]
+    if not want:
+        return
+    if not was_ready:
+        log.append("[launcher] it exited while loading (often: not enough memory for this preset); not restarting")
+        return
+    now = time.time()
+    state["crashes"] = [t for t in state["crashes"] if now - t < CRASH_LIMIT[1]] + [now]
+    if len(state["crashes"]) > CRASH_LIMIT[0]:
+        log.append(f"[launcher] crashed {CRASH_LIMIT[0]} times in {CRASH_LIMIT[1] // 60} minutes; giving up")
+        return
+    log.append(f"[launcher] crash recovery: restarting {want[0]} / {want[1]} in 3 s "
+               f"({len(state['crashes'])}/{CRASH_LIMIT[0]})")
+
+    def again():
+        time.sleep(3)
+        with lock:
+            if state["want"] is not want:   # the user stopped or started something meanwhile
+                return
+        try:
+            start_server(*want, recovering=True)
+        except Exception as e:
+            log.append(f"[launcher] crash recovery failed: {e}")
+    threading.Thread(target=again, daemon=True).start()
 
 
 def stop_server():
     with lock:
+        state["want"] = None   # an intentional stop: no crash recovery
         p = state["proc"]
         if p and p.poll() is None:
             p.terminate()
@@ -335,7 +367,7 @@ def stop_server():
         state.update(proc=None, model=None, preset=None, kernel=None, started=None, cmd=None)
 
 
-def start_server(mid, preset, k, params):
+def start_server(mid, preset, k, params, recovering=False):
     m = model_entry(mid)
     missing = [f["name"] for f in m["files"] if not file_path(mid, f["name"]).exists()]
     if missing:
@@ -363,7 +395,10 @@ def start_server(mid, preset, k, params):
                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     threading.Thread(target=reader, args=(proc,), daemon=True).start()
     with lock:
-        state.update(proc=proc, model=mid, preset=preset, kernel=k, port=port, started=time.time(), cmd=cmd)
+        state.update(proc=proc, model=mid, preset=preset, kernel=k, port=port, started=time.time(), cmd=cmd,
+                     want=(mid, preset, k, params), ready_once=False)
+        if not recovering:
+            state["crashes"] = []
     saved = load_user()
     saved[f"{mid}/{preset}/{k}"] = params
     USER_PARAMS.write_text(json.dumps(saved, indent=1), encoding="utf-8")
@@ -415,21 +450,58 @@ def server_health():
         return "stopped"
     try:
         with urllib.request.urlopen(f"http://{HOST}:{state['port']}/health", timeout=2) as r:
-            return "ready" if json.loads(r.read()).get("status") in ("ok", "healthy") else "loading"
+            ok = json.loads(r.read()).get("status") in ("ok", "healthy")
+            if ok:
+                state["ready_once"] = True
+            return "ready" if ok else "loading"
     except urllib.error.HTTPError as e:
         return "loading" if e.code == 503 else "error"
     except Exception:
         return "loading"
 
 
+THROTTLE = {0x4: "power cap", 0x8: "HW slowdown", 0x20: "thermal (SW)", 0x40: "thermal (HW)", 0x80: "power brake"}
+
+
 def gpu_info():
     try:
-        out = subprocess.run(["nvidia-smi", "--query-gpu=name,memory.used,memory.total,utilization.gpu",
-                              "--format=csv,noheader,nounits"], capture_output=True, text=True, timeout=5).stdout
-        name, used, total, util = [x.strip() for x in out.splitlines()[0].split(",")]
-        return {"name": name, "used": int(used), "total": int(total), "util": int(util)}
+        out = subprocess.run(["nvidia-smi", "--query-gpu=name,memory.used,memory.total,utilization.gpu,temperature.gpu,"
+                              "power.draw,power.limit,clocks.sm,clocks.max.sm,clocks_throttle_reasons.active",
+                              "--format=csv,noheader,nounits"], capture_output=True, text=True, timeout=5,
+                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
+        f = [x.strip() for x in out.splitlines()[0].split(",")]
+        num = lambda s: float(s) if s.replace(".", "", 1).isdigit() else None
+        reasons = int(f[9], 16) if f[9].startswith("0x") else 0
+        return {"name": f[0], "used": int(f[1]), "total": int(f[2]), "util": int(f[3]), "temp": num(f[4]),
+                "power": num(f[5]), "power_limit": num(f[6]), "clock": num(f[7]), "clock_max": num(f[8]),
+                "throttle": [v for k, v in THROTTLE.items() if reasons & k]}
     except Exception:
         return None
+
+
+# CPU temperature: Windows only exposes it through a hardware-monitor driver (needs admin). Read LibreHardwareMonitor /
+# OpenHardwareMonitor when one is running, else the ACPI thermal zone; refreshed in the background every 10 s.
+cpu_temp = {"c": None, "source": ""}
+
+
+def _cpu_temp_loop():
+    ps = ("$s = $null; foreach ($ns in 'root/LibreHardwareMonitor','root/OpenHardwareMonitor') { try { $s = Get-CimInstance "
+          "-Namespace $ns -ClassName Sensor -ErrorAction Stop | Where-Object { $_.SensorType -eq 'Temperature' -and "
+          "($_.Name -like '*Package*' -or $_.Name -like '*Core (Tctl*' -or $_.Name -like 'CPU*') } | Sort-Object Value "
+          "-Descending | Select-Object -First 1; if ($s) { 'lhm ' + $s.Value; break } } catch {} }; if (-not $s) { try { "
+          "$z = Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature -ErrorAction Stop | "
+          "Select-Object -First 1; 'acpi ' + (($z.CurrentTemperature / 10) - 273.15) } catch { 'none' } }")
+    while True:
+        try:
+            out = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=20,
+                                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout.strip().split()
+            if len(out) == 2:
+                cpu_temp.update(c=round(float(out[1]), 1), source="LibreHardwareMonitor" if out[0] == "lhm" else "ACPI")
+            else:
+                cpu_temp.update(c=None, source="")
+        except Exception:
+            pass
+        time.sleep(10)
 
 
 # ---------------------------------------------------------------- CPU / RAM (Windows API through ctypes, no extra packages)
@@ -463,6 +535,7 @@ def sys_info():
             out["cpu"] = round(100 * busy / (dk + du), 1) if dk + du else 0.0
         _cpu_prev = t
     out["cpu_threads"] = os.cpu_count()
+    out["cpu_temp"], out["cpu_temp_source"] = cpu_temp["c"], cpu_temp["source"]
 
     proc = state.get("proc")
     if proc and proc.poll() is None:
@@ -590,6 +663,7 @@ def gen_all_bats():
 
 
 if __name__ == "__main__":
+    threading.Thread(target=_cpu_temp_loop, daemon=True).start()
     if "--gen-bats" in sys.argv:
         gen_all_bats()
         sys.exit(0)

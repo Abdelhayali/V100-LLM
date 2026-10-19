@@ -15,6 +15,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        ReplyWatchService.channels(this)
+        if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+            != android.content.pm.PackageManager.PERMISSION_GRANTED)   // for "Reply ready"
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 7)
         setContent { BridgeTheme(vm.themeMode) { AppRoot(vm) } }
     }
 }

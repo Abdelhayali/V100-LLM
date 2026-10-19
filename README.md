@@ -80,6 +80,12 @@ forwarding), from anywhere:
 | 🔊 **Read aloud** | Replies spoken in Arabic and English (detected per sentence), per reply or automatically |
 | 📝 **Notes, tasks & calendar** | Stored on the PC and used by the model: "what tasks do I have?", "remind me…", "what's tomorrow?" |
 | 📧 **Gmail & Google Calendar** | Read email, draft replies, list / add events; sending always waits for your approval |
+| 🛡 **Sandbox for code** | Per chat (📎 menu → Run code in sandbox): the AI's code runs in a Windows AppContainer - no network, no access to your files, 4 GB memory cap, killed at the time limit. Packages already installed (numpy, matplotlib) work, and sandboxed code needs no approval. No admin rights or installs |
+| 🔔 **Reply ready** | A notification when a reply finishes while the app is in the background, and a short sound when it finishes while the chat is open (both can be turned off in Settings) |
+| 🌡 **GPU / CPU status** | Models tab: VRAM, GPU load, **temperature, power, clock and throttle reason**, CPU, RAM; CPU temperature when LibreHardwareMonitor runs on the PC. **Free GPU** ends the model, a stuck OCR and leftover processes |
+| 📊 **Benchmark from the phone** | Models tab: speed test and any categories of the hard suite on the loaded model (results stay on the PC in `eval/results_phone`, the public leaderboard is not changed) |
+| 🔁 **Crash recovery** | If the model server dies after it was ready, the launcher starts the same preset again (at most 3 times in 10 minutes) |
+| 🔑 **Change access key** | Settings → Change access key: a new key at once, the old key and QR stop working |
 | 📄 **OCR sub-model** | [baidu/Unlimited-OCR](https://huggingface.co/baidu/Unlimited-OCR) (MIT) reads scanned PDFs, photos of pages and text in images (tables, formulas, Arabic and English) for the chat model through an `ocr_document` tool. Choose per chat: **Off**, **A: GPU** (unloads the chat model, reads on the V100, loads it again) or **B: CPU** (the chat model stays loaded). Install once with `phone-app/ocr/setup-ocr.bat` (~10 GB) |
 | 🧠 **Thinking effort** | Off / Low / Medium / High / Max per chat (a llama.cpp thinking budget: 1k / 4k / 16k tokens / unlimited), so a reply never spends all its tokens thinking |
 | 🔑 **OpenAI API anywhere** | An OpenAI-format URL + API key (made and refreshed in the app) for the loaded model; same URL after switching models |
@@ -148,6 +154,21 @@ Some authors require you to accept their terms on Hugging Face before downloadin
 
 Recommended sampling: temperature 0.7, top-k 20, top-p 0.8 (the presets set these). For precise formatting tasks, turn
 thinking to **Low** in the apps.
+
+### Fixed address for the phone (named Cloudflare tunnel)
+
+The default quick tunnel gets a new random address every time the bridge restarts, so the phone must re-scan the QR. A
+named tunnel keeps one address for good (free Cloudflare account + a domain on Cloudflare):
+
+1. In the Cloudflare dashboard: **Zero Trust → Networks → Tunnels → Create a tunnel** (type Cloudflared), name it, and
+   copy the **token** from the install command it shows.
+2. Add a **public hostname**, e.g. `ai.yourdomain.com`, service **HTTP** → `127.0.0.1:8766` (the bridge port in
+   `phone-app/server/config.json`).
+3. In `phone-app/server/config.json` set `"tunnel_mode": "named"`, `"tunnel_token": "<the token>"` and
+   `"public_url": "https://ai.yourdomain.com"`, then restart the bridge and scan its QR once.
+
+From then on the address never changes. If a phone or QR is lost, use **Settings → Change access key** in the app: the
+old key stops working at once, and other devices re-pair with the new QR.
 
 ### Troubleshooting
 

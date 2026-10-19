@@ -360,8 +360,9 @@ def main():
     ap.add_argument("--port", type=int, default=8899)
     ap.add_argument("--skip", nargs="*", default=[])
     ap.add_argument("--only", nargs="*", default=[], help="re-run just these categories and merge into the existing result")
+    ap.add_argument("--out-dir", default="results_hard", help="where the result goes (the phone app uses results_phone)")
     a = ap.parse_args()
-    out = HERE / "results_hard" / f"{a.label}.json"
+    out = HERE / a.out_dir / f"{a.label}.json"
     if a.only and out.exists():
         old = json.loads(out.read_text(encoding="utf-8-sig"))
         for cat in a.only:

@@ -2,6 +2,7 @@ package com.localai.bridge.ui
 
 import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.DocumentScanner
+import androidx.compose.material.icons.filled.Shield
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -270,13 +271,17 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             }
 
             // ---- active modes (tap to turn off) - kept out of the input row so the text field stays wide
-            if (vm.webSearch || vm.autoApprove || vm.emailAccess || vm.organizerAccess || vm.thinking != "auto" || vm.ocr != "off") {
+            if (vm.webSearch || vm.autoApprove || vm.emailAccess || vm.organizerAccess || vm.thinking != "auto" || vm.ocr != "off" || vm.sandbox) {
                 // one line that scrolls sideways: several chips must never squeeze each other into tall columns
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(start = 12.dp, end = 12.dp, top = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (vm.thinking != "auto") InputChip(selected = vm.thinking != "off", onClick = { thinkMenu = true },
                         label = { Text("Thinking: " + (THINKING_MODES.firstOrNull { it.first == vm.thinking }?.second ?: vm.thinking), maxLines = 1, softWrap = false) },
                         leadingIcon = { Icon(Icons.Default.Psychology, null, Modifier.size(16.dp)) })
+                    if (vm.sandbox) InputChip(selected = true, onClick = { vm.toggleSandbox() },
+                        label = { Text("Sandbox", maxLines = 1, softWrap = false) },
+                        leadingIcon = { Icon(Icons.Default.Shield, null, Modifier.size(16.dp)) },
+                        trailingIcon = { Icon(Icons.Default.Close, "Turn off", Modifier.size(14.dp)) })
                     if (vm.ocr != "off") InputChip(selected = true, onClick = { ocrMenu = true },
                         label = { Text("OCR: " + (if (vm.ocr == "gpu") "GPU" else "CPU"), maxLines = 1, softWrap = false) },
                         leadingIcon = { Icon(Icons.Default.DocumentScanner, null, Modifier.size(16.dp)) })
@@ -326,6 +331,9 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                         DropdownMenuItem(text = { Text("OCR: " + (OCR_MODES.firstOrNull { it.first == vm.ocr }?.second ?: vm.ocr)) },
                             leadingIcon = { Icon(Icons.Default.DocumentScanner, null) },
                             onClick = { attachMenu = false; ocrMenu = true })
+                        DropdownMenuItem(text = { Text("Run code in sandbox") }, leadingIcon = { Icon(Icons.Default.Shield, null) },
+                            trailingIcon = { Switch(checked = vm.sandbox, onCheckedChange = null) },
+                            onClick = { vm.toggleSandbox() })
                         DropdownMenuItem(text = { Text("Web search") }, leadingIcon = { Icon(Icons.Default.Public, null) },
                             trailingIcon = { Switch(checked = vm.webSearch, onCheckedChange = null) },
                             onClick = { vm.toggleWebSearch() })
