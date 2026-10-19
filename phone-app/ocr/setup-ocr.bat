@@ -11,6 +11,9 @@ if not exist .venv\Scripts\python.exe (
 .venv\Scripts\python.exe -m pip install -r requirements.txt || goto :fail
 .venv\Scripts\python.exe get-model.py || goto :fail
 .venv\Scripts\python.exe patch-model.py || goto :fail
+rem speech-to-text for voice notes: faster-whisper large-v3-turbo (~1.6 GB)
+.venv\Scripts\python.exe -m pip install faster-whisper==1.2.1 || goto :fail
+.venv\Scripts\python.exe -c "from huggingface_hub import snapshot_download; snapshot_download('mobiuslabsgmbh/faster-whisper-large-v3-turbo', local_dir='whisper')" || goto :fail
 echo.
 echo OCR ready. Choose OCR A (GPU) or B (CPU) in the app.
 pause

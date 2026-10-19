@@ -25,6 +25,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.Response
 import okio.BufferedSink
 import okio.source
@@ -180,6 +181,14 @@ class Api(private val baseUrl: String, private val token: String) {
 
     suspend fun upload(cr: ContentResolver, uri: Uri, nameOverride: String? = null): AttachmentRef =
         json.decodeFromString(exec(req("/api/uploads").post(multipart(cr, uri, nameOverride)).build()))
+
+    /** Voice note: the recording is transcribed and summarized on the PC (cpu = chat model stays loaded, gpu = faster). */
+    suspend fun uploadVoice(file: File, device: String, addTasks: Boolean): String {
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", file.name, file.asRequestBody("audio/mp4".toMediaType()))
+            .addFormDataPart("device", device).addFormDataPart("add_tasks", addTasks.toString()).build()
+        return exec(req("/api/notes/voice").post(body).build())
+    }
 
     // ---- filesystem
     suspend fun roots(): FsRoots = get("/api/fs/roots")

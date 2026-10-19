@@ -222,6 +222,10 @@ def build_llm_messages(session_id: str) -> list[dict]:
     last_user_idx = max((i for i, r in enumerate(rows) if r["role"] == "user"), default=-1)
     ctx = _contexts(rows)
     sp = system_prompt()
+    from . import projects
+    pc = projects.context(session_id)
+    if pc:   # a project chat: goal, notes and folder of the project
+        sp += "\n\n" + pc
     if summ:
         sp += "\n\nSummary of the earlier part of this conversation (older messages were compressed):\n" + summ["summary"]
     out = [{"role": "system", "content": sp}]
@@ -567,6 +571,9 @@ async def chat_turn(run: Run, model: str | None):
                 apply_thinking(payload, run.thinking)
                 if use_tools:
                     payload["tools"] = tools.tool_schemas(web=run.web, email=run.email, organizer_access=run.organizer)
+                    from . import projects
+                    if projects.of_session(sid):
+                        payload["tools"].append(projects.note_tool_schema())
                     if run.ocr != "off":
                         payload["tools"].append(ocr_mod.schema())
                 try:
@@ -598,7 +605,9 @@ async def chat_turn(run: Run, model: str | None):
                     run.emit({"type": "tool_call", "id": tc["id"], "name": name, "args": args})
                     blocked = ((name in tools.EMAIL_TOOLS and not run.email)
                                or (name in tools.ORGANIZER_TOOLS and not run.organizer))
-                    if blocked:   # the model asked for a tool the user did not switch on: refuse, never run it
+                    approval = "auto" if name in tools.NEEDS_APPROVAL else "not needed"
+                    if blocked:
+                        approval = "blocked"   # the model asked for a tool the user did not switch on: refuse, never run it
                         what = "email" if name in tools.EMAIL_TOOLS else "tasks, notes and calendar"
                         result, atts = (f"Access denied: the user has not allowed {what} access in this chat. Tell them to "
                                         f"switch on '{what}' access in the app (paperclip menu) if they want you to use it."), []
@@ -608,6 +617,9 @@ async def chat_turn(run: Run, model: str | None):
                         run.emit({"type": "phase", "phase": "tool", "name": name})
                         result, atts = await ocr_mod.run(run.ocr, args,
                                                          lambda m: run.emit({"type": "notice", "text": m})), []
+                    elif name == "project_note":
+                        from . import projects
+                        result, atts = projects.add_note(sid, str(args.get("text", ""))), []
                     elif name == "update_tasks":
                         plan = normalize_tasks(args.get("tasks"))
                         run.emit({"type": "tasks", "tasks": plan})
@@ -626,6 +638,7 @@ async def chat_turn(run: Run, model: str | None):
                             ok = False
                         finally:
                             approvals.pop(tc["id"], None)
+                        approval = "approved" if ok else "denied"
                         if not ok:
                             result, atts = "The user denied this action.", []
                         else:
@@ -635,6 +648,7 @@ async def chat_turn(run: Run, model: str | None):
                         run.emit({"type": "phase", "phase": "tool", "name": name})
                         result, atts = await asyncio.to_thread(tools.execute_tool, name, args)
                     db.add_message(sid, "tool", result, attachments=atts or None, tool_call_id=tc["id"], name=name)
+                    audit.log(sid, name, args, approval, result, "schedule" if getattr(run, "scheduled", False) else "chat")
                     run.emit({"type": "tool_result", "id": tc["id"], "name": name, "output": result,
                               "attachments": atts})
                     if run.stopped:
@@ -1256,6 +1270,18 @@ app.include_router(models_ctl.router, dependencies=[Auth])
 from . import bench  # noqa: E402
 
 app.include_router(bench.router, dependencies=[Auth])
+from . import projects  # noqa: E402
+
+app.include_router(projects.router, dependencies=[Auth])
+from . import notes  # noqa: E402
+
+app.include_router(notes.router, dependencies=[Auth])
+from . import research  # noqa: E402
+
+app.include_router(research.router, dependencies=[Auth])
+from . import audit  # noqa: E402
+
+app.include_router(audit.router, dependencies=[Auth])
 from . import schedules  # noqa: E402
 
 app.include_router(schedules.router, dependencies=[Auth])

@@ -34,6 +34,10 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Workspaces
+import androidx.compose.material.icons.filled.KeyboardVoice
+import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Key
@@ -193,6 +197,10 @@ fun MainShell(vm: MainViewModel) {
                     Triple(Screen.MODELS, "Models", Icons.Default.Storage),
                     Triple(Screen.SCHEDULES, "Schedules\n& alerts", Icons.Default.Schedule),
                     Triple(Screen.TRANSLATE, "Translator", Icons.Default.Translate),
+                    Triple(Screen.RESEARCH, "Deep\nresearch", Icons.Default.TravelExplore),
+                    Triple(Screen.NOTES, "Voice\nnotes", Icons.Default.KeyboardVoice),
+                    Triple(Screen.PROJECTS, "Projects", Icons.Default.Workspaces),
+                    Triple(Screen.AUDIT, "Audit\nlog", Icons.Default.History),
                     Triple(Screen.TASKS, "Running" + if (vm.backgroundTaskCount > 0) " (${vm.backgroundTaskCount})" else "", Icons.Default.Memory),
                     Triple(Screen.API, "API key", Icons.Default.Key),
                     Triple(Screen.AGENT, "Code\nagent", Icons.Default.Code),
@@ -244,6 +252,10 @@ fun MainShell(vm: MainViewModel) {
             Screen.ORGANIZER -> OrganizerScreen(vm, openDrawer)
             Screen.SCHEDULES -> SchedulesScreen(vm, openDrawer)
             Screen.TRANSLATE -> TranslateScreen(vm, openDrawer)
+            Screen.RESEARCH -> ResearchScreen(vm, openDrawer)
+            Screen.NOTES -> NotesScreen(vm, openDrawer)
+            Screen.PROJECTS -> ProjectsScreen(vm, openDrawer)
+            Screen.AUDIT -> AuditScreen(vm, openDrawer)
         }
     }
 

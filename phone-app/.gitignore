@@ -16,3 +16,4 @@ ocr/.venv/
 ocr/model/
 ocr/test/
 ocr/*.out
+ocr/whisper/

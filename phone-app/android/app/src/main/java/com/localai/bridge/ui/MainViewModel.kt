@@ -30,7 +30,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-enum class Screen { CHAT, FILES, TERMINAL, MEMORY, SETTINGS, TASKS, AGENT, MODELS, API, ORGANIZER, SCHEDULES, TRANSLATE }
+enum class Screen { CHAT, FILES, TERMINAL, MEMORY, SETTINGS, TASKS, AGENT, MODELS, API, ORGANIZER, SCHEDULES, TRANSLATE, RESEARCH, NOTES, PROJECTS, AUDIT }
 
 sealed interface ChatItem {
     val key: String
@@ -555,9 +555,22 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             "ask" -> { newChat(); screen = Screen.CHAT; focusInput = true }
             "voice" -> { newChat(); screen = Screen.CHAT; pendingVoice = true }
             "drive" -> { newChat(); startDriving() }
+            "assist" -> {   // long-press home: ask about what is on the screen (screenshot when the phone gives one)
+                newChat(); screen = Screen.CHAT
+                val shot = intent.getStringExtra("assist_screenshot").orEmpty()
+                intent.removeExtra("assist_screenshot")
+                if (shot.isNotBlank() && java.io.File(shot).exists()) viewModelScope.launch {
+                    attach(listOf(Uri.fromFile(java.io.File(shot))), "screen_${System.currentTimeMillis()}.png").join()
+                    pendingVoice = true
+                } else pendingVoice = true
+            }
             "models" -> screen = Screen.MODELS
+            "notes" -> screen = Screen.NOTES
         }
         intent.removeExtra("widget_action")
+        if (intent.action == android.content.Intent.ACTION_ASSIST || intent.action == android.content.Intent.ACTION_VOICE_COMMAND) {
+            intent.action = null; newChat(); screen = Screen.CHAT; pendingVoice = true; return
+        }
         val uris = when (intent.action) {
             android.content.Intent.ACTION_SEND -> listOfNotNull(
                 if (android.os.Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(android.content.Intent.EXTRA_STREAM, Uri::class.java)

@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- to use Google's text-to-speech engine (best Arabic voices) when it is installed -->
@@ -38,6 +39,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
+            <!-- simple assist: phones that list apps handling ASSIST / voice command buttons -->
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+                <action android:name="android.intent.action.VOICE_COMMAND" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
             <!-- "Share to LocalAI Bridge" from any app: photos, screenshots, PDFs, links and text -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
@@ -54,6 +61,26 @@
             </intent-filter>
         </activity>
 
+        <!-- the phone's digital assistant: long-press home opens the app listening, with a screenshot -->
+        <service
+            android:name=".AssistService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_VOICE_INTERACTION">
+            <intent-filter><action android:name="android.service.voice.VoiceInteractionService" /></intent-filter>
+            <meta-data android:name="android.voice_interaction" android:resource="@xml/assist_service" />
+        </service>
+        <service
+            android:name=".AssistSessionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_VOICE_INTERACTION" />
+        <service
+            android:name=".AssistRecognitionService"
+            android:exported="true">
+            <intent-filter><action android:name="android.speech.RecognitionService" /></intent-filter>
+            <meta-data android:name="android.speech" android:resource="@xml/assist_recognition" />
+        </service>
+
         <!-- home-screen widget: GPU status + Ask / Voice -->
         <receiver
             android:name=".GpuWidget"
@@ -65,6 +92,12 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_gpu_info" />
         </receiver>
+
+        <!-- records voice notes / meetings with the screen off -->
+        <service
+            android:name=".RecordService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
         <!-- watches a reply while the app is in the background, then posts "Reply ready" -->
         <service

@@ -45,6 +45,7 @@ class ScheduleIn(BaseModel):
     email: bool = False
     organizer: bool = False
     enabled: bool = True
+    project_id: int = 0          # a project's schedule: its runs are project chats (goal + notes in context)
 
 
 def _next_run(kind: str, at: str, every_min: int, after: float) -> float:
@@ -76,6 +77,7 @@ async def schedules_add(b: ScheduleIn):
                 (b.name.strip()[:80] or "Task", b.prompt, b.kind, b.at, b.every_min, int(b.web), int(b.email),
                  int(b.organizer), int(b.enabled), "", 0, _next_run(b.kind, b.at, b.every_min, time.time()), "",
                  time.time()))
+    db._q("UPDATE schedules SET project_id=? WHERE id=?", (b.project_id, i))
     return _view(db._q("SELECT * FROM schedules WHERE id=?", (i,), one=True))
 
 
@@ -86,6 +88,7 @@ async def schedules_update(sid: int, b: ScheduleIn):
     db._q("UPDATE schedules SET name=?,prompt=?,kind=?,at=?,every_min=?,web=?,email=?,organizer=?,enabled=?,next_run=? "
           "WHERE id=?", (b.name.strip()[:80] or "Task", b.prompt, b.kind, b.at, b.every_min, int(b.web), int(b.email),
                          int(b.organizer), int(b.enabled), _next_run(b.kind, b.at, b.every_min, time.time()), sid))
+    db._q("UPDATE schedules SET project_id=? WHERE id=?", (b.project_id, sid))
     return _view(db._q("SELECT * FROM schedules WHERE id=?", (sid,), one=True))
 
 
@@ -110,6 +113,9 @@ async def _run_schedule(s: dict):
     if not sess:
         sess = db.create_session("⏰ " + s["name"], "")
         db._q("UPDATE schedules SET session_id=? WHERE id=?", (sess["id"], s["id"]))
+        if s.get("project_id"):
+            from . import projects
+            projects.link(sess["id"], s["project_id"])
     sid = sess["id"]
     if sid in A.runs:                # the previous run of this schedule is still going
         return
@@ -117,6 +123,7 @@ async def _run_schedule(s: dict):
           (time.time(), _next_run(s["kind"], s["at"], s["every_min"], time.time()), "running", s["id"]))
     db.add_message(sid, "user", s["prompt"])
     run = A.Run(sid, web=bool(s["web"]), email=bool(s["email"]), organizer=bool(s["organizer"]), sandbox=True)
+    run.scheduled = True
     A.runs[sid] = run
     waiting = {"approval": False}
 

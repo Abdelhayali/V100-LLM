@@ -261,7 +261,9 @@ async def auto_ocr(mode: str, attachment_ids: list, emit, stopped=lambda: False)
         return 0
     results = await run_files(mode, [Path(a["path"]) for a in todo], emit, stopped=stopped)
     n = 0
+    from . import audit
     for a, text in zip(todo, results):
+        audit.log("", "ocr_document", {"path": a["filename"]}, "not needed", text[:300], "auto-ocr")
         if text.startswith("[OCR of"):
             db._q("INSERT OR REPLACE INTO attachment_ocr VALUES(?,?,?)", (str(a["id"]), text, time.time()))
             n += 1

@@ -80,6 +80,11 @@ forwarding), from anywhere:
 | 🔊 **Read aloud** | Replies spoken in Arabic and English (detected per sentence), per reply or automatically |
 | 📝 **Notes, tasks & calendar** | Stored on the PC and used by the model: "what tasks do I have?", "remind me…", "what's tomorrow?" |
 | 📧 **Gmail & Google Calendar** | Read email, draft replies, list / add events; sending always waits for your approval |
+| 🔎 **Deep research** | Drawer → Deep research: the PC plans searches, reads the pages, takes notes, looks for gaps and writes a report with numbered sources (quick / normal / deep); saved as a chat and a .md file, notification when ready |
+| 🎙 **Voice notes / meetings** | Record on the phone (keeps going with the screen off); the PC transcribes with Whisper large-v3-turbo (Arabic + English) and writes title, summary, key points, decisions and action items, which can go straight to your tasks |
+| 📁 **Long-term projects** | A goal, living notes and a folder shared by all the project's chats; the AI records progress with `project_note`, and a daily schedule can keep working on it |
+| 🧾 **Audit log** | Every tool action the AI took - code, files, email, OCR, schedules - with time, chat, approval and result, searchable in the app |
+| 🏠 **Assistant button** | Set LocalAI Bridge as the phone's digital assistant: long-press home opens it listening, with a screenshot of the screen attached so you can ask about it |
 | ⏰ **Scheduled tasks** | Drawer → Schedules & alerts: a prompt the PC runs by itself (daily at a time, or every N minutes), e.g. "summarize my unread email" at 8:00, in its own chat with the access you give it; a notification when it is done |
 | 🌡 **Temperature alerts** | Your own GPU / CPU limits; a notification when one is passed (checked every 30 s on the PC) |
 | 🎤 **Voice chat** | Mic button in the chat: speak (Arabic or English), the reply is read aloud; a **Stop reading** button while it talks |
