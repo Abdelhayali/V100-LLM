@@ -3,3 +3,10 @@
 *.ps1 text eol=crlf
 *.patch text eol=lf
 *.png binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.gguf binary
+*.zip binary
+*.apk binary
+*.exe binary
