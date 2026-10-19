@@ -730,6 +730,33 @@ async def info():
             "code_exec": config["enable_code_exec"], "require_approval": config["require_tool_approval"]}
 
 
+class TranslateIn(BaseModel):
+    text: str
+    to: str = "en"          # en | ar
+
+
+@app.post("/api/translate", dependencies=[Auth])
+async def translate(body: TranslateIn):
+    """The Translator screen: one direct call to the loaded model, no chat history. Arabic output gets tashkeel so the
+    phone's voice reads it correctly."""
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(400, "nothing to translate")
+    target = "Arabic (Modern Standard Arabic, written with tashkeel/diacritics)" if body.to == "ar" else "English"
+    model = await pick_model(None)
+    payload = {"model": model, "stream": False, "max_tokens": 1024, "temperature": 0.2,
+               "chat_template_kwargs": {"enable_thinking": False},
+               "messages": [{"role": "system", "content": f"You are a translator. Translate the user's text into {target}. "
+                             "Reply with only the translation: no quotes, notes, explanations or transliteration."},
+                            {"role": "user", "content": text}]}
+    async with httpx.AsyncClient(timeout=httpx.Timeout(300, connect=10)) as c:
+        r = await c.post(llm_api_base() + "/chat/completions", headers=llm_headers(), json=payload)
+        r.raise_for_status()
+    msg = r.json()["choices"][0]["message"]
+    out = _strip_think(msg.get("content") or "").strip().strip('"“”')
+    return {"text": out, "to": body.to}
+
+
 @app.post("/api/token/rotate", dependencies=[Auth])
 async def token_rotate():
     """Change the access key from the phone: the old key stops working at once (other paired devices must re-pair).

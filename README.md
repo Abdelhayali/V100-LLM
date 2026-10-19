@@ -83,7 +83,8 @@ forwarding), from anywhere:
 | ⏰ **Scheduled tasks** | Drawer → Schedules & alerts: a prompt the PC runs by itself (daily at a time, or every N minutes), e.g. "summarize my unread email" at 8:00, in its own chat with the access you give it; a notification when it is done |
 | 🌡 **Temperature alerts** | Your own GPU / CPU limits; a notification when one is passed (checked every 30 s on the PC) |
 | 🎤 **Voice chat** | Mic button in the chat: speak (Arabic or English), the reply is read aloud; a **Stop reading** button while it talks |
-| 🚗 **Driving mode** | Hands-free: tap the car icon (or the "Driving mode" app shortcut) once, then it listens, sends, reads the short spoken answer and listens again - no touching. Say "new chat" or "stop" (also in Arabic); "stop" while it reads cuts the reading short. **Translate mode** ("translate mode" / «وضع الترجمة»): speak Arabic, hear English, and the reverse. Screen stays on |
+| 🚗 **Driving mode** | Hands-free: tap the car icon (or the "Driving mode" app shortcut) once, then it listens (Arabic by default, English too; switch on the driving screen), sends, reads the short spoken answer and listens again - no touching. Say "new chat" or "stop" (also in Arabic). One beep per turn; screen stays on |
+| 🌐 **Translator** | Drawer → Translator: 🎤 Arabic → English or 🎤 English → Arabic (or type), the translation is read aloud. Uses the PC's model directly, no chat history |
 | 📷 **Ask about a photo** | 📎 → Ask about a photo: take a picture, ask your question by voice, hear the answer (vision model or OCR) |
 | 📤 **Share to the app** | Share a photo, screenshot, PDF, link or text from any app straight into a chat |
 | 🧩 **Home-screen widget** | GPU status (model, VRAM, GPU / CPU temperature) with Ask and Voice buttons |

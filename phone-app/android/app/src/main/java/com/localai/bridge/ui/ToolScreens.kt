@@ -387,6 +387,14 @@ fun SettingsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                 Switch(checked = vm.soundDone, onCheckedChange = { vm.updateSoundDone(it) })
             }
             VoicePicker(vm)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Driving mode: say \"stop\" while it reads")
+                    Text("Listens during the reading too. Works only if the phone cancels its own voice well; " +
+                        "if driving mode keeps beeping or mishears, leave this off.", style = MaterialTheme.typography.bodySmall)
+                }
+                Switch(checked = vm.driveBargeIn, onCheckedChange = { vm.updateDriveBargeIn(it) })
+            }
             Text("Voice language (mic and driving mode)", style = MaterialTheme.typography.bodyMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("" to "Phone default", "ar-EG" to "العربية", "en-US" to "English").forEach { (k, label) ->

@@ -88,6 +88,11 @@ class Prefs(context: Context) {
         get() = prefs.getString("en_voice", "") ?: ""
         set(v) = prefs.edit().putString("en_voice", v).apply()
 
+    /** Driving mode: listen for "stop" while a reply is read (needs good echo cancelling; off by default). */
+    var driveBargeIn: Boolean
+        get() = prefs.getBoolean("drive_barge_in", false)
+        set(v) = prefs.edit().putBoolean("drive_barge_in", v).apply()
+
     var autoApprove: Boolean
         get() = prefs.getBoolean("auto_approve", false)
         set(v) = prefs.edit().putBoolean("auto_approve", v).apply()

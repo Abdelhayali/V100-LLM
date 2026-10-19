@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Key
@@ -191,6 +192,7 @@ fun MainShell(vm: MainViewModel) {
                     Triple(Screen.ORGANIZER, "Notes &\ntasks", Icons.Default.EventNote),
                     Triple(Screen.MODELS, "Models", Icons.Default.Storage),
                     Triple(Screen.SCHEDULES, "Schedules\n& alerts", Icons.Default.Schedule),
+                    Triple(Screen.TRANSLATE, "Translator", Icons.Default.Translate),
                     Triple(Screen.TASKS, "Running" + if (vm.backgroundTaskCount > 0) " (${vm.backgroundTaskCount})" else "", Icons.Default.Memory),
                     Triple(Screen.API, "API key", Icons.Default.Key),
                     Triple(Screen.AGENT, "Code\nagent", Icons.Default.Code),
@@ -241,6 +243,7 @@ fun MainShell(vm: MainViewModel) {
             Screen.API -> ApiScreen(vm, openDrawer)
             Screen.ORGANIZER -> OrganizerScreen(vm, openDrawer)
             Screen.SCHEDULES -> SchedulesScreen(vm, openDrawer)
+            Screen.TRANSLATE -> TranslateScreen(vm, openDrawer)
         }
     }
 

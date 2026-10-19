@@ -30,7 +30,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-enum class Screen { CHAT, FILES, TERMINAL, MEMORY, SETTINGS, TASKS, AGENT, MODELS, API, ORGANIZER, SCHEDULES }
+enum class Screen { CHAT, FILES, TERMINAL, MEMORY, SETTINGS, TASKS, AGENT, MODELS, API, ORGANIZER, SCHEDULES, TRANSLATE }
 
 sealed interface ChatItem {
     val key: String
@@ -116,7 +116,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             if (!on) speakingKey = null
             if (driving) {
                 if (on) { driveState = "speaking"; drive.listenForInterrupt() }   // say "stop" to cut the reading short
-                else if (!streaming) drive.listen(400)                             // reply read: listen again
+                else if (!streaming) drive.listen(fromTurn = true, delayMs = 400)                             // reply read: listen again
             }
         }
         s.onMissingVoice = { lang -> toast = "No $lang voice on this phone: install it in Android Settings > Text-to-speech" }
@@ -372,8 +372,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val org = organizerAccess || onceOrganizer
                 onceEmail = false; onceOrganizer = false
                 consume(a.chat(sid, text, atts.map { it.id }, currentModel.ifBlank { null }, webSearch, autoApprove,
-                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = if (translating && voiceTurn) "off" else thinking, ocr = ocr, sandbox = sandbox, voice = voiceTurn,
-                    translate = translating && voiceTurn))
+                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = thinking, ocr = ocr, sandbox = sandbox, voice = voiceTurn))
             } catch (e: com.localai.bridge.data.ApiException) {
                 if (e.code == 409) {
                     // the PC is still finishing the previous reply (e.g. the phone was off): show it instead of failing
@@ -493,7 +492,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var driveState by mutableStateOf("")       // listening | thinking | speaking
     var driveHeard by mutableStateOf("")
     var voiceLang by mutableStateOf(prefs.voiceLang)
-    fun updateVoiceLang(l: String) { voiceLang = l; prefs.voiceLang = l; drive.language = l }
+    fun updateVoiceLang(l: String) { voiceLang = l; prefs.voiceLang = l; if (l.isNotBlank()) { drive.language = l; driveLang = l } }
     val drive: DriveMode = DriveMode(app, object : DriveMode.Events {
         override fun onState(state: String) { driveState = state }
         override fun onHeard(text: String) { driveHeard = text }
@@ -502,7 +501,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 "stop" -> stopDriving(say = true)
                 "new" -> { newChat(); speaker.speak(if (voiceLang.startsWith("ar")) "محادثة جديدة" else "New chat") }
                 "interrupt" -> speaker.stop()          // stop reading; onState(false) starts listening again
-                "translate" -> toggleTranslate()
             }
         }
         override fun onQuestion(text: String) {
@@ -510,7 +508,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             sendVoice(text)
         }
         override fun onProblem(message: String) { toast = message }
-    }).also { it.language = prefs.voiceLang }
+    }).also { it.language = prefs.voiceLang.ifBlank { "ar-EG" }; it.bargeIn = prefs.driveBargeIn }
 
     fun startDriving() {
         if (!drive.available()) { toast = "No speech recognizer on this phone (install or update the Google app)"; return }
@@ -518,17 +516,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         screen = Screen.CHAT
         driving = true
         driveHeard = ""
-        speaker.speak(if (voiceLang.startsWith("ar")) "وضع القيادة. تكلم بعد الصفارة." else "Driving mode. Speak after the beep.")
+        speaker.speak(if (driveLang.startsWith("ar")) "وضع القيادة. تكلم بعد الصفارة." else "Driving mode. Speak after the beep.")
         drive.start()
     }
 
-    /** Translate mode: what you say is translated (Arabic <-> English) and read aloud in the other language. */
-    var translating by mutableStateOf(false)
-    fun toggleTranslate() {
-        translating = !translating
-        if (translating) newChat()
-        speaker.speak(if (translating) "Translation on. تكلم بالعربية أو بالإنجليزية." else "Translation off. تم إيقاف الترجمة.")
-    }
+    /** Driving-mode listening language: Arabic by default (English is allowed too where the phone detects it). */
+    var driveLang by mutableStateOf(prefs.voiceLang.ifBlank { "ar-EG" })
+    fun updateDriveLang(l: String) { driveLang = l; drive.language = l; drive.listen(fromTurn = true) }
+    var driveBargeIn by mutableStateOf(prefs.driveBargeIn)
+    fun updateDriveBargeIn(on: Boolean) { driveBargeIn = on; prefs.driveBargeIn = on; drive.bargeIn = on }
 
     /** Camera + voice: take a photo, then ask about it by voice; the answer is read aloud. */
     fun photoQuestion(uri: Uri) = viewModelScope.launch {
@@ -539,7 +535,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun stopDriving(say: Boolean = false) {
         drive.stop()
         driving = false
-        translating = false
         driveState = ""
         if (say) speaker.speak(if (voiceLang.startsWith("ar")) "تم إيقاف وضع القيادة" else "Driving mode off") else speaker.stop()
     }
@@ -794,7 +789,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     ?.takeIf { it.text.isNotBlank() }?.let { speakingKey = it.key; speaker.speak(it.text) }
                 voiceTurn = false
                 if (driving && (items.lastOrNull { it is ChatItem.Assistant } as? ChatItem.Assistant)?.text.isNullOrBlank())
-                    drive.listen(400)   // nothing to read: listen again
+                    drive.listen(fromTurn = true, delayMs = 400)   // nothing to read: listen again
             }
             "compressed" -> items += ChatItem.Notice(nextKey(),
                 "Compressed ${str(ev, "messages")} earlier messages into a summary - context freed.")

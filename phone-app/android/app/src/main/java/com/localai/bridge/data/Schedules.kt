@@ -54,3 +54,10 @@ suspend fun Api.notifyFeed(since: Int): NotifyFeed = getJson("/api/notify?since=
 suspend fun Api.alerts(): AlertsDto = getJson("/api/alerts")
 suspend fun Api.alertsSet(gpuC: Double, cpuC: Double): AlertsDto =
     sendJson("POST", "/api/alerts", buildJsonObject { put("gpu_c", gpuC); put("cpu_c", cpuC) })
+
+@Serializable
+data class TranslateDto(val text: String = "", val to: String = "")
+
+/** Translator screen: one direct translation by the PC's model (no chat history). */
+suspend fun Api.translate(text: String, to: String): String =
+    sendJson<TranslateDto>("POST", "/api/translate", buildJsonObject { put("text", text); put("to", to) }).text
