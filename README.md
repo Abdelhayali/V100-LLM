@@ -46,10 +46,9 @@ Real-time screen recordings (not sped up) of the `fast-128k` preset: official Op
 | 15 | Qwen3.8-27B Unsloth UD-Q3_K_XL (DFlash2) | llamacpp | 14.3 | 32k | 32k | 55.4 | 508 | 94 | 90 | 42 | 100 | 100 | 62 | 50 | **76.9** |
 | 16 | Ternary-Bonsai-2-27B Uncensored Heretic | prism | 7.2 | 262k | 262k | 39.5 | 363 | 56 | 100 | 42 | 100 | 100 | 88 | 50 | **76.5** |
 | 17 | Underdog Saluki 27B (Qwen3.8 2-bit, MTP) | llamacpp | 8.3 | 262k | 262k | 46.8 | 351 | 62 | 95 | 42 | 88 | 100 | 88 | 50 | **74.9** |
-| 18 | Agens Volundr 32B v1 (V100 3.3-bit mix) | volundr | 19.2 | 16k | 20k | 16.2 | 231 | 88 | 100 | 33 | 100 | 100 | 0 | 100 | **74.4** |
-| 19 | PXA-Fusion4-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 70.0 | 2384 | 38 | 90 | 25 | 88 | 100 | 75 | 100 | **73.6** |
-| 20 | Qwen3.8-27B PXQ3 | pxa | 12.4 | 8k | 8k | 19.8 | 573 | 75 | 95 | 42 | 100 | 100 | 88 | 0 | **71.3** |
-| 21 | Ornith-1.5-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 64.1 | 2333 | 50 | 85 | 33 | 100 | 83 | 75 | 0 | **60.9** |
+| 18 | PXA-Fusion4-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 70.0 | 2384 | 38 | 90 | 25 | 88 | 100 | 75 | 100 | **73.6** |
+| 19 | Qwen3.8-27B PXQ3 | pxa | 12.4 | 8k | 8k | 19.8 | 573 | 75 | 95 | 42 | 100 | 100 | 88 | 0 | **71.3** |
+| 20 | Ornith-1.5-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 64.1 | 2333 | 50 | 85 | 33 | 100 | 83 | 75 | 0 | **60.9** |
 
 Notes:
 - Long context is a ~14k-token text with three facts hidden in different places that have to be combined. Qwen3.8-27B PXQ3 runs with an 8k context preset, so the text does not fit; Ornith runs with 16k and still answered wrong.
@@ -114,7 +113,6 @@ launcher for your own settings.
 | **Qwen3.8-27B HauhauCS IQ3_XS** + FastMTP | FastMTP | 12.2 GB | 24k / 80k / 120k | 40-53 tok/s | 118k ✓ | GPU (80k) / CPU (120k) | ~2 GB | top score, uncensored |
 | **Qwen3.8-27B Unsloth UD-IQ3_S** + MTP / DFlash2 (official) | llama.cpp (V100 patch) / kvstream | 12.0 GB (+1.1-1.4 GB drafter) | 32k / 96k / 192k / **262k** | **55 tok/s** at 32k (MTP), **58** at 96k (DFlash2, code ~73), 31 at 192k; full 262k: 12 / 9 / 6 tok/s at a filled 99k / 185k / 257k | 257k ✓ (streaming) | CPU | ~2 GB (+ KV in RAM for 262k) | official 27B, fast MTP, **full context** |
 | Qwen3.8-27B Unsloth UD-Q3_K_XL + DFlash2 (official) | llama.cpp | 13.2 GB (+1.1 GB drafter) | 32k | 55 tok/s (DFlash2, code ~70) | not run yet | CPU | ~2 GB | same speed as IQ3_S, lower score (76.9) |
-| Agens Volundr 32B v1 (Blockway, V100 3.3-bit mix, text only) | llama.cpp volundr branch | 19.2 GB (12.9 GiB GPU + Engram tables in RAM) | 16k / 20k | 19 tok/s (12 at a full 20k) | 19.6k ✓ (needle) | - | ~6 GB | agentic coding and tool use; best with thinking Low (instructions 33 → 100) |
 | **Qwen3.8-27B Ridge 3.7bpw** (empero-ai, built-in MTP) | llama.cpp | 12.6 GB | 32k / 96k / 192k | 50 tok/s at 32k, 48 at 96k, 27 at 192k (no MTP) | not run yet | CPU | ~2 GB | official, balanced (87.4) |
 | Qwen3.8-27B ISTA-DASLab GSQ-RCO-IQ3_S (built-in MTP) | llama.cpp | 12.1 GB | 32k / 96k / 192k | 52 tok/s at 32k, 52 at 96k, 27 at 192k (no MTP) | not run yet | CPU | ~2 GB | official, coding 94 |
 | Qwen3.8-27B Huihui abliterated GSQ-RCO-IQ3_S (built-in MTP) | llama.cpp | 12.1 GB | 32k / 96k / 192k | 52 tok/s at 32k, 51 at 96k, 29 at 192k (no MTP) | not run yet | CPU | ~2 GB | uncensored |
@@ -201,7 +199,6 @@ NTFS.
 | `fastmtp` | llama.cpp + [HauhauCS FastMTP](https://huggingface.co/HauhauCS/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-MTP-GGUF) patch | `4df29be` + patch, CUDA 12.9, sm_70 |
 | `llamacpp` | upstream [llama.cpp](https://github.com/ggml-org/llama.cpp) (Nemotron-H, MiniCPM-V 4.7, draft-mtp, DFlash2) with the **V100 decode patch** (see below) | `f336359` + [`patches/llamacpp-f336359-v100-mmvq.patch`](patches/llamacpp-f336359-v100-mmvq.patch), CUDA 12.9, sm_70 |
 | `kvstream` | [llama.cpp adaptive KV streaming](https://github.com/RaymondHuang210129/llama.cpp-adaptive-kv-streaming): KV cache in system RAM, streamed through a VRAM arena, so Qwen3.8-27B runs the **full 262k context** on 16 GB | `db8fd5d`, CUDA 12.9, sm_70, FA pairs f16/q8_0-q4_0/q4_0-q4_0/q8_0-q8_0 |
-| `volundr` | [llama.cpp `volundr` branch](https://github.com/BlockWayz/llama.cpp/tree/volundr) (Agens Volundr: KDA linear attention, BCSA sparse attention, Engram, mHC) with `llama-quantize` and `volundr-setup.py`, which turns Blockway's Q8_0 into the V100 mix | `1a2f8ec`, CUDA 12.9, sm_70 |
 | `prism` | [Prism ML llama.cpp](https://github.com/PrismML-Eng/llama.cpp) (ternary PQ2_0/PTQ1_0 kernels) | official release `prism-b10777`, CUDA 12.4 |
 | `strata` | [Strata](https://github.com/niko1221/strata) 0.1.44.1 + its Python server | experimental CUDA 12 engine for Volta (`STRATA_EXPERIMENTAL_SM60`), sm_70 |
 
