@@ -225,6 +225,12 @@ def build_llm_messages(session_id: str) -> list[dict]:
                 att = db.get_attachment(a["id"])
                 if not att:
                     continue
+                ocr = ocr_mod.ocr_text(att["id"])
+                if ocr:   # read with the OCR sub-model: its text (tables, formulas, layout kept) goes to the chat model
+                    text += f"\n\n[Attached file: {att['filename']} saved at {att['path']}, read with OCR]\n{ocr}"
+                    if att["kind"] == "image" and i == last_user_idx:
+                        images.append(att)
+                    continue
                 if att["kind"] == "image":
                     if i == last_user_idx:
                         images.append(att)
@@ -516,6 +522,12 @@ async def chat_turn(run: Run, model: str | None):
     sid = run.sid
     tools.current_session.set(sid)
     try:
+        if run.ocr != "off":   # OCR on: read the attached images / PDFs first, whatever the chat model would do
+            last_user = next((m for m in reversed(db.get_messages(sid)) if m["role"] == "user"), None)
+            ids = [a["id"] for a in (last_user or {}).get("attachments") or []]
+            if ids:
+                run.emit({"type": "phase", "phase": "tool", "name": "ocr_document"})
+                await ocr_mod.auto_ocr(run.ocr, ids, lambda m: run.emit({"type": "notice", "text": m}))
         model = await pick_model(model)
         use_tools = True
         use_usage = True

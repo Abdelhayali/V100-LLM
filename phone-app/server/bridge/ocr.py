@@ -15,7 +15,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from . import models_ctl, tools
+from . import db, models_ctl, tools
 from .config import DATA_DIR, SERVER_DIR, config
 
 MODES = ("off", "gpu", "cpu")
@@ -113,9 +113,6 @@ async def run(mode: str, args: dict, emit) -> str:
     """The ocr_document tool. emit(text) shows progress notes in the chat."""
     if mode not in ("gpu", "cpu"):
         return "OCR is switched off in the app (settings: OCR sub-model)."
-    ok, why = ready()
-    if not ok:
-        return "OCR is not available: " + why
     path = _attachment(args.get("path", ""))
     if path is None:
         try:
@@ -124,8 +121,15 @@ async def run(mode: str, args: dict, emit) -> str:
             return f"Error: {e}"
     if not path.is_file():
         return f"Error: not a file: {path}"
-    pages = str(args.get("pages") or "").strip()
+    return (await run_files(mode, [path], emit, str(args.get("pages") or "").strip()))[0]
 
+
+async def run_files(mode: str, paths: list[Path], emit, pages: str = "") -> list[str]:
+    """OCR several files with one GPU swap (unload the chat model once, read all files, load it again)."""
+    ok, why = ready()
+    if not ok:
+        return ["OCR is not available: " + why] * len(paths)
+    out = []
     async with _lock:
         reload = None
         if mode == "gpu":
@@ -140,23 +144,58 @@ async def run(mode: str, args: dict, emit) -> str:
             await _wait_vram_free()
         else:
             emit("OCR on the CPU (the chat model stays loaded)…")
-        t0 = time.time()
-        try:
-            res = await asyncio.to_thread(_worker, "cuda" if mode == "gpu" else "cpu", path, pages)
-        except Exception as e:
-            res = {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        for path in paths:
+            emit(f"Reading {path.name.split('_', 1)[-1]} with OCR…")
+            t0 = time.time()
+            try:
+                res = await asyncio.to_thread(_worker, "cuda" if mode == "gpu" else "cpu", path, pages)
+            except Exception as e:
+                res = {"ok": False, "error": f"{type(e).__name__}: {e}"}
+            if not res.get("ok"):
+                out.append("OCR failed: " + (res.get("error") or "unknown error"))
+                emit(out[-1][:300])
+                continue
+            n = len(res.get("pages") or [])
+            note = (f"[OCR of {path.name.split('_', 1)[-1]}: {n} page(s), {res.get('seconds', round(time.time() - t0))} s on "
+                    f"{'GPU' if mode == 'gpu' else 'CPU'}" + (f"; {res['error']}" if res.get("error") else "") + "]\n\n")
+            out.append(tools.truncate(note + (res.get("text") or "(no text found)"), 60_000))
+            emit(f"OCR done: {n} page(s) in {res.get('seconds')} s")
         if reload:
-            emit("OCR finished; loading the chat model again…")
+            emit("Loading the chat model again…")
             try:
                 await models_ctl.load(models_ctl.LoadIn(id=reload[0], preset=reload[1]))
                 if not await _wait_model_ready():
                     emit("The chat model did not come back; load it again from the Models screen.")
             except Exception as e:
                 emit(f"Could not reload the chat model ({e}); load it again from the Models screen.")
+    return out
 
-    if not res.get("ok"):
-        return "OCR failed: " + (res.get("error") or "unknown error")
-    text = res.get("text") or ""
-    note = f"[OCR of {path.name}: {len(res.get('pages') or [])} page(s), {res.get('seconds', round(time.time() - t0))} s on " \
-           f"{'GPU' if mode == 'gpu' else 'CPU'}" + (f"; {res['error']}" if res.get("error") else "") + "]\n\n"
-    return tools.truncate(note + (text or "(no text found)"), 60_000)
+
+# ---- automatic OCR of attachments (OCR set to A or B: every attached image / PDF is read, whatever the model does)
+db._conn.execute("CREATE TABLE IF NOT EXISTS attachment_ocr(attachment_id TEXT PRIMARY KEY, text TEXT, created REAL)")
+db._conn.commit()
+
+
+def ocr_text(aid) -> str:
+    r = db._q("SELECT text FROM attachment_ocr WHERE attachment_id=?", (str(aid),), one=True)
+    return r["text"] if r else ""
+
+
+async def auto_ocr(mode: str, attachment_ids: list, emit) -> int:
+    """Read the message's images and PDFs with OCR once (cached per attachment). Returns how many were read."""
+    if mode not in ("gpu", "cpu"):
+        return 0
+    todo = []
+    for aid in attachment_ids:
+        a = db.get_attachment(aid)
+        if a and a["kind"] in ("image", "pdf") and not ocr_text(aid) and Path(a["path"]).is_file():
+            todo.append(a)
+    if not todo:
+        return 0
+    results = await run_files(mode, [Path(a["path"]) for a in todo], emit)
+    n = 0
+    for a, text in zip(todo, results):
+        if text.startswith("[OCR of"):
+            db._q("INSERT OR REPLACE INTO attachment_ocr VALUES(?,?,?)", (str(a["id"]), text, time.time()))
+            n += 1
+    return n
