@@ -71,6 +71,16 @@
      "url": "https://github.com/Abdelhayali/V100-LLM/releases/download/kernels-v1/kernel-kvstream.zip"
     }
    ]
+  },
+  "volundr": {
+   "name": "llama.cpp volundr branch (1a2f8ec, sm_70)",
+   "desc": "BlockWayz/llama.cpp branch volundr: Agens Volundr architecture (KDA, BCSA, Engram, mHC). Includes llama-quantize and the setup that builds the V100 quant.",
+   "exe": "llama-server.exe",
+   "download": [
+    {
+     "url": "https://github.com/Abdelhayali/V100-LLM/releases/download/kernels-v1/kernel-volundr.zip"
+    }
+   ]
   }
  },
  "models": [
@@ -4568,6 +4578,171 @@
       [
        "--min-p",
        "0",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "agens-volundr-32b",
+   "name": "Agens Volundr 32B v1 (V100 3.3-bit mix)",
+   "desc": "Blockway's agentic coding / tool-use model (Qwen3.8 based, new KDA + sparse-attention architecture, Apache-2.0). Text only. Hard eval 74.4 (coding 88, reasoning/search/agent/long-context 100, vision n/a); set thinking to Low: instructions 33 -> 100. The setup downloads the official Q8_0 (36.3 GB, checked), re-quantizes it for 16 GB (19.2 GB file, 12.9 GiB on the GPU, Engram tables in RAM) and deletes the Q8_0. Needs ~56 GB of free disk during setup.",
+   "model": "Agens-Volundr-32B-v1-V100-mix.gguf",
+   "mmproj": "",
+   "files": [
+    {
+     "name": "Agens-Volundr-32B-v1-V100-mix.gguf",
+     "size": null
+    }
+   ],
+   "setup": {
+    "cmd": [
+     "{python}",
+     "volundr-setup.py",
+     "--data-dir",
+     "{model}"
+    ]
+   },
+   "presets": [
+    {
+     "id": "fast-16k",
+     "name": "16k context (19 tok/s)",
+     "kernel": "volundr",
+     "kernels": [
+      "volundr"
+     ],
+     "bench": "19.1-19.6 tok/s decode (code / chat / Arabic), tool calls ok, 15.4 GB VRAM",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "-ot",
+       "engram_embd=CPU",
+       "Engram lookup tables (4.3 GB) stay in system RAM"
+      ],
+      [
+       "-c",
+       "16384",
+       "context (f16 KV: the volundr branch has no quantized KV)"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "-b",
+       "256",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       "smaller compute buffer"
+      ],
+      [
+       "--ctx-checkpoints",
+       "8",
+       "recurrent-state checkpoints for multi-turn cache reuse (168 MiB each, RAM)"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.6",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "max-20k",
+     "name": "20k context, max (19 tok/s, 12 at a full context)",
+     "kernel": "volundr",
+     "kernels": [
+      "volundr"
+     ],
+     "bench": "19 tok/s short prompts, 12.0 tok/s with a 19.6k-token prompt (needle recall ok), 16.2 GB VRAM peak",
+     "params": [
+      [
+       "-ngl",
+       "99",
+       ""
+      ],
+      [
+       "-ot",
+       "engram_embd=CPU",
+       "Engram lookup tables (4.3 GB) stay in system RAM"
+      ],
+      [
+       "-c",
+       "20480",
+       "context (f16 KV: the volundr branch has no quantized KV)"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "-b",
+       "256",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       "smaller compute buffer"
+      ],
+      [
+       "--ctx-checkpoints",
+       "8",
+       "recurrent-state checkpoints for multi-turn cache reuse (168 MiB each, RAM)"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.6",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.95",
        ""
       ]
      ]
