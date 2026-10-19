@@ -527,7 +527,11 @@ async def chat_turn(run: Run, model: str | None):
             ids = [a["id"] for a in (last_user or {}).get("attachments") or []]
             if ids:
                 run.emit({"type": "phase", "phase": "tool", "name": "ocr_document"})
-                await ocr_mod.auto_ocr(run.ocr, ids, lambda m: run.emit({"type": "notice", "text": m}))
+                await ocr_mod.auto_ocr(run.ocr, ids, lambda m: run.emit({"type": "notice", "text": m}),
+                                       stopped=lambda: run.stopped)
+                if run.stopped:
+                    run.emit({"type": "done"})
+                    return
         model = await pick_model(model)
         use_tools = True
         use_usage = True

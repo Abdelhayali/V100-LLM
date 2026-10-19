@@ -93,6 +93,16 @@ async def _wait_model_ready(timeout: float = 600):
     return False
 
 
+LIMIT_S = {"cuda": 600, "cpu": 2400}
+_current = {"pid": None}                 # the running worker, killed when the user stops the reply   # per file; a stuck OCR is stopped so the chat model always comes back
+
+
+def _kill_tree(pid: int):
+    """The venv's python.exe starts the real interpreter as a child: kill both, or the child keeps the GPU."""
+    subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True,
+                   creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+
+
 def _worker(device: str, path: Path, pages: str) -> dict:
     d = ocr_dir()
     out = Path(tempfile.mkdtemp(prefix="ocr_")) / "result.json"
@@ -101,12 +111,43 @@ def _worker(device: str, path: Path, pages: str) -> dict:
     if pages:
         cmd += ["--pages", pages]
     env = dict(os.environ, PYTHONIOENCODING="utf-8", HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1")
-    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    p = subprocess.run(cmd, cwd=str(d), env=env, capture_output=True, timeout=3600, creationflags=flags)
+    p = subprocess.Popen(cmd, cwd=str(d), env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    _current["pid"] = p.pid
+    try:
+        _, err = p.communicate(timeout=LIMIT_S[device])
+    except subprocess.TimeoutExpired:
+        _kill_tree(p.pid)
+        p.communicate()
+        return {"ok": False, "error": f"stopped after {LIMIT_S[device] // 60} minutes (the page is too large or "
+                                      "the OCR model got stuck); try the other OCR mode or a smaller image"}
     if out.exists():
         return json.loads(out.read_text(encoding="utf-8"))
-    err = p.stderr.decode("utf-8", "replace")[-1500:]
-    return {"ok": False, "error": f"the OCR process exited with code {p.returncode}: {err}"}
+    return {"ok": False, "error": f"the OCR process exited with code {p.returncode}: "
+                                  f"{err.decode('utf-8', 'replace')[-1500:]}"}
+
+
+async def _worker_with_progress(device: str, path: Path, pages: str, emit, stopped=lambda: False) -> dict:
+    """Run the worker; every 30 s tell the chat it is still working (else a long page looks like a hang), and kill it
+    as soon as the user stops the reply."""
+    task = asyncio.ensure_future(asyncio.to_thread(_worker, device, path, pages))
+    t0 = last = time.time()
+    while True:
+        try:
+            return await asyncio.wait_for(asyncio.shield(task), 2)
+        except asyncio.TimeoutError:
+            if stopped():
+                if _current["pid"]:
+                    await asyncio.to_thread(_kill_tree, _current["pid"])
+                await task
+                return {"ok": False, "error": "stopped by the user"}
+            if time.time() - last >= 30:
+                last = time.time()
+                emit(f"OCR still reading… {int(last - t0)} s")
+        except asyncio.CancelledError:      # reply stopped from the phone: stop the OCR process too
+            if _current["pid"]:
+                await asyncio.to_thread(_kill_tree, _current["pid"])
+            raise
 
 
 async def run(mode: str, args: dict, emit) -> str:
@@ -124,7 +165,7 @@ async def run(mode: str, args: dict, emit) -> str:
     return (await run_files(mode, [path], emit, str(args.get("pages") or "").strip()))[0]
 
 
-async def run_files(mode: str, paths: list[Path], emit, pages: str = "") -> list[str]:
+async def run_files(mode: str, paths: list[Path], emit, pages: str = "", stopped=lambda: False) -> list[str]:
     """OCR several files with one GPU swap (unload the chat model once, read all files, load it again)."""
     ok, why = ready()
     if not ok:
@@ -144,11 +185,33 @@ async def run_files(mode: str, paths: list[Path], emit, pages: str = "") -> list
             await _wait_vram_free()
         else:
             emit("OCR on the CPU (the chat model stays loaded)…")
+        try:
+            await _read_all(mode, paths, pages, emit, out, stopped)
+        finally:
+            if reload:   # also when the reply was stopped: the chat model must come back
+                await asyncio.shield(_reload(reload, emit))
+    return out
+
+
+async def _reload(reload, emit):
+    emit("Loading the chat model again…")
+    try:
+        await models_ctl.load(models_ctl.LoadIn(id=reload[0], preset=reload[1]))
+        if not await _wait_model_ready():
+            emit("The chat model did not come back; load it again from the Models screen.")
+    except Exception as e:
+        emit(f"Could not reload the chat model ({e}); load it again from the Models screen.")
+
+
+async def _read_all(mode, paths, pages, emit, out, stopped):
         for path in paths:
+            if stopped():
+                out.append("OCR failed: stopped by the user")
+                continue
             emit(f"Reading {path.name.split('_', 1)[-1]} with OCR…")
             t0 = time.time()
             try:
-                res = await asyncio.to_thread(_worker, "cuda" if mode == "gpu" else "cpu", path, pages)
+                res = await _worker_with_progress("cuda" if mode == "gpu" else "cpu", path, pages, emit, stopped)
             except Exception as e:
                 res = {"ok": False, "error": f"{type(e).__name__}: {e}"}
             if not res.get("ok"):
@@ -160,15 +223,6 @@ async def run_files(mode: str, paths: list[Path], emit, pages: str = "") -> list
                     f"{'GPU' if mode == 'gpu' else 'CPU'}" + (f"; {res['error']}" if res.get("error") else "") + "]\n\n")
             out.append(tools.truncate(note + (res.get("text") or "(no text found)"), 60_000))
             emit(f"OCR done: {n} page(s) in {res.get('seconds')} s")
-        if reload:
-            emit("Loading the chat model again…")
-            try:
-                await models_ctl.load(models_ctl.LoadIn(id=reload[0], preset=reload[1]))
-                if not await _wait_model_ready():
-                    emit("The chat model did not come back; load it again from the Models screen.")
-            except Exception as e:
-                emit(f"Could not reload the chat model ({e}); load it again from the Models screen.")
-    return out
 
 
 # ---- automatic OCR of attachments (OCR set to A or B: every attached image / PDF is read, whatever the model does)
@@ -181,7 +235,7 @@ def ocr_text(aid) -> str:
     return r["text"] if r else ""
 
 
-async def auto_ocr(mode: str, attachment_ids: list, emit) -> int:
+async def auto_ocr(mode: str, attachment_ids: list, emit, stopped=lambda: False) -> int:
     """Read the message's images and PDFs with OCR once (cached per attachment). Returns how many were read."""
     if mode not in ("gpu", "cpu"):
         return 0
@@ -192,7 +246,7 @@ async def auto_ocr(mode: str, attachment_ids: list, emit) -> int:
             todo.append(a)
     if not todo:
         return 0
-    results = await run_files(mode, [Path(a["path"]) for a in todo], emit)
+    results = await run_files(mode, [Path(a["path"]) for a in todo], emit, stopped=stopped)
     n = 0
     for a, text in zip(todo, results):
         if text.startswith("[OCR of"):

@@ -99,6 +99,7 @@ def main():
     ap.add_argument("--dpi", type=int, default=200)
     ap.add_argument("--max-pages", type=int, default=20)
     ap.add_argument("--threads", type=int, default=0)
+    ap.add_argument("--max-tokens", type=int, default=8192, help="prompt + output tokens per page")
     ap.add_argument("--multi", action="store_true", help="read all pages in one pass instead of page by page")
     a = ap.parse_args()
 
@@ -138,7 +139,9 @@ def main():
             fuse_moe(model)
         res["load_seconds"] = round(time.time() - t0, 1)
 
-        common = dict(max_length=32768, no_repeat_ngram_size=35, temperature=0.0)
+        # cap the output: a real page is a few thousand tokens; a model stuck in a loop otherwise runs to 32k tokens
+        # and its eager attention keeps growing in VRAM (a phone screenshot reached 13 GB)
+        common = dict(max_length=a.max_tokens, no_repeat_ngram_size=35, temperature=0.0)
         if not a.multi:   # page by page (single-image "gundam" mode: global view + 640 crops; faster and sharper)
             texts = []
             for i, img in enumerate(images):
