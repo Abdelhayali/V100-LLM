@@ -4729,6 +4729,430 @@
      ]
     }
    ]
+  },
+  {
+   "id": "orcacyber-nano",
+   "name": "OrcaCyber-Nano-1.0 27B Mix-13G (MTP built in)",
+   "desc": "orcarouter's cybersecurity fine-tune of a Qwen3.8-27B type model (reverse engineering, vulnerability analysis, secure code review), Mix-13G GGUF (13.0 GB) with the MTP head in the file; vision on the CPU. Gated on Hugging Face: sign in and accept access, then download the files into the model folder.",
+   "files": [
+    {
+     "name": "OrcaCyber-Nano-1.0-AI-Defense-Mix-13G.gguf",
+     "repo": "orcarouter/OrcaCyber-Nano-1.0",
+     "sha256": "****************************************************************",
+     "size": 12993304352,
+     "url": "https://huggingface.co/orcarouter/OrcaCyber-Nano-1.0/resolve/main/OrcaCyber-Nano-1.0-AI-Defense-Mix-13G.gguf"
+    },
+    {
+     "name": "mmproj-OrcaCyber-Nano-1.0-AI-Defense-F16.gguf",
+     "repo": "orcarouter/OrcaCyber-Nano-1.0",
+     "sha256": "****************************************************************",
+     "size": 927606848,
+     "url": "https://huggingface.co/orcarouter/OrcaCyber-Nano-1.0/resolve/main/mmproj-OrcaCyber-Nano-1.0-AI-Defense-F16.gguf"
+    }
+   ],
+   "model": "OrcaCyber-Nano-1.0-AI-Defense-Mix-13G.gguf",
+   "mmproj": "mmproj-OrcaCyber-Nano-1.0-AI-Defense-F16.gguf",
+   "presets": [
+    {
+     "id": "fast-32k",
+     "name": "FAST: 32k context, MTP 3 (60 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "60.3 tok/s (code 66.6 / chat 54.0), draft accepted 76%, 15.3 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "the MTP head built into the model file"
+      ],
+      [
+       "--spec-draft-n-max",
+       "3",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "32768",
+       "context"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "long-96k",
+     "name": "96k context, MTP 3, q4 KV (57 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "57.1 tok/s (code 63.0 / chat 51.2), draft accepted 73%, 15.6 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "the MTP head built into the model file"
+      ],
+      [
+       "--spec-draft-n-max",
+       "3",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "--spec-draft-type-k",
+       "q4_0",
+       ""
+      ],
+      [
+       "--spec-draft-type-v",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "98304",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "max-160k",
+     "name": "160k context, no MTP, q4 KV (32 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "31.7 tok/s, 15.8 GB VRAM; image ok (192k does not fit)",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "163840",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "4-bit KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "full-262k-stream",
+     "name": "FULL 262k context, KV streaming (text only)",
+     "kernel": "kvstream",
+     "kernels": [
+      "kvstream"
+     ],
+     "bench": "23.8 tok/s code after a 19.6k-token prompt (KV cache in system RAM, streamed over PCIe; slower as the context fills, like Unsloth: ~6-12 tok/s at 100k-257k); text only",
+     "params": [
+      [
+       "--no-mmproj",
+       "",
+       "text only (vision not tested with streaming)"
+      ],
+      [
+       "--spec-type",
+       "none",
+       ""
+      ],
+      [
+       "-ngl",
+       "999",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       "full context"
+      ],
+      [
+       "--shared-device-memory-mib",
+       "3500",
+       "VRAM arena the KV cache streams through"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--fit",
+       "off",
+       ""
+      ],
+      [
+       "-b",
+       "256",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
   }
  ]
 }
