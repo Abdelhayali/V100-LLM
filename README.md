@@ -96,19 +96,70 @@ forwarding), from anywhere:
 run `phone-app\Start-Server.bat` on the PC (needs Python 3.10+), and scan the QR code it shows. The V100-LLM launcher is
 started automatically when the phone needs it. Details: [phone-app/README.md](phone-app/README.md).
 
-## Quick start
+## Quick start (fresh Windows PC)
+
+**You need:** Windows 10 or 11 (64-bit), an NVIDIA Tesla V100 16 GB (other 16 GB NVIDIA cards from Volta on work too),
+32 GB of system RAM (64 GB for the 262k-context and Strata presets) and about 20 GB of free disk per model (an SSD
+loads models much faster). Nothing else: no Python, CUDA, WSL or Docker. Engines and the Python runtime come with the folder.
 
 1. Install an NVIDIA driver from the **R576 series or newer**. A V100 in TCC mode is fine.
 2. Download this repository (green **Code → Download ZIP**, or `git clone`), then extract it, for example to `D:\V100-LLM`.
+   Avoid a path with spaces or one under OneDrive.
 3. Double-click **`START-GUI.bat`**. The first run downloads the portable Python runtime (37 MB), then opens the GUI at
    http://127.0.0.1:7860.
 4. Pick a model, then press **Download missing**. That fetches the model files from Hugging Face (checking each one's
-   checksum) and the engine from this repo's release.
-5. Press **Start**, then chat in the right-hand panel. A live tokens/s meter, prompt speed and image upload are built in.
-   Any OpenAI-compatible app can also use `http://127.0.0.1:8899/v1`.
+   SHA-256) and the engine from this repo's release.
+5. Pick a preset (the first one, **FAST**, is the tuned default), press **Start**, then chat in the right-hand panel. A live
+   tokens/s meter, prompt speed and image upload are built in. Any OpenAI-compatible app can also use
+   `http://127.0.0.1:8899/v1`.
 
 Every parameter is editable in the GUI. **Recommended** restores the tuned values, and **Save .bat** writes a standalone
-launcher for your own settings.
+launcher for your own settings. Each model folder also has ready `run-<preset>.bat` files that work without the GUI.
+
+### Gated models (OrcaCyber-Nano): sign in once
+
+Some authors require you to accept their terms on Hugging Face before downloading. The launcher then uses your own token:
+
+1. Create a free account at [huggingface.co](https://huggingface.co/join) and sign in.
+2. Open the model page and press **Agree and access repository** (for OrcaCyber-Nano:
+   [orcarouter/OrcaCyber-Nano-1.0](https://huggingface.co/orcarouter/OrcaCyber-Nano-1.0); access is granted at once).
+3. Create a token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) (type **Read**).
+4. Save it as a text file **`hf-token.txt`** in the V100-LLM folder (just the token, one line). Alternatively set the
+   `HF_TOKEN` environment variable, or run `hf auth login` if you have the Hugging Face CLI. The token is only sent to
+   huggingface.co, and `hf-token.txt` is ignored by git, so it never ends up in a commit.
+5. Press **Download missing** again. Without access, the GUI tells you which page to open.
+
+### Install OrcaCyber-Nano-1.0 27B on a V100 16 GB (#1 on the leaderboard)
+
+1. Do steps 1-3 of the quick start above, then the gated-model steps (accept access + `hf-token.txt`).
+2. In the GUI pick **OrcaCyber-Nano-1.0 27B Mix-13G (MTP built in)** and press **Download missing**: 13.0 GB model +
+   0.9 GB vision projector, plus the `llamacpp` engine (V100-tuned build) from the release. About 14 GB in total.
+3. Choose a preset and press **Start**:
+
+   | Preset | Context | Speed on V100 16 GB | Use it for |
+   |---|---|---|---|
+   | **FAST: 32k, MTP 3** | 32k | **60 tok/s** (66 on code) | chat, coding, images: the default |
+   | 96k, MTP 3, q4 KV | 96k | 57 tok/s | long files and documents |
+   | 160k, no MTP | 160k | 32 tok/s | very long documents |
+   | FULL 262k, KV streaming (`kvstream` engine) | 262k | 24 tok/s at 20k, slower as it fills | the full context, text only, needs 64 GB RAM |
+
+4. Chat in the GUI, connect any OpenAI-compatible app to `http://127.0.0.1:8899/v1`, or use the phone / desktop app below
+   (Models screen → OrcaCyber-Nano → preset). Without the GUI: run `models\orcacyber-nano\run-fast-32k.bat`.
+
+Recommended sampling: temperature 0.7, top-k 20, top-p 0.8 (the presets set these). For precise formatting tasks, turn
+thinking to **Low** in the apps.
+
+### Troubleshooting
+
+- **"needs the Microsoft Visual C++ Redistributable"**: install
+  [vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe) (only the Prism engine relies on it; the others
+  ship their own runtime).
+- **Out of memory when starting or on a long prompt**: choose a preset with a shorter context, and make sure nothing else
+  uses the GPU (`nvidia-smi`). On a card that also drives a display, about 0.5-1 GB less VRAM is free.
+- **The first start of a model is slow**: the file is read from disk once (an HDD takes minutes), then it stays cached.
+- **Qwen3.8-27B EXL3 (ExLlamaV3, experimental)** cannot be downloaded: its engine is a local TabbyAPI build. Every other model installs with **Download missing**.
+- **Port 7860 or 8899 already in use**: close the other program, or start the server with `set PORT=8900` before a
+  `run-<preset>.bat`.
 
 ## Models (tested on one Tesla V100-SXM2-16GB, Xeon E5-2660 v4, 64 GB DDR4)
 

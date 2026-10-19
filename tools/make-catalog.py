@@ -7,9 +7,22 @@ src = json.loads(Path(__file__).with_name("catalog-src.json").read_text(encoding
 trees = {}
 
 
+def _hf_auth():
+    import os
+    tok = os.environ.get("HF_TOKEN", "")
+    for f in (Path(__file__).resolve().parent.parent / "hf-token.txt", Path.home() / ".cache" / "huggingface" / "token"):
+        if not tok and f.exists():
+            tok = f.read_text(encoding="utf-8").strip()
+    return {"Authorization": "Bearer " + tok} if tok else {}
+
+
+HF_AUTH = _hf_auth()
+
+
 def tree(repo):
     if repo not in trees:
-        with urllib.request.urlopen(f"https://huggingface.co/api/models/{repo}/tree/main?recursive=true", timeout=120) as r:
+        with urllib.request.urlopen(urllib.request.Request(f"https://huggingface.co/api/models/{repo}/tree/main?recursive=true",
+                headers=HF_AUTH), timeout=120) as r:   # gated repos hide the SHA-256 from anonymous requests
             trees[repo] = {f["path"]: f for f in json.loads(r.read())}
     return trees[repo]
 

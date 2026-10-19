@@ -4738,14 +4738,14 @@
     {
      "name": "OrcaCyber-Nano-1.0-AI-Defense-Mix-13G.gguf",
      "repo": "orcarouter/OrcaCyber-Nano-1.0",
-     "sha256": "****************************************************************",
+     "sha256": "6d383a195b96d5a77c186f9ff8b71ab2356c7ea6e0b446992244371b8c75a21b",
      "size": 12993304352,
      "url": "https://huggingface.co/orcarouter/OrcaCyber-Nano-1.0/resolve/main/OrcaCyber-Nano-1.0-AI-Defense-Mix-13G.gguf"
     },
     {
      "name": "mmproj-OrcaCyber-Nano-1.0-AI-Defense-F16.gguf",
      "repo": "orcarouter/OrcaCyber-Nano-1.0",
-     "sha256": "****************************************************************",
+     "sha256": "f854eb8f1e4fdd133a7375b9aa78792548e561f6d8b95da7660e91db56f85382",
      "size": 927606848,
      "url": "https://huggingface.co/orcarouter/OrcaCyber-Nano-1.0/resolve/main/mmproj-OrcaCyber-Nano-1.0-AI-Defense-F16.gguf"
     }

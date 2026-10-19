@@ -23,6 +23,7 @@ import tempfile
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import zipfile
 from collections import deque
@@ -169,14 +170,41 @@ def sha256(path):
     return h.hexdigest()
 
 
+def hf_token():
+    """The user's own Hugging Face token, for gated models: HF_TOKEN, hf-token.txt in this folder, or `hf auth login`."""
+    if os.environ.get("HF_TOKEN"):
+        return os.environ["HF_TOKEN"].strip()
+    for f in (ROOT / "hf-token.txt", Path.home() / ".cache" / "huggingface" / "token"):
+        try:
+            tok = f.read_text(encoding="utf-8").strip()
+            if tok:
+                return tok
+        except OSError:
+            pass
+    return ""
+
+
 def fetch(url, dest, size=None):
     """Resumable download with progress in dl{}."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     have = dest.stat().st_size if dest.exists() else 0
     if size and have == size:
         return
-    req = urllib.request.Request(url, headers={"User-Agent": "V100-LLM", **({"Range": f"bytes={have}-"} if have else {})})
-    with urllib.request.urlopen(req, timeout=60) as r:
+    hdr = {"User-Agent": "V100-LLM", **({"Range": f"bytes={have}-"} if have else {})}
+    tok = hf_token() if urllib.parse.urlparse(url).hostname == "huggingface.co" else ""
+    if tok:
+        hdr["Authorization"] = "Bearer " + tok
+    try:
+        r = urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=60)
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403) and "huggingface.co" in url:
+            repo = "/".join(urllib.parse.urlparse(url).path.split("/")[1:3])
+            raise RuntimeError(f"{dest.name} is gated on Hugging Face. Open https://huggingface.co/{repo}, sign in and accept "
+                               "access, then put your token (huggingface.co/settings/tokens, type Read) in hf-token.txt "
+                               "in the V100-LLM folder and press Download missing again"
+                               + (" (a token was sent: access is not granted yet, or the token is wrong)" if tok else "")) from None
+        raise
+    with r:
         if have and r.status != 206:
             have = 0
         total = have + int(r.headers.get("Content-Length", 0))
@@ -188,6 +216,25 @@ def fetch(url, dest, size=None):
                     break
                 f.write(b)
                 dl["done"] += len(b)
+
+
+VC_DLLS = ("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll", "vcomp140.dll")
+
+
+def ensure_vc_runtime(store):
+    """Engines built with MSVC need the Visual C++ runtime. Our kernel zips ship it; for one that does not (e.g. the
+    official Prism release) on a PC without the VC++ Redistributable, copy the DLLs from another installed kernel."""
+    sys32 = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32"
+    missing = [d for d in VC_DLLS if not (store / d).exists() and not (sys32 / d).exists()]
+    if not missing:
+        return
+    for other in (ROOT / "_kernels").iterdir():
+        if other != store and all((other / d).exists() for d in missing):
+            for d in missing:
+                shutil.copy2(other / d, store / d)
+            return
+    raise RuntimeError("this engine needs the Microsoft Visual C++ Redistributable (x64): install it from "
+                       "https://aka.ms/vs/17/release/vc_redist.x64.exe and press Download missing again")
 
 
 def ensure_kernel(mid, k):
@@ -220,6 +267,7 @@ def ensure_kernel(mid, k):
                 shutil.move(str(f), t)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
+    ensure_vc_runtime(store)
     for f in store.rglob("*"):
         if f.is_file():
             t = kd / f.relative_to(store)
