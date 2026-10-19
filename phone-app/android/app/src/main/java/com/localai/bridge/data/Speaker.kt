@@ -123,16 +123,38 @@ class Speaker(context: Context) {
             .replace(Regex("[ \\t]+"), " ")
             .trim()
 
-        /** Split into sentences and group neighbours of the same script: [(isArabic, text)]. */
+        /**
+         * Split into runs of one script, word by word: Arabic words go to the Arabic voice, English words and acronyms
+         * (GPU, V100) to the English voice, even inside one sentence. Digits and punctuation stay with the run they are
+         * in. A sentence-level split gave a mixed sentence to the wrong voice, which then mispronounced the other script.
+         */
         fun segments(t: String): List<Pair<Boolean, String>> {
             val out = mutableListOf<Pair<Boolean, String>>()
-            for (s in t.split(Regex("(?<=[.!?؟。\\n])\\s+")).map { it.trim() }.filter { it.isNotEmpty() }) {
-                val ar = arabicChar.findAll(s).count()
-                val la = latinChar.findAll(s).count()
-                val isAr = if (ar == 0 && la == 0) out.lastOrNull()?.first ?: false else ar >= la
+            fun add(isAr: Boolean, s: String) {
+                if (s.isBlank()) return
                 if (out.isNotEmpty() && out.last().first == isAr && out.last().second.length < 3500)
-                    out[out.lastIndex] = isAr to (out.last().second + " " + s)
-                else out += isAr to s
+                    out[out.lastIndex] = isAr to (out.last().second + " " + s.trim())
+                else out += isAr to s.trim()
+            }
+            // the main script of the whole text decides where neutral words (numbers, symbols) go at the start
+            val textAr = arabicChar.findAll(t).count() >= latinChar.findAll(t).count()
+            for (line in t.split('\n').map { it.trim() }.filter { it.isNotEmpty() }) {
+                var curAr: Boolean? = null
+                val buf = StringBuilder()
+                val neutral = StringBuilder()
+                for (w in line.split(Regex("\\s+"))) {
+                    val ar = arabicChar.containsMatchIn(w)
+                    val la = latinChar.containsMatchIn(w)
+                    val wAr: Boolean? = when { ar && !la -> true; la && !ar -> false; ar && la -> true; else -> null }
+                    if (wAr == null) { (if (curAr == null) neutral else buf).append(w).append(' '); continue }
+                    if (curAr == null) { curAr = wAr; buf.append(neutral); neutral.clear() }
+                    if (wAr != curAr) { add(curAr, buf.toString()); buf.clear(); curAr = wAr }
+                    buf.append(w).append(' ')
+                }
+                add(curAr ?: textAr, (buf.toString() + neutral).trim())
+                if (out.isNotEmpty() && !out.last().second.endsWith(".") && !out.last().second.endsWith("؟") &&
+                    !out.last().second.endsWith("?") && !out.last().second.endsWith("!"))
+                    out[out.lastIndex] = out.last().first to (out.last().second + ".")   // a short pause between lines
             }
             return out
         }

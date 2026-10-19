@@ -187,7 +187,9 @@ def attach_context(mid: int, content: str, voice: bool = False):
     parts = [f"sent {time.strftime('%Y-%m-%d %H:%M (%A)')}"]
     if voice:   # read aloud to the user (maybe while driving): spoken style, short
         parts.append("asked by voice and your reply is read aloud (the user may be driving): answer in a few short, "
-                     "plain spoken sentences in the user's language; no tables, code, lists or links unless asked")
+                     "plain spoken sentences in the user's language; no tables, code, lists or links unless asked. When you answer "
+                     "in Arabic, write it with full tashkeel (diacritics, e.g. مَرْحَبًا بِكَ) so the text-to-speech voice "
+                     "pronounces every word correctly, and write numbers as digits")
     mem = memory.context(content, recent=False)
     if mem:
         parts.append(mem)
