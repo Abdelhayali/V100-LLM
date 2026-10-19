@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
 from . import db, memory, tools
+from . import ocr as ocr_mod
 from .config import DATA_DIR, config, llm_api_base
 
 app = FastAPI(title="LocalAI Bridge", docs_url=None, redoc_url=None, openapi_url=None)
@@ -227,10 +228,14 @@ def build_llm_messages(session_id: str) -> list[dict]:
                 if att["kind"] == "image":
                     if i == last_user_idx:
                         images.append(att)
+                        text += f"\n\n[image attached: {att['filename']} saved at {att['path']}]"
                     else:
-                        text += f"\n\n[image attached earlier: {att['filename']}]"
-                elif att["text"]:
-                    text += f"\n\n[Attached file: {att['filename']}]\n{att['text']}"
+                        text += f"\n\n[image attached earlier: {att['filename']} saved at {att['path']}]"
+                elif att["text"] and re.sub(r"--- page \d+ ---", "", att["text"]).strip():
+                    text += f"\n\n[Attached file: {att['filename']} saved at {att['path']}]\n{att['text']}"
+                elif att["kind"] == "pdf":   # a scan: no text layer
+                    text += (f"\n\n[Attached file: {att['filename']} saved at {att['path']}: a scanned PDF without a text "
+                             f"layer; read it with ocr_document if that tool is available]")
                 else:
                     text += f"\n\n[Attached file: {att['filename']} saved at {att['path']}]"
             if images:
@@ -323,9 +328,10 @@ async def compress_turn(run, model: str | None):
 class Run:
     """A chat turn running in the background; survives phone disconnects."""
 
-    def __init__(self, sid, web=False, auto_approve=False, compress_at=0.0, email=False, organizer=False, thinking="auto"):
+    def __init__(self, sid, web=False, auto_approve=False, compress_at=0.0, email=False, organizer=False, thinking="auto", ocr="off"):
         self.sid = sid
         self.thinking = thinking
+        self.ocr = ocr if ocr in ocr_mod.MODES else "off"
         self.compress_at = compress_at
         self.web = web
         self.email, self.organizer = email, organizer      # access switches from the phone (off = no such tools)
@@ -533,6 +539,8 @@ async def chat_turn(run: Run, model: str | None):
                 apply_thinking(payload, run.thinking)
                 if use_tools:
                     payload["tools"] = tools.tool_schemas(web=run.web, email=run.email, organizer_access=run.organizer)
+                    if run.ocr != "off":
+                        payload["tools"].append(ocr_mod.schema())
                 try:
                     content, reasoning, tool_calls, stats = await stream_completion(client, payload, run)
                 except httpx.HTTPStatusError as e:
@@ -568,6 +576,10 @@ async def chat_turn(run: Run, model: str | None):
                                         f"switch on '{what}' access in the app (paperclip menu) if they want you to use it."), []
                     elif name == "ask_user":
                         result, atts = await ask_user(run, tc["id"], args), []
+                    elif name == "ocr_document":
+                        run.emit({"type": "phase", "phase": "tool", "name": name})
+                        result, atts = await ocr_mod.run(run.ocr, args,
+                                                         lambda m: run.emit({"type": "notice", "text": m})), []
                     elif name == "update_tasks":
                         plan = normalize_tasks(args.get("tasks"))
                         run.emit({"type": "tasks", "tasks": plan})
@@ -707,6 +719,7 @@ class ChatIn(BaseModel):
     auto_approve: bool = False   # run code / write files without asking the phone
     compress_at: float = 0.0     # e.g. 0.75 = summarize old messages when 75% of the context is used; 0 = off
     thinking: str = "auto"       # auto (model default) | off | low | medium | high | max  (see THINKING)
+    ocr: str = "off"             # OCR sub-model (Unlimited-OCR): off | gpu (swap with the chat model) | cpu
 
 
 class ApprovalIn(BaseModel):
@@ -777,7 +790,8 @@ async def chat(sid: str, body: ChatIn):
         db.update_session(sid, model=body.model)
     run = Run(sid, web=body.web, auto_approve=body.auto_approve, compress_at=max(0.0, min(body.compress_at, 0.98)),
               email=body.email, organizer=body.organizer,
-              thinking=body.thinking if body.thinking in THINKING or body.thinking == "auto" else "auto")
+              thinking=body.thinking if body.thinking in THINKING or body.thinking == "auto" else "auto",
+              ocr=body.ocr)
     runs[sid] = run
     resp = sse_response(run)
     run.task = asyncio.create_task(chat_turn(run, model))

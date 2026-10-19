@@ -50,6 +50,11 @@ class Prefs(context: Context) {
         get() = prefs.getString("thinking", "auto") ?: "auto"
         set(v) = prefs.edit().putString("thinking", v).apply()
 
+    /** OCR sub-model (Unlimited-OCR) for scanned PDFs and images: off, gpu (swaps with the chat model) or cpu. */
+    var ocr: String
+        get() = prefs.getString("ocr", "off") ?: "off"
+        set(v) = prefs.edit().putString("ocr", v).apply()
+
     var autoApprove: Boolean
         get() = prefs.getBoolean("auto_approve", false)
         set(v) = prefs.edit().putBoolean("auto_approve", v).apply()

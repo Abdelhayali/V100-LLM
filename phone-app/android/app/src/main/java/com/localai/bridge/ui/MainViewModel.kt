@@ -53,6 +53,13 @@ val THINKING_MODES = listOf(
     Triple("high", "High", "up to ~16k tokens"), Triple("max", "Max", "as long as it needs, slow"),
 )
 
+/** OCR sub-model (Unlimited-OCR) for scanned PDFs, photos of documents and text in images. */
+val OCR_MODES = listOf(
+    Triple("off", "Off", "no OCR tool"),
+    Triple("gpu", "A: GPU (swap)", "fast: unloads the chat model, reads on the V100, loads it again (~1 min extra)"),
+    Triple("cpu", "B: CPU", "the chat model stays loaded; slower (~1-2 min per page)"),
+)
+
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     val prefs = Prefs(app)
     var api: Api? = if (prefs.isPaired) Api(prefs.serverUrl, prefs.token) else null
@@ -81,6 +88,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var editingMessageId by mutableStateOf<Long?>(null)
     var themeMode by mutableStateOf(prefs.themeMode)   // system | light | dark
     var webSearch by mutableStateOf(prefs.webSearch)   // give the model internet search
+    var ocr by mutableStateOf(prefs.ocr)               // OCR sub-model: off/gpu/cpu
     var thinking by mutableStateOf(prefs.thinking)     // thinking effort: auto/off/low/medium/high/max
     var emailAccess by mutableStateOf(prefs.emailAccess)          // Gmail tools in chats (off by default)
     var organizerAccess by mutableStateOf(prefs.organizerAccess)  // tasks / notes / calendar tools (off by default)
@@ -338,7 +346,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val org = organizerAccess || onceOrganizer
                 onceEmail = false; onceOrganizer = false
                 consume(a.chat(sid, text, atts.map { it.id }, currentModel.ifBlank { null }, webSearch, autoApprove,
-                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = thinking))
+                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = thinking, ocr = ocr))
             } catch (e: com.localai.bridge.data.ApiException) {
                 if (e.code == 409) {
                     // the PC is still finishing the previous reply (e.g. the phone was off): show it instead of failing
@@ -660,6 +668,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val last = items.lastOrNull { it is ChatItem.User } as? ChatItem.User ?: return
         startEdit(last)
         if (editingMessageId != null) send()
+    }
+
+    fun updateOcr(mode: String) {
+        ocr = mode
+        prefs.ocr = mode
+        toast = "OCR: " + (OCR_MODES.firstOrNull { it.first == mode }?.let { "${it.second} (${it.third})" } ?: mode)
     }
 
     fun updateThinking(mode: String) {

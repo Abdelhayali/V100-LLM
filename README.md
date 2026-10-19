@@ -75,6 +75,7 @@ forwarding), from anywhere:
 | 🔊 **Read aloud** | Replies spoken in Arabic and English (detected per sentence), per reply or automatically |
 | 📝 **Notes, tasks & calendar** | Stored on the PC and used by the model: "what tasks do I have?", "remind me…", "what's tomorrow?" |
 | 📧 **Gmail & Google Calendar** | Read email, draft replies, list / add events; sending always waits for your approval |
+| 📄 **OCR sub-model** | [baidu/Unlimited-OCR](https://huggingface.co/baidu/Unlimited-OCR) (MIT) reads scanned PDFs, photos of pages and text in images (tables, formulas, Arabic and English) for the chat model through an `ocr_document` tool. Choose per chat: **Off**, **A: GPU** (unloads the chat model, reads on the V100, loads it again) or **B: CPU** (the chat model stays loaded). Install once with `phone-app/ocr/setup-ocr.bat` (~10 GB) |
 | 🧠 **Thinking effort** | Off / Low / Medium / High / Max per chat (a llama.cpp thinking budget: 1k / 4k / 16k tokens / unlimited), so a reply never spends all its tokens thinking |
 | 🔑 **OpenAI API anywhere** | An OpenAI-format URL + API key (made and refreshed in the app) for the loaded model; same URL after switching models |
 | ❓ **Choices** | When the model needs a decision it asks with buttons and waits; listed options become tap-to-answer chips |

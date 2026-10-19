@@ -103,7 +103,7 @@ async function send(text = null, { email = false, organizer = false } = {}) {
   render(); scrollDown(true);
   const body = { content: text, attachments: atts.map(a => a.id), model: S.model || null, web: S.prefs.web, auto_approve: S.prefs.autoApprove,
                  compress_at: S.prefs.autoCompress ? S.prefs.compressAt / 100 : 0,
-                 email: S.prefs.email || email, organizer: S.prefs.organizer || organizer, thinking: S.prefs.thinking || 'auto' };
+                 email: S.prefs.email || email, organizer: S.prefs.organizer || organizer, thinking: S.prefs.thinking || 'auto', ocr: S.prefs.ocr || 'off' };
   const sid = S.sid;
   startStream();
   try { await sse(`/api/sessions/${sid}/chat`, { method: 'POST', body, signal: S.abort.signal }, onEvent); }
@@ -419,6 +419,17 @@ function thinkingSelect(p) {
       toast('Thinking: ' + x[1].replace('🧠 ', '') + ' (' + x[2] + ')'); renderHeader(); } },
     ...THINKING.map(([v, label, tip]) => h('option', { value: v, selected: v === cur[0], title: tip }, label)));
 }
+// OCR sub-model (Unlimited-OCR) for scanned PDFs and images: A = GPU (swaps with the chat model), B = CPU
+const OCR = [['off', '📄 OCR off', 'No OCR tool'],
+  ['gpu', '📄 OCR A: GPU', 'Fast: unloads the chat model, reads on the V100, loads it again (~1 min extra)'],
+  ['cpu', '📄 OCR B: CPU', 'The chat model stays loaded; slower (~1-2 min per page)']];
+function ocrSelect(p) {
+  const cur = OCR.find(x => x[0] === (p.ocr || 'off')) || OCR[0];
+  return h('select', { class: 'toggle think' + (cur[0] !== 'off' ? ' on' : ''), title: 'OCR: ' + cur[2],
+    onchange: e => { p.ocr = e.target.value; savePrefs(); const x = OCR.find(y => y[0] === p.ocr);
+      toast(x[1].replace('📄 ', '') + ' (' + x[2] + ')'); renderHeader(); } },
+    ...OCR.map(([v, label, tip]) => h('option', { value: v, selected: v === cur[0], title: tip }, label)));
+}
 function toggleChip(label, key, on, onToggle) {
   return h('button', { class: 'toggle' + (on ? ' on' : ''), onclick: onToggle, title: label }, label);
 }
@@ -432,6 +443,7 @@ function renderHeader() {
   el.replaceChildren(h('div', { class: 'ttl' }, h('div', { class: 'title', dir: 'auto' }, S.title), sel),
     h('div', { class: 'toggles' },
       thinkingSelect(p),
+      ocrSelect(p),
       toggleChip('🌐 Web', 'web', p.web, () => flip('web', v => 'Web search ' + (v ? 'ON' : 'OFF'))),
       toggleChip('✉ Email', 'email', p.email, () => flip('email', v => v ? 'Email access ON: the AI can read mail and write drafts (sending asks you)' : 'Email access OFF')),
       toggleChip('📅 Tasks', 'organizer', p.organizer, () => flip('organizer', v => 'Tasks & calendar access ' + (v ? 'ON' : 'OFF'))),

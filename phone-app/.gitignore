@@ -12,3 +12,7 @@ android/.idea/
 *.apk
 !release/*.apk
 android/.kotlin/
+ocr/.venv/
+ocr/model/
+ocr/test/
+ocr/*.out

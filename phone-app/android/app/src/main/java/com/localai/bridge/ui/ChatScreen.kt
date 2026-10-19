@@ -1,6 +1,7 @@
 package com.localai.bridge.ui
 
 import androidx.compose.material.icons.filled.Compress
+import androidx.compose.material.icons.filled.DocumentScanner
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -119,6 +120,19 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                 Column { Text(label); Text(tip, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             } } } },
         confirmButton = { TextButton(onClick = { thinkMenu = false }) { Text("Close") } })
+    var ocrMenu by remember { mutableStateOf(false) }
+    if (ocrMenu) AlertDialog(onDismissRequest = { ocrMenu = false },
+        title = { Text("OCR sub-model") },
+        text = { Column {
+            Text("Unlimited-OCR reads scanned PDFs, photos of pages and text in images (any language) for the chat model.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            OCR_MODES.forEach { (id, label, tip) ->
+            Row(Modifier.fillMaxWidth().clickable { vm.updateOcr(id); ocrMenu = false }.padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                RadioButton(selected = vm.ocr == id, onClick = { vm.updateOcr(id); ocrMenu = false })
+                Column { Text(label); Text(tip, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            } } } },
+        confirmButton = { TextButton(onClick = { ocrMenu = false }) { Text("Close") } })
     var confirmAuto by remember { mutableStateOf(false) }
     var modelMenu by remember { mutableStateOf(false) }
     var cameraUri by rememberSaveable { mutableStateOf<String?>(null) }
@@ -256,13 +270,16 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             }
 
             // ---- active modes (tap to turn off) - kept out of the input row so the text field stays wide
-            if (vm.webSearch || vm.autoApprove || vm.emailAccess || vm.organizerAccess || vm.thinking != "auto") {
+            if (vm.webSearch || vm.autoApprove || vm.emailAccess || vm.organizerAccess || vm.thinking != "auto" || vm.ocr != "off") {
                 // one line that scrolls sideways: several chips must never squeeze each other into tall columns
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(start = 12.dp, end = 12.dp, top = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (vm.thinking != "auto") InputChip(selected = vm.thinking != "off", onClick = { thinkMenu = true },
                         label = { Text("Thinking: " + (THINKING_MODES.firstOrNull { it.first == vm.thinking }?.second ?: vm.thinking), maxLines = 1, softWrap = false) },
                         leadingIcon = { Icon(Icons.Default.Psychology, null, Modifier.size(16.dp)) })
+                    if (vm.ocr != "off") InputChip(selected = true, onClick = { ocrMenu = true },
+                        label = { Text("OCR: " + (if (vm.ocr == "gpu") "GPU" else "CPU"), maxLines = 1, softWrap = false) },
+                        leadingIcon = { Icon(Icons.Default.DocumentScanner, null, Modifier.size(16.dp)) })
                     if (vm.emailAccess) InputChip(selected = true, onClick = { vm.toggleEmailAccess() },
                         label = { Text("Email", maxLines = 1, softWrap = false) }, leadingIcon = { Icon(Icons.Default.Email, null, Modifier.size(16.dp)) },
                         trailingIcon = { Icon(Icons.Default.Close, "Turn off", Modifier.size(14.dp)) })
@@ -306,6 +323,9 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                         DropdownMenuItem(text = { Text("Thinking: " + (THINKING_MODES.firstOrNull { it.first == vm.thinking }?.second ?: vm.thinking)) },
                             leadingIcon = { Icon(Icons.Default.Psychology, null) },
                             onClick = { attachMenu = false; thinkMenu = true })
+                        DropdownMenuItem(text = { Text("OCR: " + (OCR_MODES.firstOrNull { it.first == vm.ocr }?.second ?: vm.ocr)) },
+                            leadingIcon = { Icon(Icons.Default.DocumentScanner, null) },
+                            onClick = { attachMenu = false; ocrMenu = true })
                         DropdownMenuItem(text = { Text("Web search") }, leadingIcon = { Icon(Icons.Default.Public, null) },
                             trailingIcon = { Switch(checked = vm.webSearch, onCheckedChange = null) },
                             onClick = { vm.toggleWebSearch() })
