@@ -2,6 +2,7 @@ package com.localai.bridge.ui
 
 import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.DocumentScanner
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Shield
 import android.Manifest
 import android.content.pm.PackageManager
@@ -91,6 +92,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -153,6 +155,20 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
     val camPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) launchCamera() else vm.toast = "Camera permission denied"
     }
+    // voice chat: the phone's speech recognizer (Arabic / English), then the reply is read aloud
+    val listen = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        val text = r.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull().orEmpty()
+        if (text.isNotBlank()) vm.sendVoice(text)
+    }
+    fun startListening() {
+        val i = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Ask your PC…")
+        runCatching { listen.launch(i) }.onFailure { vm.toast = "No speech recognizer on this phone (install Google app)" }
+    }
+    LaunchedEffect(vm.pendingVoice) { if (vm.pendingVoice) { vm.pendingVoice = false; startListening() } }
+    val inputFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    LaunchedEffect(vm.focusInput) { if (vm.focusInput) { vm.focusInput = false; runCatching { inputFocus.requestFocus() } } }
 
     LaunchedEffect(vm.items.size, (vm.items.lastOrNull() as? ChatItem.Assistant)?.text?.length) {
         if (vm.items.isNotEmpty()) listState.scrollToItem(vm.items.lastIndex, Int.MAX_VALUE / 2)
@@ -354,12 +370,14 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                 OutlinedTextField(
                     value = vm.draft, onValueChange = { vm.draft = it },
                     placeholder = { Text("Message…") },
-                    modifier = Modifier.weight(1f).heightIn(max = 160.dp),
+                    modifier = Modifier.weight(1f).heightIn(max = 160.dp).focusRequester(inputFocus),
                     shape = RoundedCornerShape(24.dp),
                 )
                 Spacer(Modifier.size(6.dp))
                 if (vm.streaming) {
                     FilledIconButton(onClick = { vm.stop() }) { Icon(Icons.Default.Stop, "Stop") }
+                } else if (vm.draft.isBlank() && vm.pendingAttachments.isEmpty()) {
+                    FilledIconButton(onClick = { startListening() }) { Icon(Icons.Default.Mic, "Speak") }
                 } else {
                     FilledIconButton(onClick = { vm.send() },
                         enabled = (vm.draft.isNotBlank() || vm.pendingAttachments.isNotEmpty()) && !vm.uploading) {

@@ -96,7 +96,22 @@ def available() -> bool:
     return os.name == "nt"
 
 
-def run(code: str, language: str = "python", timeout: int = 120) -> dict:
+def _warm_matplotlib(cache: Path):
+    """matplotlib builds a font cache on first import (~2.5 min inside the sandbox, longer than a run may take, so a
+    killed run never saved it and every chart failed). Reuse the user's own cache when it exists, else build it once
+    here without the run time limit."""
+    dst = cache / "matplotlib"
+    dst.mkdir(exist_ok=True)
+    mine = sorted((Path.home() / ".matplotlib").glob("fontlist-*.json"))
+    if mine:
+        for f in mine:
+            shutil.copy2(f, dst / f.name)
+        return
+    run("import matplotlib\nmatplotlib.use('Agg')\nimport matplotlib.font_manager\nprint('font cache ready')",
+        "python", timeout=900, warm=False)
+
+
+def run(code: str, language: str = "python", timeout: int = 120, warm: bool = True) -> dict:
     sid, sid_str = _sid()
     root = Path(config["workspace"]) / "sandbox"
     box = root / uuid.uuid4().hex[:10]
@@ -112,6 +127,8 @@ def run(code: str, language: str = "python", timeout: int = 120) -> dict:
         for d in read_dirs:   # once: read + execute on the Python installation for this AppContainer only
             _grant(d, sid_str, "RX")
         marker.write_text(sid_str + "|" + "|".join(map(str, read_dirs)), encoding="utf-8")
+    if warm and not list((cache / "matplotlib").glob("fontlist-*.json")):
+        _warm_matplotlib(cache)
     if language == "python":
         (box / "main.py").write_text(code, encoding="utf-8")
         cmdline = subprocess.list2cmdline([py, "-I", "-X", "utf8", str(box / "main.py")])

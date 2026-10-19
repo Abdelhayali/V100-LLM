@@ -70,6 +70,11 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean("sandbox", false)
         set(v) = prefs.edit().putBoolean("sandbox", v).apply()
 
+    /** Last notification-feed event shown (scheduled tasks, temperature alerts). */
+    var lastNotifyId: Int
+        get() = prefs.getInt("last_notify_id", 0)
+        set(v) = prefs.edit().putInt("last_notify_id", v).apply()
+
     var autoApprove: Boolean
         get() = prefs.getBoolean("auto_approve", false)
         set(v) = prefs.edit().putBoolean("auto_approve", v).apply()

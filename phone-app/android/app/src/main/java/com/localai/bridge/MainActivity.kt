@@ -20,5 +20,14 @@ class MainActivity : ComponentActivity() {
             != android.content.pm.PackageManager.PERMISSION_GRANTED)   // for "Reply ready"
             requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 7)
         setContent { BridgeTheme(vm.themeMode) { AppRoot(vm) } }
+        NotifyWorker.schedule(this)          // scheduled-task results and temperature alerts, even when closed
+        GpuWidget.refreshAll(this)
+        vm.handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        vm.handleIntent(intent)
     }
 }

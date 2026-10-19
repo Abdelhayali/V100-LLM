@@ -30,7 +30,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-enum class Screen { CHAT, FILES, TERMINAL, MEMORY, SETTINGS, TASKS, AGENT, MODELS, API, ORGANIZER }
+enum class Screen { CHAT, FILES, TERMINAL, MEMORY, SETTINGS, TASKS, AGENT, MODELS, API, ORGANIZER, SCHEDULES }
 
 sealed interface ChatItem {
     val key: String
@@ -467,10 +467,65 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun onAppBackground() {
-        tasksJob?.cancel(); pcJob?.cancel(); backgroundAtMs = System.currentTimeMillis()
+        tasksJob?.cancel(); pcJob?.cancel(); notifyJob?.cancel(); backgroundAtMs = System.currentTimeMillis()
         val sid = currentSessionId
         if (streaming && notifyDone && sid != null)   // keep watching the reply and say when it is ready
             com.localai.bridge.ReplyWatchService.start(getApplication(), prefs.serverUrl, prefs.token, sid, currentTitle)
+    }
+
+    // ---------------------------------------------------------------- voice chat
+    var voiceTurn = false                       // this reply answers a spoken question: read it aloud
+    var pendingVoice by mutableStateOf(false)   // the widget's Voice button: start listening when the chat shows
+    var focusInput by mutableStateOf(false)     // the widget's Ask button: put the cursor in the message box
+
+    fun sendVoice(text: String) {
+        if (text.isBlank()) return
+        draft = if (draft.isBlank()) text else draft.trimEnd() + " " + text
+        voiceTurn = true
+        send()
+    }
+
+    // ---------------------------------------------------------------- share to the app, widget buttons, notifications
+    fun handleIntent(intent: android.content.Intent?) {
+        intent ?: return
+        val open = intent.getStringExtra("open_session").orEmpty()
+        if (open.isNotBlank() && paired) { screen = Screen.CHAT; openSession(open); intent.removeExtra("open_session") }
+        when (intent.getStringExtra("widget_action")) {
+            "ask" -> { newChat(); screen = Screen.CHAT; focusInput = true }
+            "voice" -> { newChat(); screen = Screen.CHAT; pendingVoice = true }
+            "models" -> screen = Screen.MODELS
+        }
+        intent.removeExtra("widget_action")
+        val uris = when (intent.action) {
+            android.content.Intent.ACTION_SEND -> listOfNotNull(
+                if (android.os.Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(android.content.Intent.EXTRA_STREAM, Uri::class.java)
+                else @Suppress("DEPRECATION") intent.getParcelableExtra(android.content.Intent.EXTRA_STREAM))
+            android.content.Intent.ACTION_SEND_MULTIPLE ->
+                (if (android.os.Build.VERSION.SDK_INT >= 33) intent.getParcelableArrayListExtra(android.content.Intent.EXTRA_STREAM, Uri::class.java)
+                 else @Suppress("DEPRECATION") intent.getParcelableArrayListExtra(android.content.Intent.EXTRA_STREAM)).orEmpty()
+            else -> emptyList()
+        }
+        val text = if (intent.action == android.content.Intent.ACTION_SEND)
+            intent.getStringExtra(android.content.Intent.EXTRA_TEXT).orEmpty() else ""
+        if (uris.isEmpty() && text.isBlank()) return
+        intent.action = null                     // handled: not again after a screen rotation
+        if (!paired) { toast = "Pair with your PC first, then share again"; return }
+        screen = Screen.CHAT
+        if (text.isNotBlank()) draft = if (draft.isBlank()) text else draft.trimEnd() + "\n" + text
+        if (uris.isNotEmpty()) { attach(uris); toast = "Shared ${uris.size} file(s) - add your question and send" }
+        else focusInput = true
+    }
+
+    private var notifyJob: Job? = null
+    /** While the app is open, show finished scheduled tasks and temperature alerts within 30 s. */
+    private fun startNotifyPolling() {
+        notifyJob?.cancel()
+        notifyJob = viewModelScope.launch {
+            while (true) {
+                runCatching { com.localai.bridge.NotifyWorker.check(getApplication()) }
+                kotlinx.coroutines.delay(30_000)
+            }
+        }
     }
 
     private fun startPcPolling() {
@@ -522,7 +577,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Called when the app comes back to the foreground. */
     fun onAppForeground() {
         com.localai.bridge.ReplyWatchService.stop(getApplication())
-        if (paired) { startTaskPolling(); startPcPolling() }
+        if (paired) { startTaskPolling(); startPcPolling(); startNotifyPolling() }
         val away = backgroundAtMs > 0 && System.currentTimeMillis() - backgroundAtMs > 3_000
         backgroundAtMs = 0L
         if (!paired || currentSessionId == null) return
@@ -659,8 +714,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             "title" -> currentTitle = str(ev, "title")
             "done" -> {
                 turnCompleted = true; turnEnded = true
-                if (autoRead) (items.lastOrNull { it is ChatItem.Assistant } as? ChatItem.Assistant)
+                if (autoRead || voiceTurn) (items.lastOrNull { it is ChatItem.Assistant } as? ChatItem.Assistant)
                     ?.takeIf { it.text.isNotBlank() }?.let { speakingKey = it.key; speaker.speak(it.text) }
+                voiceTurn = false
             }
             "compressed" -> items += ChatItem.Notice(nextKey(),
                 "Compressed ${str(ev, "messages")} earlier messages into a summary - context freed.")

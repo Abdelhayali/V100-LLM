@@ -1217,6 +1217,14 @@ app.include_router(models_ctl.router, dependencies=[Auth])
 from . import bench  # noqa: E402
 
 app.include_router(bench.router, dependencies=[Auth])
+from . import schedules  # noqa: E402
+
+app.include_router(schedules.router, dependencies=[Auth])
+
+
+@app.on_event("startup")
+async def _start_background():
+    asyncio.create_task(schedules.loop())   # scheduled prompts + temperature alerts
 
 # ---------------------------------------------------------------- OpenAI-compatible API for the loaded model
 from . import openai_proxy  # noqa: E402

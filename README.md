@@ -80,6 +80,11 @@ forwarding), from anywhere:
 | 🔊 **Read aloud** | Replies spoken in Arabic and English (detected per sentence), per reply or automatically |
 | 📝 **Notes, tasks & calendar** | Stored on the PC and used by the model: "what tasks do I have?", "remind me…", "what's tomorrow?" |
 | 📧 **Gmail & Google Calendar** | Read email, draft replies, list / add events; sending always waits for your approval |
+| ⏰ **Scheduled tasks** | Drawer → Schedules & alerts: a prompt the PC runs by itself (daily at a time, or every N minutes), e.g. "summarize my unread email" at 8:00, in its own chat with the access you give it; a notification when it is done |
+| 🌡 **Temperature alerts** | Your own GPU / CPU limits; a notification when one is passed (checked every 30 s on the PC) |
+| 🎤 **Voice chat** | Mic button in the chat: speak (Arabic or English), the reply is read aloud |
+| 📤 **Share to the app** | Share a photo, screenshot, PDF, link or text from any app straight into a chat |
+| 🧩 **Home-screen widget** | GPU status (model, VRAM, GPU / CPU temperature) with Ask and Voice buttons |
 | 🛡 **Sandbox for code** | Per chat (📎 menu → Run code in sandbox): the AI's code runs in a Windows AppContainer - no network, no access to your files, 4 GB memory cap, killed at the time limit. Packages already installed (numpy, matplotlib) work, and sandboxed code needs no approval. No admin rights or installs |
 | 🔔 **Reply ready** | A notification when a reply finishes while the app is in the background, and a short sound when it finishes while the chat is open (both can be turned off in Settings) |
 | 🌡 **GPU / CPU status** | Models tab: VRAM, GPU load, **temperature, power, clock and throttle reason**, CPU, RAM; CPU temperature when LibreHardwareMonitor runs on the PC. **Free GPU** ends the model, a stuck OCR and leftover processes |
