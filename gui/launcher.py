@@ -16,6 +16,7 @@ Standard library only.
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -484,6 +485,29 @@ def gpu_info():
 cpu_temp = {"c": None, "source": ""}
 
 
+def _cpu_temp_web():
+    """LibreHardwareMonitor's own web server (Options > Remote Web Server, port 8085): the hottest CPU package / core."""
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:8085/data.json", timeout=3) as r:
+            root = json.loads(r.read())
+    except Exception:
+        return None
+    best = {}
+
+    def walk(n):
+        sid = str(n.get("SensorId") or "")
+        if "/temperature/" in sid and ("cpu" in sid.split("/")[1] if sid.count("/") > 1 else False):
+            m = re.match(r"\s*([\d.,]+)", str(n.get("Value") or ""))
+            if m:
+                v = float(m.group(1).replace(",", "."))
+                kind = "package" if "package" in str(n.get("Text", "")).lower() else "core"
+                best[kind] = max(best.get(kind, 0), v)
+        for ch in n.get("Children") or []:
+            walk(ch)
+    walk(root)
+    return best.get("package") or best.get("core")
+
+
 def _cpu_temp_loop():
     ps = ("$s = $null; foreach ($ns in 'root/LibreHardwareMonitor','root/OpenHardwareMonitor') { try { $s = Get-CimInstance "
           "-Namespace $ns -ClassName Sensor -ErrorAction Stop | Where-Object { $_.SensorType -eq 'Temperature' -and "
@@ -492,6 +516,11 @@ def _cpu_temp_loop():
           "$z = Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature -ErrorAction Stop | "
           "Select-Object -First 1; 'acpi ' + (($z.CurrentTemperature / 10) - 273.15) } catch { 'none' } }")
     while True:
+        web = _cpu_temp_web()
+        if web:
+            cpu_temp.update(c=round(web, 1), source="LibreHardwareMonitor")
+            time.sleep(10)
+            continue
         try:
             out = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=20,
                                  creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout.strip().split()
