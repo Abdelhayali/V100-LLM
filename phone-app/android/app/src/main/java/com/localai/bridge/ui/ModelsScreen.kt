@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AssistChip
@@ -34,6 +35,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +57,7 @@ import com.localai.bridge.data.v100Load
 import com.localai.bridge.data.v100Models
 import com.localai.bridge.data.v100Status
 import com.localai.bridge.data.v100Unload
+import com.localai.bridge.data.v100FreeGpu
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -99,6 +102,18 @@ fun ModelsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
         } catch (e: Exception) { vm.toast = e.message }
         busy = false
     }
+    fun freeGpu() = scope.launch {
+        busy = true
+        vm.toast = "Freeing the GPU…"
+        try {
+            val r = vm.api?.v100FreeGpu()
+            val before = r?.get("before_mb")?.toString()?.toIntOrNull() ?: -1
+            val after = r?.get("after_mb")?.toString()?.toIntOrNull() ?: -1
+            vm.toast = if (before >= 0 && after >= 0) "GPU freed: %.1f GB → %.1f GB in use".format(before / 1024.0, after / 1024.0)
+                       else "GPU freed"
+        } catch (e: Exception) { vm.toast = e.message }
+        busy = false
+    }
     fun unload() = scope.launch {
         busy = true
         try { vm.api?.v100Unload(); vm.toast = "Model unloaded, GPU memory freed" } catch (e: Exception) { vm.toast = e.message }
@@ -116,7 +131,7 @@ fun ModelsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            StatusCard(status, busy, onUnload = { unload() })
+            StatusCard(status, busy, onUnload = { unload() }, onFreeGpu = { freeGpu() })
 
             Text("Models", style = MaterialTheme.typography.titleMedium)
             error?.let {
@@ -137,6 +152,22 @@ fun ModelsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
     }
 }
 
+/** Always shown: also frees memory held by a stuck OCR or a leftover engine process, not only the loaded model. */
+@Composable
+private fun FreeGpuButton(busy: Boolean, onFreeGpu: () -> Unit) {
+    var confirm by remember { mutableStateOf(false) }
+    if (confirm) AlertDialog(onDismissRequest = { confirm = false },
+        title = { Text("Free the GPU?") },
+        text = { Text("Unloads the model, stops a running OCR and ends leftover V100-LLM processes that still use GPU " +
+                      "memory. A reply that is running will stop. Your other programs are not touched.") },
+        confirmButton = { TextButton(onClick = { confirm = false; onFreeGpu() }) { Text("Free GPU") } },
+        dismissButton = { TextButton(onClick = { confirm = false }) { Text("Cancel") } })
+    OutlinedButton(onClick = { confirm = true }, enabled = !busy, modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
+        Icon(Icons.Default.Memory, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Free GPU")
+    }
+}
+
 @Composable
 private fun Meter(label: String, frac: Float, text: String) {
     Column(Modifier.fillMaxWidth()) {
@@ -153,13 +184,14 @@ private fun Meter(label: String, frac: Float, text: String) {
 }
 
 @Composable
-private fun StatusCard(s: V100Status?, busy: Boolean, onUnload: () -> Unit) {
+private fun StatusCard(s: V100Status?, busy: Boolean, onUnload: () -> Unit, onFreeGpu: () -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (s == null) { CircularProgressIndicator(Modifier.size(20.dp)); return@Column }
             if (!s.launcher) {
                 Text("V100-LLM launcher is not running on the PC", style = MaterialTheme.typography.titleSmall)
                 Text("It starts automatically when the model list loads (tap refresh).", style = MaterialTheme.typography.bodySmall)
+                FreeGpuButton(busy, onFreeGpu)
                 return@Column
             }
             val loaded = s.health != "stopped"
@@ -185,6 +217,7 @@ private fun StatusCard(s: V100Status?, busy: Boolean, onUnload: () -> Unit) {
             Meter("CPU", (s.cpu / 100).toFloat(), "%.0f%% of %d threads".format(s.cpu, s.cpuThreads))
             if (s.ramTotal > 0) Meter("RAM", s.ramUsed.toFloat() / s.ramTotal,
                 "${gib(s.ramUsed)} / ${gib(s.ramTotal)} GB" + if (s.modelRam > 0) " · model ${gib(s.modelRam)}" else "")
+            FreeGpuButton(busy, onFreeGpu)
             if (s.health == "loading" && s.log.isNotEmpty())
                 Text(s.log.last(), style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace,
                     maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)

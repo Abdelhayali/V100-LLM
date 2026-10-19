@@ -93,8 +93,18 @@ async def _wait_model_ready(timeout: float = 600):
     return False
 
 
-LIMIT_S = {"cuda": 600, "cpu": 2400}
-_current = {"pid": None}                 # the running worker, killed when the user stops the reply   # per file; a stuck OCR is stopped so the chat model always comes back
+LIMIT_S = {"cuda": 600, "cpu": 2400}   # per file; a stuck OCR is stopped so the chat model always comes back
+_current = {"pid": None}                 # the running worker, killed when the user stops the reply
+_freed = {"on": False}                   # "Free GPU" in the app: stop OCR and do NOT load the chat model again
+
+
+def free_gpu_now() -> bool:
+    """Called by the app's Free GPU button: kill a running OCR worker and skip the chat-model reload after it."""
+    _freed["on"] = True
+    if _current["pid"]:
+        _kill_tree(_current["pid"])
+        return True
+    return False
 
 
 def _kill_tree(pid: int):
@@ -119,8 +129,10 @@ def _worker(device: str, path: Path, pages: str) -> dict:
     except subprocess.TimeoutExpired:
         _kill_tree(p.pid)
         p.communicate()
+        _current["pid"] = None
         return {"ok": False, "error": f"stopped after {LIMIT_S[device] // 60} minutes (the page is too large or "
                                       "the OCR model got stuck); try the other OCR mode or a smaller image"}
+    _current["pid"] = None
     if out.exists():
         return json.loads(out.read_text(encoding="utf-8"))
     return {"ok": False, "error": f"the OCR process exited with code {p.returncode}: "
@@ -172,6 +184,7 @@ async def run_files(mode: str, paths: list[Path], emit, pages: str = "", stopped
         return ["OCR is not available: " + why] * len(paths)
     out = []
     async with _lock:
+        _freed["on"] = False
         reload = None
         if mode == "gpu":
             try:
@@ -188,7 +201,7 @@ async def run_files(mode: str, paths: list[Path], emit, pages: str = "", stopped
         try:
             await _read_all(mode, paths, pages, emit, out, stopped)
         finally:
-            if reload:   # also when the reply was stopped: the chat model must come back
+            if reload and not _freed["on"]:   # also after Stop; not after Free GPU (the user wants it empty)
                 await asyncio.shield(_reload(reload, emit))
     return out
 

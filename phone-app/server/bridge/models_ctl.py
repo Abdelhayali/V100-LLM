@@ -144,3 +144,65 @@ async def unload():
         return {"ok": True}
     await _post("/api/stop", {})
     return {"ok": True}
+
+@router.post("/free_gpu")
+async def free_gpu():
+    """The app's Free GPU button: unload the model, stop a running OCR (without loading the chat model again), and end
+    any other V100-LLM / OCR process that still holds GPU memory. Other programs on the GPU are never touched."""
+    from . import ocr
+    before = _gpu_used()
+    stopped_ocr = await asyncio.to_thread(ocr.free_gpu_now)
+    if await _reachable():
+        try:
+            await _post("/api/stop", {})
+        except Exception:
+            pass
+    roots = [str(Path(config.data.get("launcher_dir") or r"D:\V100-LLM")).lower(), str(ocr.ocr_dir()).lower()]
+    killed = []
+    for pid, name in _gpu_apps():
+        cmd = _cmdline(pid).lower()
+        if any(r in name.lower() or r in cmd for r in roots) or "ocr_worker.py" in cmd:
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            killed.append(Path(name).name or str(pid))
+    for _ in range(20):
+        await asyncio.sleep(0.5)
+        if _gpu_used() < 1000:
+            break
+    after = _gpu_used()
+    return {"ok": True, "before_mb": before, "after_mb": after, "stopped_ocr": stopped_ocr, "killed": killed}
+
+
+def _gpu_used() -> int:
+    try:
+        out = subprocess.run(["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+                             capture_output=True, text=True, timeout=10,
+                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
+        return int(out.split()[0])
+    except Exception:
+        return -1
+
+
+def _gpu_apps() -> list[tuple[int, str]]:
+    try:
+        out = subprocess.run(["nvidia-smi", "--query-compute-apps=pid,process_name", "--format=csv,noheader"],
+                             capture_output=True, text=True, timeout=10,
+                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
+    except Exception:
+        return []
+    apps = []
+    for line in out.splitlines():
+        pid, _, name = line.partition(",")
+        if pid.strip().isdigit():
+            apps.append((int(pid), name.strip()))
+    return apps
+
+
+def _cmdline(pid: int) -> str:
+    try:
+        return subprocess.run(["powershell", "-NoProfile", "-Command",
+                               f"(Get-CimInstance Win32_Process -Filter 'ProcessId={pid}').CommandLine"],
+                              capture_output=True, text=True, timeout=15,
+                              creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
+    except Exception:
+        return ""

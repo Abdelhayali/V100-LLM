@@ -50,3 +50,5 @@ suspend fun Api.v100Models(): List<V100Model> = getJson("/api/v100/models")
 suspend fun Api.v100Load(id: String, preset: String): JsonObject =
     sendJson("POST", "/api/v100/load", buildJsonObject { put("id", id); put("preset", preset) })
 suspend fun Api.v100Unload(): JsonObject = sendJson("POST", "/api/v100/unload", JsonObject(emptyMap()))
+/** Unload the model, stop a running OCR and end leftover V100-LLM / OCR processes that still hold GPU memory. */
+suspend fun Api.v100FreeGpu(): JsonObject = sendJson("POST", "/api/v100/free_gpu", JsonObject(emptyMap()))
