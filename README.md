@@ -6,6 +6,8 @@ mode, and ships a test suite that scores models in a leaderboard.
 
 You don't need WSL, Docker, CUDA, Visual Studio or Python: the folder brings its own engines, CUDA runtime and Python.
 
+> **New #1 on the leaderboard: OrcaCyber-Nano-1.0 27B (89.8)** at **60 tok/s, 66 tok/s on code** on one V100 16 GB (`fast-32k`, built-in MTP), with presets up to the full 262k context.
+
 ## Demo: MiniCPM-V 4.7 35B-A3B at ~90 tok/s on one V100 16 GB
 
 Real-time screen recordings (not sped up) of the `fast-128k` preset: official OpenBMB `mix_q3gud_im` quant, stock llama.cpp,
@@ -29,7 +31,7 @@ Real-time screen recordings (not sped up) of the `fast-128k` preset: official Op
 
 | # | Model | Kernel | Size (GB) | Context (scored) | Max context on V100 | Gen tok/s | Prompt tok/s (short) | Coding | Reasoning | Instructions | Web search | Agent | Vision | Long context | Overall |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | OrcaCyber-Nano-1.0 27B Mix-13G (MTP built in) | llamacpp | 13.0 | 32k | 262k | 56.9 | 501 | 88 | 95 | 58 | 100 | 100 | 88 | 100 | **89.8** |
+| 1 | OrcaCyber-Nano-1.0 27B Mix-13G (MTP built in) | llamacpp | 13.0 | 32k | 262k | **60** (code 66)¹ | 501 | 88 | 95 | 58 | 100 | 100 | 88 | 100 | **89.8** |
 | 2 | Qwen3.8-27B HauhauCS Aggressive IQ3_XS | fastmtp | 13.1 | 24k | 120k | 42.2 | 387 | 88 | 95 | 50 | 100 | 100 | 88 | 100 | **88.6** |
 | 3 | Qwen3.8-27B Unsloth UD-IQ3_S (MTP) | llamacpp | 13.4 | 32k | 262k | 52.1 | 460 | 94 | 100 | 50 | 100 | 100 | 75 | 100 | **88.4** |
 | 4 | MiniCPM-V 4.7 35B-A3B Q3 mix (official mix_q3gud_im) | llamacpp | 15.5 | 128k | 262k | 93.4 | 467 | 88 | 100 | 50 | 88 | 100 | 88 | 100 | **87.5** |
@@ -50,6 +52,8 @@ Real-time screen recordings (not sped up) of the `fast-128k` preset: official Op
 | 19 | PXA-Fusion4-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 70.0 | 2384 | 38 | 90 | 25 | 88 | 100 | 75 | 100 | **73.6** |
 | 20 | Qwen3.8-27B PXQ3 | pxa | 12.4 | 8k | 8k | 19.8 | 573 | 75 | 95 | 42 | 100 | 100 | 88 | 0 | **71.3** |
 | 21 | Ornith-1.5-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 64.1 | 2333 | 50 | 85 | 33 | 100 | 83 | 75 | 0 | **60.9** |
+
+¹ OrcaCyber-Nano: speed of its tuned `fast-32k` preset (MTP 3), measured as code 66.6 / chat 54.0 tok/s (mean 60.3); its mean over all eval replies is 56.9 tok/s.
 
 Notes:
 - Long context is a ~14k-token text with three facts hidden in different places that have to be combined. Qwen3.8-27B PXQ3 runs with an 8k context preset, so the text does not fit; Ornith runs with 16k and still answered wrong.
