@@ -416,6 +416,7 @@ private fun LiveStatus(vm: MainViewModel) {
     val speed = vm.liveTps?.let { " · %.1f t/s".format(it) } ?: ""
     val label = when (vm.phase) {
         "sending" -> "Sending to your PC…"
+        "resuming" -> "Catching up with the PC…"
         "prompt" -> "Reading the conversation…"
         "thinking" -> "Thinking… ${vm.liveTokens} tokens$speed"
         "writing" -> "Writing… ${vm.liveTokens} tokens$speed"

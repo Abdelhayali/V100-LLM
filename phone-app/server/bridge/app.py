@@ -634,10 +634,33 @@ async def chat_turn(run: Run, model: str | None):
             q.put_nowait(None)
 
 
+def compact_history(history: list[dict]) -> list[dict]:
+    """What a re-attaching app needs to catch up, in a few events: consecutive text / thinking chunks merged into one,
+    only the latest progress kept. A 900-token reply replays as ~5 events instead of ~900, so the phone shows the reply
+    so far at once instead of re-typing it from the start."""
+    out: list[dict] = []
+    last_progress = last_phase = None
+    for ev in history:
+        t = ev.get("type")
+        if t == "progress":
+            last_progress = ev
+            continue
+        if t == "phase":       # only the current phase matters (else "Reading the conversation" flashes again)
+            last_phase = ev
+            continue
+        if t in ("delta", "reasoning") and out and out[-1].get("type") == t:
+            out[-1] = {**out[-1], "text": out[-1].get("text", "") + ev.get("text", "")}
+            continue
+        out.append(dict(ev))
+    if not any(e.get("type") in ("done", "error") for e in out[-1:]):
+        out += [e for e in (last_phase, last_progress) if e]
+    return out
+
+
 def sse_response(run: Run, replay=False):
     q: asyncio.Queue = asyncio.Queue()
     if replay:
-        for ev in run.history:
+        for ev in compact_history(run.history):
             q.put_nowait(ev)
     run.queues.append(q)
 

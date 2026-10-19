@@ -21,6 +21,7 @@ import com.localai.bridge.data.ServerInfo
 import com.localai.bridge.data.SessionDto
 import com.localai.bridge.data.SessionStats
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -135,6 +136,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var startupDone = false
 
     private var streamJob: Job? = null
+    private var backgroundAtMs = 0L   // when the app last went to the background
     private var keyCounter = 0
     private fun nextKey() = "k${keyCounter++}"
 
@@ -432,7 +434,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun onAppBackground() { tasksJob?.cancel(); pcJob?.cancel() }
+    fun onAppBackground() { tasksJob?.cancel(); pcJob?.cancel(); backgroundAtMs = System.currentTimeMillis() }
 
     private fun startPcPolling() {
         pcJob?.cancel()
@@ -483,7 +485,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Called when the app comes back to the foreground. */
     fun onAppForeground() {
         if (paired) { startTaskPolling(); startPcPolling() }
-        if (!paired || streaming || currentSessionId == null) return
+        val away = backgroundAtMs > 0 && System.currentTimeMillis() - backgroundAtMs > 3_000
+        backgroundAtMs = 0L
+        if (!paired || currentSessionId == null) return
+        if (streaming) {
+            // Android or the tunnel usually drops the connection while the app is in the background, without an error
+            // until a long timeout: the reply looked stopped. The PC kept working, so reconnect now and catch up.
+            if (away) viewModelScope.launch { streamJob?.cancelAndJoin(); reattach() }
+            return
+        }
         viewModelScope.launch { reattach() }
     }
 
@@ -513,7 +523,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         plan.clear(); plan.addAll(s.plan)
         if (s.running) {
             trimToLastUser()
-            streamStartMs = System.currentTimeMillis(); phase = "prompt"
+            streamStartMs = System.currentTimeMillis(); phase = "resuming"
             streamJob = viewModelScope.launch { consume(a.resume(sid)) }
         }
         return true
