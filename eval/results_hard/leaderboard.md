@@ -4,7 +4,7 @@
 
 | # | Model | Kernel | Size (GB) | Context (scored) | Max context on V100 | Gen tok/s | Prompt tok/s (short) | Coding | Reasoning | Instructions | Web search | Agent | Vision | Long context | Overall |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | OrcaCyber-Nano-1.0 27B Mix-13G (MTP built in) | llamacpp | 13.0 | 32k | 262k | 56.9 | 501 | 88 | 95 | 58 | 100 | 100 | 88 | 100 | **89.8** |
+| 1 | OrcaCyber-Nano-1.0 27B Mix-13G (MTP built in) | llamacpp | 13.0 | 32k | 262k | 60 (code 66) | 501 | 88 | 95 | 58 | 100 | 100 | 88 | 100 | **89.8** |
 | 2 | Qwen3.8-27B HauhauCS Aggressive IQ3_XS | fastmtp | 13.1 | 24k | 120k | 42.2 | 387 | 88 | 95 | 50 | 100 | 100 | 88 | 100 | **88.6** |
 | 3 | Qwen3.8-27B Unsloth UD-IQ3_S (MTP) | llamacpp | 13.4 | 32k | 262k | 52.1 | 460 | 94 | 100 | 50 | 100 | 100 | 75 | 100 | **88.4** |
 | 4 | MiniCPM-V 4.7 35B-A3B Q3 mix (official mix_q3gud_im) | llamacpp | 15.5 | 128k | 262k | 93.4 | 467 | 88 | 100 | 50 | 88 | 100 | 88 | 100 | **87.5** |

@@ -12,7 +12,9 @@
  },
  "speed": {
   "gen_tps": 56.9,
-  "prompt_tps": 501.0
+  "prompt_tps": 501.0,
+  "preset_tps": 60.3,
+  "preset_code_tps": 66.6
  },
  "log": [
   {

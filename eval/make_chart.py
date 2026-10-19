@@ -39,7 +39,7 @@ def load():
     return sorted(rows, key=lambda d: d["overall"], reverse=True)
 
 
-SHORT = {"minicpm-v4.7-35b": "MiniCPM-V 4.7 IQ3_XS", "qwen3.8-27b-pxq3": "Qwen3.8-27B PXQ3", "saluki-27b": "Saluki 27B (MTP)",
+SHORT = {"orcacyber-nano": "OrcaCyber-Nano 27B", "minicpm-v4.7-35b": "MiniCPM-V 4.7 IQ3_XS", "qwen3.8-27b-pxq3": "Qwen3.8-27B PXQ3", "saluki-27b": "Saluki 27B (MTP)",
          "bonsai-heretic-27b": "Bonsai-2 27B Heretic", "nemotron-bolt-74b": "Nemotron-3.5 Bolt 74B", "fusion4-35b-pxq2": "PXA-Fusion4 35B",
          "ornith-35b-pxq2": "Ornith-1.5 35B", "strata-flash-next": "Strata IQ2_XS", "strata-flash-next@q2_0": "Strata Q2_0", "strata-flash-next@coder-iq1m": "Strata Coder IQ1_M", "hauhau-qwen3.8-27b": "HauhauCS IQ3_XS",
          "qwen3.8-27b-exl3": "Qwen3.8-27B EXL3 3.0bpw", "hauhau-qwen3.8-27b-q2kp": "HauhauCS Q2_K_P", "huihui-qwen3.8-27b-gsq": "Huihui abliterated GSQ IQ3_S", "ista-qwen3.8-27b-gsq": "ISTA-DASLab GSQ IQ3_S", "ridge-qwen3.8-27b": "Qwen3.8-27B Ridge 3.7bpw",
@@ -54,7 +54,7 @@ def short(d):
 
 def svg_chart(rows, w=1180, h=520):
     n = max(len(rows), 1)
-    left, right, top, bottom = 90, 20, 70, 175
+    left, right, top, bottom = 150, 20, 70, 175
     pw, ph = w - left - right, h - top - bottom
     bw = pw / n * 0.72
     out = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" font-family="Segoe UI, Arial, sans-serif">',
@@ -72,9 +72,12 @@ def svg_chart(rows, w=1180, h=520):
         y = top + ph - bh
         out.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{bw:.1f}" height="{bh:.1f}" rx="3" fill="{COLORS.get(k, "#ddd")}"/>')
         out.append(f'<text x="{x + bw / 2:.1f}" y="{y + bh / 2 + 5:.1f}" font-size="14" font-weight="600" fill="#222" text-anchor="middle">{d["overall"]:.0f}</text>')
-        tps = d.get("speed", {}).get("gen_tps")
+        sp = d.get("speed", {})
+        tps = sp.get("preset_tps") or sp.get("gen_tps")   # preset_tps: speed of the tuned preset (code + chat), if measured
         if tps:
             out.append(f'<text x="{x + bw / 2:.1f}" y="{y - 6:.1f}" font-size="10" fill="#666" text-anchor="middle">{tps:.0f} t/s</text>')
+            if sp.get("preset_code_tps"):
+                out.append(f'<text x="{x + bw / 2:.1f}" y="{y - 18:.1f}" font-size="10" fill="#666" text-anchor="middle">code {int(sp["preset_code_tps"])}</text>')
         out.append(f'<circle cx="{x + bw / 2:.1f}" cy="{top + ph + 14}" r="5" fill="{DARK.get(k, "#888")}"/>')
         lx, ly = x + bw / 2 + 4, top + ph + 28
         name = html.escape(short(d))
@@ -123,7 +126,7 @@ def table(rows, md=False):
         sc = d["scores"]
 
         lines.append([str(i), d.get("model", d["label"]), d.get("kernel", ""), f'{d.get("size_gb") or ""}', context_of(d), max_context_of(d),
-                      f'{sp.get("gen_tps") or ""}', f'{int(sp["prompt_tps"]) if sp.get("prompt_tps") else ""}']
+                      (f'{sp["preset_tps"]:.0f} (code {int(sp["preset_code_tps"])})' if sp.get("preset_tps") else f'{sp.get("gen_tps") or ""}'), f'{int(sp["prompt_tps"]) if sp.get("prompt_tps") else ""}']
                      + [f'{sc[c]:.0f}' if c in sc else "–" for c, _ in CATS] + [f'**{d["overall"]:.1f}**' if md else f'{d["overall"]:.1f}'])
     if md:
         return "\n".join(["| " + " | ".join(head) + " |", "|" + "---|" * len(head)] + ["| " + " | ".join(l) + " |" for l in lines])
