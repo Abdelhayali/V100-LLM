@@ -18,3 +18,4 @@ ocr/test/
 ocr/*.out
 ocr/whisper/
 ocr/piper/
+ocr/image/

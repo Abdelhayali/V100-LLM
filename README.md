@@ -75,28 +75,28 @@ forwarding), from anywhere:
 |---|---|
 | 🔀 **Switch models** | Every model of the catalog with its tuned presets: **Load**, **Switch**, **Reload** or **Unload** with one tap |
 | 📊 **Live PC status** | Loaded model plus **VRAM, GPU load, CPU and RAM** bars at the top of every chat, refreshed every 3 s |
-| 💬 **Chat** | Streaming replies, sessions, thinking view, tokens/s and context used; the model list follows what is loaded |
+| 💬 **Chat** | Streaming replies, sessions, thinking view, tokens/s and context used; the model list follows what is loaded; tap a chat's title to rename it |
 | 🖼️ **Vision & files** | Send photos, PDFs and PC screenshots to the vision models; browse and upload files on the PC |
 | 🔊 **Read aloud** | Replies spoken in Arabic and English (detected per sentence), per reply or automatically |
 | 📝 **Notes, tasks & calendar** | Stored on the PC and used by the model: "what tasks do I have?", "remind me…", "what's tomorrow?" |
 | 📧 **Gmail & Google Calendar** | Read email, draft replies, list / add events; sending always waits for your approval |
-| 🔎 **Deep research** | Drawer → Deep research: the PC plans searches, reads the pages, takes notes, looks for gaps and writes a report with numbered sources (quick / normal / deep); saved as a chat and a .md file, notification when ready |
-| 🎙 **Voice notes / meetings** | Record on the phone (keeps going with the screen off); the PC transcribes with Whisper large-v3-turbo (Arabic + English) and writes title, summary, key points, decisions and action items, which can go straight to your tasks |
-| 📁 **Long-term projects** | A goal, living notes and a folder shared by all the project's chats; the AI records progress with `project_note`, and a daily schedule can keep working on it |
+| 🔎 **Deep research** | Drawer → Deep research: the PC plans searches, reads the pages, takes notes, looks for gaps and writes a report with numbered sources (quick / normal / deep); saved as a chat and a .md file, notification when ready; 🗑 removes a run from the list, or also its chat and file |
+| 🎙 **Voice notes / meetings** | Record on the phone (keeps going with the screen off); the PC transcribes with Whisper large-v3-turbo (Arabic + English, on the CPU or the GPU) and writes title, summary, key points, decisions and action items, which can go straight to your tasks; 🗑 deletes a note (optionally with its chat and file) |
+| 📁 **Long-term projects** | A goal, living notes and a folder shared by all the project's chats; the AI records progress with `project_note`, and a daily schedule can keep working on it. **Knowledge:** add PDFs, Word, PowerPoint, Excel, text / code files and figures (with your description); every project chat sees them and searches or reads them with `project_knowledge`, citing the file. Each chat gets its own name and can be renamed |
 | 🗣️ **PC voices** | Settings → voices: natural offline neural voices made on the PC (Piper: Arabic "Kareem", English Amy / Ryan / Alba) instead of the phone's TTS, per language; the phone voice stays the fallback |
 | 🖥️ **PC actions** | Per chat (📎 → PC actions, off by default): the AI may look at the screen (vision model), open a file / folder / link / app, move or rename files in the allowed folders, and run your own saved scripts - opening, moving and running always ask you, and everything is in the audit log. No free mouse / keyboard control |
 | 🎙 **Live meeting assistant** | Drawer → Live meeting: the transcript appears during the meeting (20-second pieces, Whisper on the PC CPU so the GPU stays free for the model); ask "what was decided?" at any time; when you stop you get the summary, decisions and action items |
-| 🗣 **Language tutor** | English or Arabic, three levels. Conversation: speak, and it replies, lists your mistakes with the fix and why, and gives a more natural phrasing. Pronunciation: hear a sentence, read it aloud, see which words were not understood, with a score and tips |
+| 🗣 **Language tutor** | English or Arabic, three levels. Conversation: speak, and it replies, lists your mistakes with the fix and why, and gives a more natural phrasing. Pronunciation: everyday sentences (café, taxi, doctor…) or **your own word or sentence**, which it reads to you first; the sentence stays on screen and each word lights up as you read it, then a score, the misheard words and tips |
 | 🔒 **Private vault** | Chats encrypted on the PC (AES-256-GCM) with a key that only the phone holds behind your fingerprint; unreadable without it, even on the PC; never used for memories; locks when you leave the app; recovery code for a new phone |
 | 🕶 **Temporary chat** | Drawer → New temporary chat: no memories are saved or used, and it is deleted when you leave it (or after 24 h) |
 | 👤 **Personal profile** | Settings: the AI keeps a short profile of how you write and what you work on (from normal chats, notes and memories, never private ones), refreshed nightly and added to every chat; you can read, edit or turn it off. On a 16 GB V100 this replaces fine-tuning a LoRA, which does not fit next to a 27B model |
 | 🎨 **Image generation** | Ask for a picture in any chat ("draw…", "ارسم…"): the model writes a detailed prompt, the PC unloads the chat model, Qwen-Image-2512 (GGUF, 8-step Lightning, stable-diffusion.cpp) draws it in about a minute, the chat model comes back and the image appears in the chat. Install: `phone-app\ocr\get-image-model.py` (~16.7 GB) |
-| 🧾 **Audit log** | Every tool action the AI took - code, files, email, OCR, schedules - with time, chat, approval and result, searchable in the app |
+| 🧾 **Audit log** | Every tool action the AI took - code, files, email, OCR, images, schedules - with time, chat, approval and result, searchable in the app |
 | 🏠 **Assistant button** | Set LocalAI Bridge as the phone's digital assistant: long-press home opens it listening, with a screenshot of the screen attached so you can ask about it |
 | ⏰ **Scheduled tasks** | Drawer → Schedules & alerts: a prompt the PC runs by itself (daily at a time, or every N minutes), e.g. "summarize my unread email" at 8:00, in its own chat with the access you give it; a notification when it is done |
 | 🌡 **Temperature alerts** | Your own GPU / CPU limits; a notification when one is passed (checked every 30 s on the PC) |
 | 🎤 **Voice chat** | Mic button in the chat: speak (Arabic or English), the reply is read aloud; a **Stop reading** button while it talks |
-| 🚗 **Driving mode** | Hands-free: tap the car icon (or the "Driving mode" app shortcut) once, then it listens (Arabic by default, English too; switch on the driving screen), sends, reads the short spoken answer and listens again - no touching. Say "new chat" or "stop" (also in Arabic). One beep per turn; screen stays on |
+| 🚗 **Driving mode** | Hands-free: tap the car icon (or the "Driving mode" app shortcut) once, then it listens (Arabic by default, English too; switch on the driving screen), sends, reads the short spoken answer and listens again - no touching. Say "new chat" or "stop" (also in Arabic). **Talk only:** no code, no approvals and no choices to pick while you drive (web search still works), thinking off for faster answers. One beep per turn; screen stays on |
 | 🌐 **Translator** | Drawer → Translator: 🎤 Arabic → English or 🎤 English → Arabic (or type), the translation is read aloud. Uses the PC's model directly, no chat history |
 | 📷 **Ask about a photo** | 📎 → Ask about a photo: take a picture, ask your question by voice, hear the answer (vision model or OCR) |
 | 📤 **Share to the app** | Share a photo, screenshot, PDF, link or text from any app straight into a chat |
@@ -110,12 +110,13 @@ forwarding), from anywhere:
 | 📄 **OCR sub-model** | [baidu/Unlimited-OCR](https://huggingface.co/baidu/Unlimited-OCR) (MIT) reads scanned PDFs, photos of pages and text in images (tables, formulas, Arabic and English) for the chat model through an `ocr_document` tool. Choose per chat: **Off**, **A: GPU** (unloads the chat model, reads on the V100, loads it again) or **B: CPU** (the chat model stays loaded). Install once with `phone-app/ocr/setup-ocr.bat` (~10 GB) |
 | 🧠 **Thinking effort** | Off / Low / Medium / High / Max per chat (a llama.cpp thinking budget: 1k / 4k / 16k tokens / unlimited), so a reply never spends all its tokens thinking |
 | 🔑 **OpenAI API anywhere** | An OpenAI-format URL + API key (made and refreshed in the app) for the loaded model; same URL after switching models |
+| ⚡ **Auto-approve** | Per chat, with a warning: code and file actions run without asking. Switching it on while a reply waits for your approval lets that reply go on at once; actions that always ask (sending email, PC actions) still wait |
 | ❓ **Choices** | When the model needs a decision it asks with buttons and waits; listed options become tap-to-answer chips |
 | 👁️ **See every step** | A live step list of what the model does on the PC (code, files, search, questions) with now / waiting / done |
 | 🖥️ **Tools** | The model can run code, read files, search the web, draw charts and remember facts (you approve each action) |
 | 🤖 **Code agent (beta)** | OpenCode working on a project folder of your PC with the loaded model |
 
-**💻 Windows desktop app:** the same features on a laptop screen: [`desktop-app/release/LocalAI-Bridge-Desktop.exe`](desktop-app/release/LocalAI-Bridge-Desktop.exe) (one file, about 8 MB, no install). See [desktop-app/README.md](desktop-app/README.md).
+**💻 Windows desktop app:** the same features on a laptop screen: [`desktop-app/release/LocalAI-Bridge-Desktop.exe`](desktop-app/release/LocalAI-Bridge-Desktop.exe) (one file, about 8 MB, no install): chat with all the access switches, projects with knowledge files, deep research, voice notes (record or upload), live meeting, language tutor, translator, schedules & alerts, private vault (opened with the vault's recovery code), temporary chats, image generation, notes / tasks / calendar, Gmail, models, files, terminal, memory, profile, PC voices and the audit log. Driving mode stays on the phone. See [desktop-app/README.md](desktop-app/README.md).
 
 ![LocalAI Bridge Desktop on Windows](media/desktop-app.png)
 
@@ -139,6 +140,13 @@ loads models much faster). Nothing else: no Python, CUDA, WSL or Docker. Engines
 5. Pick a preset (the first one, **FAST**, is the tuned default), press **Start**, then chat in the right-hand panel. A live
    tokens/s meter, prompt speed and image upload are built in. Any OpenAI-compatible app can also use
    `http://127.0.0.1:8899/v1`.
+
+**Optional add-ons for the phone / desktop app** (run once on the PC that has the V100; each download is listed with its size):
+
+| Add-on | Install | Size |
+|---|---|---|
+| OCR, Whisper speech-to-text (voice notes, live meeting) and the Piper PC voices | `phone-app\ocr\setup-ocr.bat` | ~12 GB |
+| Image generation (Qwen-Image-2512 Q3_K_M, text encoder, VAE, 8-step Lightning LoRA, stable-diffusion.cpp CUDA 12) | `runtime\python\python.exe phone-app\ocr\get-image-model.py` (the portable Python from step 3; add `--quant Q4_K_M` for the 13.2 GB model) | ~16.7 GB |
 
 Every parameter is editable in the GUI. **Recommended** restores the tuned values, and **Save .bat** writes a standalone
 launcher for your own settings. Each model folder also has ready `run-<preset>.bat` files that work without the GUI.
