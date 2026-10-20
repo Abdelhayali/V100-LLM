@@ -74,6 +74,7 @@ forwarding), from anywhere:
 | | |
 |---|---|
 | 🔀 **Switch models** | Every model of the catalog with its tuned presets: **Load**, **Switch**, **Reload** or **Unload** with one tap |
+| 🛒 **Model shop** | Models → Shop: search Hugging Face for GGUF models, see every quantization with its size and whether it fits the V100 (green: GPU with 32k, orange: 8k, red: part on the CPU), add the vision part, and install with one tap. The PC downloads only the model files and checks each against its SHA-256 from Hugging Face; the model then appears in Models with 32k / 8k presets (llama.cpp with automatic fit, not hand-tuned). Gated models use your own `hf auth login`; Remove deletes the files |
 | 📊 **Live PC status** | Loaded model plus **VRAM, GPU load, CPU and RAM** bars at the top of every chat, refreshed every 3 s |
 | 💬 **Chat** | Streaming replies, sessions, thinking view, tokens/s and context used; the model list follows what is loaded; tap a chat's title to rename it |
 | 🖼️ **Vision & files** | Send photos, PDFs and PC screenshots to the vision models; browse and upload files on the PC |
@@ -116,7 +117,7 @@ forwarding), from anywhere:
 | 🖥️ **Tools** | The model can run code, read files, search the web, draw charts and remember facts (you approve each action) |
 | 🤖 **Code agent (beta)** | OpenCode working on a project folder of your PC with the loaded model |
 
-**💻 Windows desktop app:** the same features on a laptop screen: [`desktop-app/release/LocalAI-Bridge-Desktop.exe`](desktop-app/release/LocalAI-Bridge-Desktop.exe) (one file, about 8 MB, no install): chat with all the access switches, projects with knowledge files, deep research, voice notes (record or upload), live meeting, language tutor, translator, schedules & alerts, private vault (opened with the vault's recovery code), temporary chats, image generation, notes / tasks / calendar, Gmail, models, files, terminal, memory, profile, PC voices and the audit log. Driving mode stays on the phone. See [desktop-app/README.md](desktop-app/README.md).
+**💻 Windows desktop app:** the same features on a laptop screen: [`desktop-app/release/LocalAI-Bridge-Desktop.exe`](desktop-app/release/LocalAI-Bridge-Desktop.exe) (one file, about 8 MB, no install): chat with all the access switches, model shop, projects with knowledge files, deep research, voice notes (record or upload), live meeting, language tutor, translator, schedules & alerts, private vault (opened with the vault's recovery code), temporary chats, image generation, notes / tasks / calendar, Gmail, models, files, terminal, memory, profile, PC voices and the audit log. Driving mode stays on the phone. See [desktop-app/README.md](desktop-app/README.md).
 
 ![LocalAI Bridge Desktop on Windows](media/desktop-app.png)
 

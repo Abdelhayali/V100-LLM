@@ -509,6 +509,7 @@ async function viewShop(main) {
     S2.q = q.value.trim(); if (!S2.q) return;
     body.replaceChildren(h('span', { class: 'spin' })); S2.open = null;
     try { S2.results = await api('/api/v100/shop/search?q=' + enc(S2.q)); } catch (e) { S2.results = []; fail(e); }
+    S2.searched = true;
     draw();
   }
   async function openRepo(repo) {
@@ -535,6 +536,7 @@ async function viewShop(main) {
           h('b', {}, `${c.quant || c.key.split('/').pop()} · ${gbs(c.size)}` + (c.parts.length > 1 ? ` (${c.parts.length} parts)` : '')),
           h('div', { class: 'small', style: 'color:' + fitCol(c.fit) }, c.fit_text)), h('button', { onclick: () => install(c) }, 'Get')))));
     } else {
+      if (S2.searched && !S2.results.length) return body.replaceChildren(h('p', { class: 'muted' }, `No GGUF models found for "${S2.q}". Try fewer words, e.g. just the model name.`));
       body.replaceChildren(...S2.results.map(r => card(h('button', { class: 'link', style: 'text-align:left', onclick: () => openRepo(r.repo) }, h('b', {}, r.repo)),
         h('div', { class: 'muted small' }, `⬇ ${r.downloads.toLocaleString()} · ♥ ${r.likes}` + (r.license ? ' · ' + r.license : '') + (r.gated ? ' · 🔒 gated (sign in on the PC)' : '')))));
     }

@@ -27,6 +27,7 @@ Microsoft Edge's app mode, which is built into Windows 10 and 11.
 | Read aloud | Arabic and English, detected per sentence (Windows / Edge voices), per reply or automatic |
 | Access switches | Web, Email, Tasks & calendar, Auto-approve in the chat header (Email and Tasks off by default) |
 | Models | Load, switch, reload, unload with tuned presets; live VRAM / GPU / CPU / RAM in the sidebar |
+| Model shop | Search Hugging Face for GGUF models, fit check for the V100, install (checksum-verified) and remove |
 | API key | OpenAI-format URL + key for the loaded model, refresh / turn off, curl and Python examples |
 | Notes, tasks & calendar | Tasks with descriptions and date-time pickers, notes, calendar (+ Google Calendar) |
 | Email | Gmail folders, search, load more, explain an email, AI draft replies, edit / AI-edit / send drafts |

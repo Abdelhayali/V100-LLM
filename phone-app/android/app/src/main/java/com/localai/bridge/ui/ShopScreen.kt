@@ -63,6 +63,7 @@ fun ShopScreen(vm: MainViewModel, openDrawer: () -> Unit) {
     var q by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf<List<ShopRepo>>(emptyList()) }
+    var searched by remember { mutableStateOf("") }
     var open by remember { mutableStateOf<ShopFiles?>(null) }
     var mmproj by remember { mutableStateOf<String?>(null) }
     var confirm by remember { mutableStateOf<ShopChoice?>(null) }
@@ -85,7 +86,7 @@ fun ShopScreen(vm: MainViewModel, openDrawer: () -> Unit) {
     fun search() = scope.launch {
         if (q.isBlank()) return@launch
         busy = true; open = null
-        runCatching { vm.api?.shopSearch(q.trim()) }.onSuccess { results = it.orEmpty() }.onFailure { vm.toast = it.message }
+        runCatching { vm.api?.shopSearch(q.trim()) }.onSuccess { results = it.orEmpty(); searched = q.trim() }.onFailure { vm.toast = it.message }
         busy = false
     }
     fun openRepo(repo: String) = scope.launch {
@@ -151,6 +152,8 @@ fun ShopScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                     Button(onClick = { search() }, enabled = !busy) { Text("Search") }
                 }
                 if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (searched.isNotBlank() && results.isEmpty() && !busy) Text("No GGUF models found for \"$searched\". Try fewer words, e.g. just the model name.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 results.forEach { r ->
                     Card(Modifier.fillMaxWidth().clickable { openRepo(r.repo) }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
                         Column(Modifier.padding(12.dp)) {

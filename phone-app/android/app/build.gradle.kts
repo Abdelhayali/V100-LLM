@@ -13,8 +13,8 @@ android {
         applicationId = "com.localai.bridge.v100"
         minSdk = 26
         targetSdk = 36
-        versionCode = 21
-        versionName = "3.4-v100"
+        versionCode = 22
+        versionName = "3.4.1-v100"
     }
 
     buildTypes {
