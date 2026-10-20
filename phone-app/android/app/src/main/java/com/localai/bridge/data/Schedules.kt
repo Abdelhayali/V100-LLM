@@ -128,7 +128,12 @@ data class ProjectDto(
     val folder: String = "",
     val chats: List<ProjectChat> = emptyList(),
     val files: List<String> = emptyList(),
+    val knowledge: List<KnowledgeDto> = emptyList(),
 )
+
+@Serializable
+data class KnowledgeDto(val name: String = "", val size: Long = 0, val chars: Long = 0, val kind: String = "",
+                        val description: String = "")
 
 suspend fun Api.projects(): List<ProjectDto> = getJson("/api/projects")
 suspend fun Api.projectSave(p: ProjectDto): ProjectDto {
@@ -136,7 +141,13 @@ suspend fun Api.projectSave(p: ProjectDto): ProjectDto {
     return if (p.id == 0) sendJson("POST", "/api/projects", b) else sendJson("PUT", "/api/projects/${p.id}", b)
 }
 suspend fun Api.projectDelete(id: Int): JsonObject = sendJson("DELETE", "/api/projects/$id", null)
-suspend fun Api.projectNewChat(id: Int): SessionDto = sendJson("POST", "/api/projects/$id/chat", JsonObject(emptyMap()))
+suspend fun Api.projectNewChat(id: Int, title: String = ""): SessionDto =
+    sendJson("POST", "/api/projects/$id/chat", buildJsonObject { put("title", title) })
+suspend fun Api.knowledgeDelete(id: Int, name: String): JsonObject =
+    sendJson("DELETE", "/api/projects/$id/knowledge/" + java.net.URLEncoder.encode(name, "UTF-8").replace("+", "%20"), null)
+suspend fun Api.knowledgeDescribe(id: Int, name: String, description: String): JsonObject =
+    sendJson("PUT", "/api/projects/$id/knowledge/" + java.net.URLEncoder.encode(name, "UTF-8").replace("+", "%20"),
+        buildJsonObject { put("title", description) })
 suspend fun Api.projectSchedule(p: ProjectDto, at: String, prompt: String): ScheduleDto =
     sendJson("POST", "/api/schedules", buildJsonObject {
         put("name", "Project: ${p.name}"); put("prompt", prompt); put("kind", "daily"); put("at", at)

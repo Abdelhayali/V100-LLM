@@ -953,6 +953,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun updateAutoApprove(on: Boolean) {
         autoApprove = on
         prefs.autoApprove = on
+        val sid = currentSessionId ?: return
+        viewModelScope.launch {   // a reply may be running right now: let it use the new setting at once
+            runCatching {
+                api?.setRunAutoApprove(sid, on)
+                if (on) api?.session(sid)?.let { s -> approvals.clear(); approvals.addAll(s.pendingApprovals) }
+            }
+        }
     }
 
     fun setTheme(mode: String) {

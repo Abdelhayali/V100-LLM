@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,6 +55,10 @@ import androidx.core.content.ContextCompat
 import com.localai.bridge.RecordService
 import com.localai.bridge.data.ProjectDto
 import com.localai.bridge.data.ResearchRun
+import com.localai.bridge.data.ProjectChat
+import com.localai.bridge.data.KnowledgeDto
+import com.localai.bridge.data.knowledgeDelete
+import com.localai.bridge.data.knowledgeDescribe
 import com.localai.bridge.data.VoiceJob
 import com.localai.bridge.data.projectDelete
 import com.localai.bridge.data.projectNewChat
@@ -240,8 +245,29 @@ fun ProjectsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
     var openId by remember { mutableStateOf<Int?>(null) }
     var editing by remember { mutableStateOf<ProjectDto?>(null) }
     var scheduling by remember { mutableStateOf<ProjectDto?>(null) }
+    var naming by remember { mutableStateOf<Pair<ProjectDto, ProjectChat?>?>(null) }   // new chat (null) or rename
+    var adding by remember { mutableStateOf<ProjectDto?>(null) }                        // knowledge picker target
+    var describing by remember { mutableStateOf<Pair<ProjectDto, KnowledgeDto>?>(null) }
+    var uploadingK by remember { mutableStateOf(0) }
+    val ctx = LocalContext.current
     fun reload() = scope.launch { runCatching { vm.api?.projects() }.onSuccess { list = it }.onFailure { vm.toast = it.message } }
     LaunchedEffect(Unit) { reload() }
+    val pickKnowledge = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        val p = adding ?: return@rememberLauncherForActivityResult
+        adding = null
+        if (uris.isEmpty()) return@rememberLauncherForActivityResult
+        uploadingK = uris.size
+        scope.launch {
+            var ok = 0
+            uris.forEach { u ->
+                runCatching { vm.api?.uploadKnowledge(p.id, ctx.contentResolver, u, "") }
+                    .onSuccess { ok++ }.onFailure { vm.toast = "Could not add a file: ${it.message}" }
+                uploadingK--
+            }
+            if (ok > 0) vm.toast = "$ok file(s) added to the project knowledge"
+            reload()
+        }
+    }
 
     editing?.let { p ->
         var name by remember(p.id) { mutableStateOf(p.name) }
@@ -260,6 +286,42 @@ fun ProjectsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                     .onSuccess { reload() }.onFailure { vm.toast = it.message } }
             }) { Text("Save") } },
             dismissButton = { TextButton(onClick = { editing = null }) { Text("Cancel") } })
+    }
+    naming?.let { (p, c) ->
+        var title by remember(p.id, c?.id) { mutableStateOf(c?.title?.removePrefix("📁 ") ?: "") }
+        AlertDialog(onDismissRequest = { naming = null },
+            title = { Text(if (c == null) "New chat in \"${p.name}\"" else "Rename chat") },
+            text = { OutlinedTextField(title, { title = it }, label = { Text("Chat name") }, singleLine = true,
+                placeholder = { Text("e.g. Literature review, Methods, Figures") }) },
+            confirmButton = { TextButton(onClick = {
+                naming = null
+                scope.launch {
+                    if (c == null) runCatching { vm.api?.projectNewChat(p.id, title.trim()) }
+                        .onSuccess { s -> if (s != null) { vm.screen = Screen.CHAT; vm.openSession(s.id) } }.onFailure { vm.toast = it.message }
+                    else if (title.isNotBlank()) { vm.renameSession(c.id, "📁 " + title.trim()).join(); reload() }
+                }
+            }) { Text(if (c == null) "Start" else "Save") } },
+            dismissButton = { TextButton(onClick = { naming = null }) { Text("Cancel") } })
+    }
+    describing?.let { (p, k) ->
+        var d by remember(p.id, k.name) { mutableStateOf(k.description) }
+        AlertDialog(onDismissRequest = { describing = null }, title = { Text(k.name) },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedTextField(d, { d = it }, label = { Text("What it shows / what it is for") }, minLines = 3)
+                Hint(if (k.kind == "figure") "The AI cannot see figures here: this description is what it knows about the figure, and it can show the figure to you."
+                     else "Optional: helps the AI know when to use this file.")
+            } },
+            confirmButton = { TextButton(onClick = {
+                describing = null
+                scope.launch { runCatching { vm.api?.knowledgeDescribe(p.id, k.name, d.trim()) }.onSuccess { reload() }.onFailure { vm.toast = it.message } }
+            }) { Text("Save") } },
+            dismissButton = { Row {
+                TextButton(onClick = {
+                    describing = null
+                    scope.launch { runCatching { vm.api?.knowledgeDelete(p.id, k.name) }.onSuccess { reload() }.onFailure { vm.toast = it.message } }
+                }) { Text("Remove file", color = MaterialTheme.colorScheme.error) }
+                TextButton(onClick = { describing = null }) { Text("Cancel") }
+            } })
     }
     scheduling?.let { p ->
         var at by remember(p.id) { mutableStateOf("21:00") }
@@ -299,15 +361,36 @@ fun ProjectsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                             Text("Files (${p.files.size})", style = MaterialTheme.typography.titleSmall)
                             Text(p.files.take(12).joinToString("\n"), style = MaterialTheme.typography.bodySmall)
                         }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Knowledge (${p.knowledge.size})", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                            TextButton(onClick = { adding = p; pickKnowledge.launch(arrayOf("*/*")) }, enabled = uploadingK == 0) { Text("+ Add files") }
+                        }
+                        if (uploadingK > 0) { LinearProgressIndicator(Modifier.fillMaxWidth()); Hint("Adding $uploadingK file(s)… (reading the text on the PC)") }
+                        if (p.knowledge.isEmpty()) Hint("PDFs, Word, PowerPoint, Excel, text or code files and figures the AI should use in every chat of this project.")
+                        p.knowledge.forEach { k ->
+                            Row(Modifier.fillMaxWidth().clickable { describing = p to k }, verticalAlignment = Alignment.CenterVertically) {
+                                Text(when (k.kind) { "figure" -> "🖼"; "text" -> "📄"; else -> "📎" }, Modifier.padding(end = 6.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(k.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(when (k.kind) {
+                                        "figure" -> k.description.ifBlank { "figure · tap to describe it" }
+                                        "text" -> "%,d characters".format(k.chars) + if (k.description.isNotBlank()) " · " + k.description else ""
+                                        else -> "no readable text (e.g. scanned PDF)" + if (k.description.isNotBlank()) " · " + k.description else ""
+                                    }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                        }
                         Text("Chats (${p.chats.size})", style = MaterialTheme.typography.titleSmall)
-                        p.chats.take(10).forEach { c ->
-                            Text("• " + c.title, color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.clickable { vm.screen = Screen.CHAT; vm.openSession(c.id) })
+                        p.chats.take(20).forEach { c ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("• " + c.title, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f).clickable { vm.screen = Screen.CHAT; vm.openSession(c.id) })
+                                IconButton(onClick = { naming = p to c }) { Icon(Icons.Default.Edit, "Rename chat") }
+                            }
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Button(onClick = { scope.launch {
-                                runCatching { vm.api?.projectNewChat(p.id) }.getOrNull()?.let { s -> vm.screen = Screen.CHAT; vm.openSession(s.id) }
-                            } }) { Text("New chat") }
+                            Button(onClick = { naming = p to null }) { Text("New chat") }
                             OutlinedButton(onClick = { scheduling = p }) { Text("Daily work") }
                             OutlinedButton(onClick = { editing = p }) { Text("Edit") }
                         }

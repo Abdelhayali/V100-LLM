@@ -102,6 +102,11 @@ class Api(private val baseUrl: String, private val token: String) {
     }
     suspend fun screenshot(): AttachmentRef = send("POST", "/api/screenshot", JsonObject(emptyMap()))
     suspend fun stop(id: String) { send<JsonObject>("POST", "/api/sessions/$id/stop", JsonObject(emptyMap())) }
+    /** Auto-approve changed while a reply runs: the PC applies it now (and on = approves what is waiting). */
+    suspend fun setRunAutoApprove(sessionId: String, on: Boolean) {
+        exec(req("/api/sessions/$sessionId/auto_approve").post(buildJsonObject { put("on", on) }.toString().toRequestBody(jsonType)).build())
+    }
+
     suspend fun approve(callId: String, ok: Boolean) {
         send<JsonObject>("POST", "/api/approvals/$callId", buildJsonObject { put("approve", ok) })
     }
@@ -185,6 +190,15 @@ class Api(private val baseUrl: String, private val token: String) {
         val name = nameOverride ?: displayName(cr, uri)
         return MultipartBody.Builder().setType(MultipartBody.FORM)
             .addFormDataPart("file", name, uriBody(cr, uri, mime)).build()
+    }
+
+    /** A knowledge file for a project (PDF, Office, text, figure...); [description] mostly for figures. */
+    suspend fun uploadKnowledge(projectId: Int, cr: ContentResolver, uri: Uri, description: String) {
+        val mime = cr.getType(uri) ?: "application/octet-stream"
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", displayName(cr, uri), uriBody(cr, uri, mime))
+            .addFormDataPart("description", description).build()
+        exec(req("/api/projects/$projectId/knowledge").post(body).build())
     }
 
     suspend fun upload(cr: ContentResolver, uri: Uri, nameOverride: String? = null): AttachmentRef =

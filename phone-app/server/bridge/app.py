@@ -358,7 +358,7 @@ async def compress_turn(run, model: str | None):
 
 # ---------------------------------------------------------------- chat engine
 # car mode: read-only tools that never ask the user anything
-DRIVE_TOOLS = {"web_search", "fetch_url", "search_chats"}
+DRIVE_TOOLS = {"web_search", "fetch_url", "search_chats", "project_knowledge"}
 
 
 class Run:
@@ -594,6 +594,7 @@ async def chat_turn(run: Run, model: str | None):
                         payload["tools"] += pc_tools.schemas()
                     if projects.of_session(sid):
                         payload["tools"].append(projects.note_tool_schema())
+                        payload["tools"].append(projects.knowledge_tool_schema())
                     if run.ocr != "off":
                         payload["tools"].append(ocr_mod.schema())
                     if run.drive:
@@ -653,6 +654,9 @@ async def chat_turn(run: Run, model: str | None):
                     elif name == "project_note":
                         from . import projects
                         result, atts = projects.add_note(sid, str(args.get("text", ""))), []
+                    elif name == "project_knowledge":
+                        from . import projects
+                        result, atts = await asyncio.to_thread(projects.knowledge_tool, sid, args), []
                     elif name == "update_tasks":
                         plan = normalize_tasks(args.get("tasks"))
                         run.emit({"type": "tasks", "tasks": plan})
@@ -1092,6 +1096,27 @@ async def approve(call_id: str, body: ApprovalIn):
     if not a["future"].done():
         a["future"].set_result(body.approve)
     return {"ok": True}
+
+
+class AutoApproveIn(BaseModel):
+    on: bool
+
+
+@app.post("/api/sessions/{sid}/auto_approve", dependencies=[Auth])
+async def session_auto_approve(sid: str, body: AutoApproveIn):
+    """Auto-approve switched on or off while a reply is running: applies to the rest of this reply, and on also
+    approves what is waiting now. Actions that always ask (PC actions, sending email...) still wait for the user."""
+    run = runs.get(sid)
+    if not run:
+        return {"ok": True, "running": False, "approved": 0}
+    run.auto_approve = body.on and not getattr(run, "drive", False)
+    approved = 0
+    if run.auto_approve:
+        for a in list(approvals.values()):
+            if a["session_id"] == sid and a["name"] not in tools.ALWAYS_APPROVE and not a["future"].done():
+                a["future"].set_result(True)
+                approved += 1
+    return {"ok": True, "running": True, "approved": approved}
 
 
 class AnswerIn(BaseModel):

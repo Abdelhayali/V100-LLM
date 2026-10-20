@@ -148,6 +148,7 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             } } } },
         confirmButton = { TextButton(onClick = { ocrMenu = false }) { Text("Close") } })
     var confirmAuto by remember { mutableStateOf(false) }
+    var renamingTitle by remember { mutableStateOf(false) }
     var modelMenu by remember { mutableStateOf(false) }
     var cameraUri by rememberSaveable { mutableStateOf<String?>(null) }
 
@@ -198,13 +199,23 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
         if (vm.items.isNotEmpty()) listState.scrollToItem(vm.items.lastIndex, Int.MAX_VALUE / 2)
     }
 
+    if (renamingTitle) {
+        var name by remember { mutableStateOf(vm.currentTitle) }
+        AlertDialog(onDismissRequest = { renamingTitle = false }, title = { Text("Rename chat") },
+            text = { OutlinedTextField(name, { name = it }, label = { Text("Chat name") }, singleLine = true) },
+            confirmButton = { TextButton(enabled = name.isNotBlank(), onClick = {
+                renamingTitle = false; vm.currentSessionId?.let { vm.renameSession(it, name.trim()) }
+            }) { Text("Save") } },
+            dismissButton = { TextButton(onClick = { renamingTitle = false }) { Text("Cancel") } })
+    }
     Scaffold(
         topBar = {
             TopAppBar(
                 navigationIcon = { IconButton(onClick = openDrawer) { Icon(Icons.Default.Menu, "Menu") } },
                 title = {
                     Column {
-                        Text(vm.currentTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(vm.currentTitle, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.clickable(enabled = vm.currentSessionId != null) { renamingTitle = true })
                         if (vm.tempChat) Text("🕶 Temporary · no memory · deleted when you leave", style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.tertiary)
                         if (vm.vaultChat) Text("🔒 Private vault · encrypted on the PC", style = MaterialTheme.typography.labelSmall,
