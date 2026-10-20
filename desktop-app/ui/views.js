@@ -8,7 +8,8 @@ const card = (...k) => h('div', { class: 'card' }, ...k);
 // ---------------------------------------------------------------- Models (V100-LLM launcher)
 async function viewModels(main) {
   const list = h('div', { class: 'grid' }, h('span', { class: 'spin' }));
-  main.replaceChildren(page('Models', h('p', { class: 'muted' }, 'Load, switch or unload the model running on your PC (V100-LLM launcher). The chat and the OpenAI API use whatever is loaded.'), list));
+  main.replaceChildren(page('Models', h('div', { class: 'row' }, h('p', { class: 'muted', style: 'flex:1' }, 'Load, switch or unload the model running on your PC (V100-LLM launcher). The chat and the OpenAI API use whatever is loaded.'),
+    h('button', { class: 'primary', onclick: () => go('shop') }, '🛒 Model shop')), list));
   let models;
   try { models = await api('/api/v100/models'); } catch (e) { list.replaceChildren(h('p', { class: 'err' }, e.message)); return; }
   const chosen = {};

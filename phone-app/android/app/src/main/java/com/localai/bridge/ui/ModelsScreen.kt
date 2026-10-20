@@ -124,7 +124,10 @@ fun ModelsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
         TopAppBar(
             title = { Text("Models (V100)") },
             navigationIcon = { IconButton(onClick = openDrawer) { Icon(Icons.Default.Menu, "Menu") } },
-            actions = { IconButton(onClick = { loadModels() }) { Icon(Icons.Default.Refresh, "Refresh") } },
+            actions = {
+                TextButton(onClick = { vm.screen = Screen.SHOP }) { Text("🛒 Shop") }
+                IconButton(onClick = { loadModels() }) { Icon(Icons.Default.Refresh, "Refresh") }
+            },
         )
     }) { pad ->
         Column(

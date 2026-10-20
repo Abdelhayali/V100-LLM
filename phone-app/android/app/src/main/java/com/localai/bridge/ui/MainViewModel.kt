@@ -32,7 +32,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-enum class Screen { CHAT, FILES, TERMINAL, MEMORY, SETTINGS, TASKS, AGENT, MODELS, API, ORGANIZER, SCHEDULES, TRANSLATE, RESEARCH, NOTES, PROJECTS, AUDIT, VAULT, TUTOR, LIVE }
+enum class Screen { CHAT, FILES, TERMINAL, MEMORY, SETTINGS, TASKS, AGENT, MODELS, API, ORGANIZER, SCHEDULES, TRANSLATE, RESEARCH, NOTES, PROJECTS, AUDIT, VAULT, TUTOR, LIVE, SHOP }
 
 sealed interface ChatItem {
     val key: String

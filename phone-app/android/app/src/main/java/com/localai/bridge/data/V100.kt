@@ -85,3 +85,38 @@ suspend fun Api.benchStart(categories: List<String>, speed: Boolean): JsonObject
         put("categories", kotlinx.serialization.json.JsonArray(categories.map { kotlinx.serialization.json.JsonPrimitive(it) }))
     })
 suspend fun Api.benchStop(): JsonObject = sendJson("POST", "/api/v100/bench/stop", JsonObject(emptyMap()))
+
+// ------------------------------------------------------------------ model shop (Hugging Face GGUF models)
+@Serializable
+data class ShopRepo(val repo: String = "", val downloads: Long = 0, val likes: Int = 0, val gated: Boolean = false,
+                    val license: String = "", val pipeline: String = "")
+
+@Serializable
+data class ShopFile(val name: String = "", val size: Long = 0, val sha256: String = "")
+
+@Serializable
+data class ShopChoice(val key: String = "", val quant: String = "", val size: Long = 0, val parts: List<ShopFile> = emptyList(),
+                      val fit: String = "", @SerialName("fit_text") val fitText: String = "")
+
+@Serializable
+data class ShopFiles(val repo: String = "", val gated: Boolean = false, val license: String = "",
+                     val choices: List<ShopChoice> = emptyList(), val mmproj: List<ShopFile> = emptyList())
+
+@Serializable
+data class ShopInstalled(val id: String = "", val name: String = "", val repo: String = "", val size: Long = 0,
+                         val installed: Boolean = false)
+
+@Serializable
+data class ShopProgress(val active: Boolean = false, val item: String = "", val done: Long = 0, val total: Long = 0,
+                        val error: String = "", val mid: String = "")
+
+@Serializable
+data class ShopStarted(val id: String = "", val name: String = "")
+
+suspend fun Api.shopSearch(q: String): List<ShopRepo> = getJson("/api/v100/shop/search?q=" + java.net.URLEncoder.encode(q, "UTF-8"))
+suspend fun Api.shopFiles(repo: String): ShopFiles = getJson("/api/v100/shop/files?repo=" + java.net.URLEncoder.encode(repo, "UTF-8"))
+suspend fun Api.shopInstalled(): List<ShopInstalled> = getJson("/api/v100/shop/installed")
+suspend fun Api.shopProgress(): ShopProgress = getJson("/api/v100/shop/progress")
+suspend fun Api.shopInstall(repo: String, key: String, mmproj: String?): ShopStarted =
+    sendJson("POST", "/api/v100/shop/install", buildJsonObject { put("repo", repo); put("key", key); if (mmproj != null) put("mmproj", mmproj) })
+suspend fun Api.shopRemove(id: String): JsonObject = sendJson("POST", "/api/v100/shop/remove", buildJsonObject { put("id", id) })

@@ -17,7 +17,7 @@ function render() {
   ({ chat: renderChat, organizer: viewOrganizer, models: viewModels, api: viewApi, memory: viewMemory, files: viewFiles,
      terminal: viewTerminal, running: viewRunning, settings: viewSettings, projects: viewProjects, research: viewResearch,
      notes: viewNotes, live: viewLive, tutor: viewTutor, translate: viewTranslate, schedules: viewSchedules, vault: viewVault,
-     audit: viewAudit })[S.view](main);
+     audit: viewAudit, shop: viewShop })[S.view](main);
 }
 function renderNav() {
   $('#nav').replaceChildren(...NAV.map(([k, ic, label]) => h('button', { class: 'navbtn' + (S.view === k ? ' on' : ''), onclick: () => go(k) },

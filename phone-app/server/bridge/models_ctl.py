@@ -5,6 +5,7 @@ OpenAI-compatible API on its own port (8899), which is what llm_base_url points 
 launcher's own API, so the phone does exactly what the launcher GUI does.
 """
 import asyncio
+import urllib.parse
 import subprocess
 import sys
 from pathlib import Path
@@ -113,6 +114,7 @@ async def models():
             "size_gb": round(size / 1e9, 1) if size else 0.0,
             "vision": bool(m.get("mmproj")) or bool(m.get("strata")),
             "presets": [{"id": p["id"], "name": p["name"], "bench": p.get("bench", "")} for p in m.get("presets", [])],
+            "shop": bool((m.get("source") or {}).get("shop")),
         })
     return out
 
@@ -213,3 +215,61 @@ def _cmdline(pid: int) -> str:
                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
     except Exception:
         return ""
+
+
+# ---------------------------------------------------------------- model shop (Hugging Face GGUF models, via the launcher)
+class ShopInstallIn(BaseModel):
+    repo: str
+    key: str
+    mmproj: str | None = None
+
+
+class ShopRemoveIn(BaseModel):
+    id: str
+
+
+async def _shop(method: str, path: str, body: dict | None = None, timeout: float = 40):
+    """Call the launcher's shop and pass its own error message on (it answers errors as {"ok": false, "error": ...})."""
+    await _ensure_launcher()
+    async with httpx.AsyncClient(timeout=timeout) as c:
+        r = await (c.get(_base() + path) if method == "GET" else c.post(_base() + path, json=body or {}))
+    try:
+        d = r.json()
+    except ValueError:
+        raise HTTPException(502, f"launcher: HTTP {r.status_code}")
+    if r.status_code >= 400 or (isinstance(d, dict) and d.get("ok") is False):
+        raise HTTPException(502, (d.get("error") if isinstance(d, dict) else None) or f"launcher: HTTP {r.status_code}")
+    return d
+
+
+@router.get("/shop/search")
+async def shop_search(q: str):
+    return await _shop("GET", "/api/shop/search?q=" + urllib.parse.quote(q))
+
+
+@router.get("/shop/files")
+async def shop_files(repo: str):
+    return await _shop("GET", "/api/shop/files?repo=" + urllib.parse.quote(repo))
+
+
+@router.get("/shop/installed")
+async def shop_installed():
+    return await _shop("GET", "/api/shop/installed")
+
+
+@router.get("/shop/progress")
+async def shop_progress():
+    """The launcher's download state: item, bytes done / total, error."""
+    s = await _shop("GET", "/api/status", timeout=10)
+    return s.get("download") or {}
+
+
+@router.post("/shop/install")
+async def shop_install(b: ShopInstallIn):
+    """Start downloading one GGUF choice of a repo (the launcher looks the files and checksums up itself)."""
+    return await _shop("POST", "/api/shop/install", b.model_dump(), timeout=60)
+
+
+@router.post("/shop/remove")
+async def shop_remove(b: ShopRemoveIn):
+    return await _shop("POST", "/api/shop/remove", b.model_dump())

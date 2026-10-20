@@ -268,6 +268,7 @@ fun MainShell(vm: MainViewModel) {
             Screen.VAULT -> VaultScreen(vm, openDrawer)
             Screen.TUTOR -> TutorScreen(vm, openDrawer)
             Screen.LIVE -> LiveScreen(vm, openDrawer)
+            Screen.SHOP -> ShopScreen(vm, openDrawer)
         }
     }
 

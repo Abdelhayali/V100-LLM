@@ -494,3 +494,73 @@ async function voicesCard() {
     if (my === gen) { this.key = null; window.dispatchEvent(new Event('speech')); }
   };
 })();
+
+// ---------------------------------------------------------------- model shop (GGUF models from Hugging Face)
+const Shop = { q: '', results: [], open: null, mmproj: null };
+const gbs = b => (b / 1e9).toFixed(1) + ' GB';
+const fitCol = f => f === 'gpu' ? '#2E9D57' : f === 'tight' ? '#C27C0E' : 'var(--bad)';
+async function viewShop(main) {
+  const S2 = Shop;
+  const prog = h('div'), installedBox = h('div', { class: 'list' });
+  const q = h('input', { type: 'search', placeholder: 'Search Hugging Face, e.g. Qwen3 8B, Gemma 3, Llama', value: S2.q, style: 'flex:1',
+    onkeydown: e => { if (e.key === 'Enter') doSearch(); } });
+  const body = h('div', { class: 'list' });
+  async function doSearch() {
+    S2.q = q.value.trim(); if (!S2.q) return;
+    body.replaceChildren(h('span', { class: 'spin' })); S2.open = null;
+    try { S2.results = await api('/api/v100/shop/search?q=' + enc(S2.q)); } catch (e) { S2.results = []; fail(e); }
+    draw();
+  }
+  async function openRepo(repo) {
+    body.replaceChildren(h('span', { class: 'spin' }));
+    try { S2.open = await api('/api/v100/shop/files?repo=' + enc(repo)); S2.mmproj = null; } catch (e) { fail(e); }
+    draw();
+  }
+  async function install(c) {
+    const f = S2.open, mm = f.mmproj.find(x => x.name === S2.mmproj);
+    const lines = c.parts.map(p => `• ${p.name} (${gbs(p.size)})`).concat(mm ? [`• ${mm.name} (${gbs(mm.size)}, vision)`] : []);
+    if (!await confirmBox('Download this model?', `From huggingface.co/${f.repo}\n${lines.join('\n')}\n\nTotal ${gbs(c.size + (mm?.size || 0))} onto the PC (V100-LLM\models). Each file is checked against its SHA-256 from Hugging Face.\n${c.fit_text}` + (f.license ? `\nLicence: ${f.license}` : ''), 'Download')) return;
+    try { const r = await api('/api/v100/shop/install', { method: 'POST', body: { repo: f.repo, key: c.key, mmproj: mm?.name || null } }); toast('Downloading ' + r.name + '…'); } catch (e) { fail(e); }
+  }
+  function draw() {
+    if (S2.open) {
+      const f = S2.open;
+      body.replaceChildren(h('div', { class: 'row' }, h('button', { onclick: () => { S2.open = null; draw(); } }, '← Results'), h('h3', {}, f.repo)),
+        f.gated ? h('p', { class: 'err small' }, '🔒 Gated: on the PC run `hf auth login` once and accept access on the model\'s Hugging Face page.') : null,
+        f.mmproj.length ? h('div', { class: 'chips' }, h('span', { class: 'small' }, 'Vision:'),
+          h('button', { class: 'chip' + (!S2.mmproj ? ' on' : ''), onclick: () => { S2.mmproj = null; draw(); } }, 'No vision'),
+          ...f.mmproj.slice(0, 3).map(m => h('button', { class: 'chip' + (S2.mmproj === m.name ? ' on' : ''), onclick: () => { S2.mmproj = m.name; draw(); } }, `${m.name.replace(/\.gguf$/, '')} ${gbs(m.size)}`))) : null,
+        !f.choices.length ? h('p', {}, 'No GGUF files in this repository.') : null,
+        ...f.choices.map(c => card(h('div', { class: 'row' }, h('div', { style: 'flex:1' },
+          h('b', {}, `${c.quant || c.key.split('/').pop()} · ${gbs(c.size)}` + (c.parts.length > 1 ? ` (${c.parts.length} parts)` : '')),
+          h('div', { class: 'small', style: 'color:' + fitCol(c.fit) }, c.fit_text)), h('button', { onclick: () => install(c) }, 'Get')))));
+    } else {
+      body.replaceChildren(...S2.results.map(r => card(h('button', { class: 'link', style: 'text-align:left', onclick: () => openRepo(r.repo) }, h('b', {}, r.repo)),
+        h('div', { class: 'muted small' }, `⬇ ${r.downloads.toLocaleString()} · ♥ ${r.likes}` + (r.license ? ' · ' + r.license : '') + (r.gated ? ' · 🔒 gated (sign in on the PC)' : '')))));
+    }
+  }
+  async function tick() {
+    try {
+      const p = await api('/api/v100/shop/progress');
+      prog.replaceChildren(p.active ? card(h('div', {}, 'Downloading: ' + p.item), p.total ? [bar(p.done / p.total), h('div', { class: 'small muted' }, `${gbs(p.done)} of ${gbs(p.total)}`)] : bar(0.5))
+        : p.error ? h('p', { class: 'err small' }, p.error) : null);
+      if (tick.was && !p.active) loadInstalled();
+      tick.was = p.active;
+    } catch {}
+  }
+  async function loadInstalled() {
+    let list = [];
+    try { list = await api('/api/v100/shop/installed'); } catch {}
+    installedBox.replaceChildren(list.length ? h('h3', {}, 'Installed from the shop') : null, ...list.map(m => h('div', { class: 'row' },
+      h('div', { style: 'flex:1' }, h('div', {}, m.name), h('div', { class: 'muted small' }, gbs(m.size) + (m.installed ? ' · ready in Models' : ' · not fully downloaded'))),
+      h('button', { class: 'danger', onclick: async () => {
+        if (!await confirmBox('Remove ' + m.name + '?', `Deletes its files from the PC (${gbs(m.size)}) and removes it from Models. If it is loaded, it is unloaded first.`, 'Remove', true)) return;
+        try { await api('/api/v100/shop/remove', { method: 'POST', body: { id: m.id } }); toast('Removed'); loadInstalled(); } catch (e) { fail(e); }
+      } }, 'Remove'))));
+  }
+  main.replaceChildren(page('Model shop',
+    h('p', { class: 'muted' }, 'Find GGUF models on Hugging Face and install them on the PC. They run on the standard llama.cpp engine with automatic fit (what does not fit in 16 GB runs on the CPU), not tuned like the catalog models.'),
+    h('div', { class: 'row' }, h('button', { onclick: () => go('models') }, '← Models'), q, h('button', { class: 'primary', onclick: doSearch }, 'Search')),
+    prog, body, installedBox));
+  draw(); loadInstalled(); tick(); poll(main, tick, 2000);
+}

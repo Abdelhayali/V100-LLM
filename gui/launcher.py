@@ -33,6 +33,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GUI = Path(__file__).resolve().parent
+sys.path.insert(0, str(GUI))   # the portable Python does not add the script's folder: needed for `import shop`
 CATALOG = ROOT / "catalog.json"
 USER_PARAMS = ROOT / "user-params.json"
 UI_PORT = int(os.environ.get("LAUNCHER_PORT", "7860"))
@@ -46,8 +47,19 @@ lock = threading.Lock()
 
 
 # ---------------------------------------------------------------- catalog / paths
+USER_CATALOG = ROOT / "user-models.json"   # models installed from the phone app's Model shop (not in git)
+
+
 def catalog():
-    return json.loads(CATALOG.read_text(encoding="utf-8"))
+    c = json.loads(CATALOG.read_text(encoding="utf-8"))
+    try:   # merge the user's own models; the curated catalog wins on an id clash
+        have = {m["id"] for m in c["models"]}
+        c["models"] += [m for m in json.loads(USER_CATALOG.read_text(encoding="utf-8")).get("models", []) if m["id"] not in have]
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print("user-models.json:", e)
+    return c
 
 
 def model_entry(mid):
@@ -284,7 +296,7 @@ def ensure_kernel(mid, k):
 def download_worker(mid, k):
     m = model_entry(mid)
     try:
-        dl.update(active=True, error="")
+        dl.update(active=True, error="", mid=mid)
         if k:
             ensure_kernel(mid, k)
         if m.get("setup"):
@@ -638,8 +650,58 @@ class Handler(BaseHTTPRequestHandler):
                             "uptime": round(time.time() - state["started"]) if state["started"] else 0,
                             "gpu": gpu_info(), "sys": sys_info(), "log": list(log)[-150:], "download": dl,
                             "exit": p.poll() if p else None})
+        elif self.path.startswith("/api/shop/"):
+            self.shop_get()
         else:
             self.send_error(404)
+
+    def shop_get(self):
+        """Model shop: search Hugging Face for GGUF models, list a repo's files with a V100 fit check."""
+        import shop
+        u = urllib.parse.urlparse(self.path)
+        q = urllib.parse.parse_qs(u.query)
+        try:
+            if u.path == "/api/shop/search":
+                self.send_json(shop.search((q.get("q") or [""])[0], hf_token()))
+            elif u.path == "/api/shop/files":
+                self.send_json(shop.files((q.get("repo") or [""])[0], hf_token()))
+            elif u.path == "/api/shop/installed":
+                have = {m["id"]: model_status(m) for m in catalog()["models"] if m.get("source", {}).get("shop")}
+                self.send_json([{"id": m["id"], "name": m["name"], "repo": m["source"]["repo"],
+                                 "size": sum(f["size"] for f in m["files"]),
+                                 "installed": all(f["have"] for f in have[m["id"]]["files"])}
+                                for m in catalog()["models"] if m["id"] in have])
+            else:
+                self.send_error(404)
+        except urllib.error.HTTPError as e:
+            self.send_json({"ok": False, "error": f"Hugging Face: HTTP {e.code}" + (
+                " (gated: sign in with `hf auth login` and accept access on the model page)" if e.code in (401, 403) else "")}, 502)
+        except Exception as e:
+            self.send_json({"ok": False, "error": str(e)}, 500)
+
+    def shop_post(self, b):
+        import shop
+        if self.path == "/api/shop/install":
+            if dl["active"]:
+                raise RuntimeError("a download is already running")
+            info = shop.files(b["repo"], hf_token())        # look the files up again: never trust sizes / hashes sent by the app
+            choice = next((c for c in info["choices"] if c["key"] == b["key"]), None)
+            if not choice:
+                raise RuntimeError("that file is not in the repository")
+            mm = next((x for x in info["mmproj"] if x["name"] == b.get("mmproj")), None) if b.get("mmproj") else None
+            if any(not x["sha256"] for x in choice["parts"] + ([mm] if mm else [])):
+                raise RuntimeError("Hugging Face lists no checksum for this file, so it cannot be verified")
+            e = shop.entry(b["repo"], choice, mm)
+            shop.add(USER_CATALOG, e)
+            threading.Thread(target=download_worker, args=(e["id"], "llamacpp"), daemon=True).start()
+            return {"ok": True, "id": e["id"], "name": e["name"]}
+        if self.path == "/api/shop/remove":
+            if state["model"] == b["id"]:
+                stop_server()
+            if dl["active"] and dl.get("mid") == b["id"]:
+                raise RuntimeError("this model is downloading; wait or stop the download first")
+            return {"ok": shop.remove(USER_CATALOG, ROOT / "models", b["id"])}
+        raise LookupError
 
     def do_POST(self):
         try:
@@ -662,6 +724,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True, "path": str(out)})
             elif self.path == "/api/chat":
                 self.proxy_chat()
+            elif self.path.startswith("/api/shop/"):
+                self.send_json(self.shop_post(self.body()))
             else:
                 self.send_error(404)
         except Exception as e:
