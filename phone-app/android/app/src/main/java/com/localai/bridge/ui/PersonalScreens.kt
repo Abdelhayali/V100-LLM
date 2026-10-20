@@ -194,6 +194,9 @@ fun TutorScreen(vm: MainViewModel, openDrawer: () -> Unit) {
     val ctx = LocalContext.current
     var reading by remember { mutableStateOf(false) }
     var heard by remember { mutableStateOf("") }
+    var own by remember { mutableStateOf("") }
+    var readAfterSpeech by remember { mutableStateOf(false) }   // your own text: read it to me, then listen
+    fun isArabic(s: String) = s.any { it in '\u0600'..'\u06FF' }
     val reader = remember { LiveReader(ctx) }
     DisposableEffect(Unit) { onDispose { reader.release() } }
     val mic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (!ok) vm.toast = "Needs the microphone" }
@@ -224,17 +227,27 @@ fun TutorScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             mic.launch(Manifest.permission.RECORD_AUDIO); return
         }
         vm.speaker.stop(); result = null; heard = ""; reading = true
-        reader.start(rec, onPartial = { heard = it }, onFinal = { text ->
+        val sLang = if (isArabic(sentence)) "ar" else if (sentence.any { it.isLetter() }) "en" else lang
+        reader.start(if (sLang == "ar") "ar-EG" else "en-US", onPartial = { heard = it }, onFinal = { text ->
             reading = false; heard = text
             if (text.isBlank()) vm.toast = "I did not hear anything - try again"
             else {
                 busy = true
                 scope.launch {
-                    runCatching { vm.api?.tutorPronounce(lang, sentence, text) }.onSuccess { result = it }.onFailure { vm.toast = it.message }
+                    runCatching { vm.api?.tutorPronounce(sLang, sentence, text) }.onSuccess { result = it }.onFailure { vm.toast = it.message }
                     busy = false
                 }
             }
         })
+    }
+    LaunchedEffect(readAfterSpeech) {
+        if (!readAfterSpeech) return@LaunchedEffect
+        var waited = 0
+        while (!vm.speaking && waited < 50) { delay(100); waited++ }   // speech may take a moment to start
+        while (vm.speaking) delay(150)
+        delay(300)
+        readAfterSpeech = false
+        readAloud()
     }
 
     Page("Language tutor", openDrawer) {
@@ -278,6 +291,15 @@ fun TutorScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             if (chat.isNotEmpty()) TextButton(onClick = { chat.clear() }) { Text("New conversation") }
         } else {
             Small("Tap Read and say the sentence. It stays on screen, and each word lights up as you say it.")
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedTextField(own, { own = it }, label = { Text("Or type your own word or sentence") },
+                    modifier = Modifier.weight(1f), maxLines = 3)
+                Button(enabled = own.isNotBlank() && !reading && !busy, onClick = {
+                    reader.cancel(); sentence = own.trim(); result = null; heard = ""
+                    vm.speaker.speak(sentence); readAfterSpeech = true
+                }) { Text("▶ Say it") }
+            }
+            if (readAfterSpeech) Small("Listen… then read it back.", MaterialTheme.colorScheme.primary)
             if (sentence.isNotBlank()) {
                 val words = remember(sentence) { sentence.split(Regex("\\s+")).filter { it.isNotBlank() } }
                 val done = if (result == null) followWords(words, heard) else 0
