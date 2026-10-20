@@ -8,6 +8,19 @@ The result JSON: {"ok", "text", "language", "duration", "segments": [{"start", "
 import argparse, json, os, sys, time
 from pathlib import Path
 
+
+def _cuda_dlls():
+    """faster-whisper (CTranslate2) needs cuBLAS 12 and cuDNN 9 on the GPU. They ship with the venv's PyTorch
+    (torch/lib), so let Windows find them there instead of needing a separate CUDA install."""
+    import importlib.util
+    spec = importlib.util.find_spec("torch")
+    if not spec or not spec.submodule_search_locations:
+        return
+    lib = Path(list(spec.submodule_search_locations)[0]) / "lib"
+    if lib.is_dir():
+        os.add_dll_directory(str(lib))
+        os.environ["PATH"] = str(lib) + os.pathsep + os.environ.get("PATH", "")
+
 MODEL = Path(os.environ.get("WHISPER_MODEL", Path(__file__).resolve().parent / "whisper"))   # setup-ocr.bat downloads it
 
 
@@ -24,6 +37,8 @@ def main():
         import av   # PyAV 15+ dropped open(metadata_errors=...), which faster-whisper 1.2 still passes
         _open = av.open
         av.open = lambda *x, **k: _open(*x, **{n: v for n, v in k.items() if n != "metadata_errors"})
+        if a.device == "cuda":
+            _cuda_dlls()
         from faster_whisper import WhisperModel
         m = WhisperModel(str(MODEL), device=a.device, compute_type="float16" if a.device == "cuda" else "int8",
                          cpu_threads=max(1, (os.cpu_count() or 8) - 2))
