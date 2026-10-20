@@ -30,15 +30,27 @@ class RecordService : Service() {
             ContextCompat.startForegroundService(ctx, Intent(ctx, RecordService::class.java))
         }
 
-        /** Stops and returns the recording (null if nothing was recorded). */
+        @Volatile private var rec: MediaRecorder? = null
+
+        /**
+         * Stops and returns the recording (null if nothing was recorded). The recorder is finished here, before
+         * returning: only then is the .m4a complete (stopping the service alone finishes it a moment later, and an
+         * upload started before that sends a file the PC cannot read).
+         */
         fun stop(ctx: Context): File? {
             val f = file
+            finish()
             ctx.stopService(Intent(ctx, RecordService::class.java))
             return f
         }
-    }
 
-    private var rec: MediaRecorder? = null
+        @Synchronized private fun finish() {
+            runCatching { rec?.stop() }
+            runCatching { rec?.release() }
+            rec = null
+            recording = false
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -73,10 +85,7 @@ class RecordService : Service() {
     }
 
     override fun onDestroy() {
-        runCatching { rec?.stop() }
-        runCatching { rec?.release() }
-        rec = null
-        recording = false
+        finish()
         super.onDestroy()
     }
 }

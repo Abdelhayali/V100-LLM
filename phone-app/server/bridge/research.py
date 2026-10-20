@@ -164,3 +164,17 @@ async def research_start(b: ResearchIn):
 @router.get("/api/research")
 async def research_list():
     return sorted(runs.values(), key=lambda r: -r["started"])
+
+
+@router.delete("/api/research/{rid}")
+async def research_delete(rid: str, with_chat: bool = False):
+    st = runs.get(rid)
+    if not st:
+        raise HTTPException(404)
+    if st["status"] == "running":
+        raise HTTPException(409, "still researching - wait for it to finish")
+    if with_chat:
+        from .notes import _drop_result
+        _drop_result(st.get("session_id", ""), st.get("file", ""))
+    runs.pop(rid, None)
+    return {"ok": True}

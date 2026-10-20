@@ -89,10 +89,13 @@ async def _process(jid: str, audio: Path, device: str, add_tasks: bool):
             raise RuntimeError("no speech was found in the recording")
         j["progress"] = "writing the summary"
         r = await finalize(text, res.get("segments", []), lang, res.get("duration", 0), add_tasks, "Voice note")
-        j.update(status="done", progress="done", session_id=r["session_id"], title=r["title"], tasks_added=r["tasks_added"],
+        j.update(status="done", progress="done", session_id=r["session_id"], title=r["title"], file=r.get("file", ""), tasks_added=r["tasks_added"],
                  duration=res.get("duration", 0), stt_seconds=res.get("seconds", 0))
     except Exception as e:
-        j.update(status="error", progress="failed", error=f"{type(e).__name__}: {e}")
+        msg = f"{type(e).__name__}: {e}"
+        if "InvalidData" in msg or "moov atom" in msg:
+            msg = "The recording file is incomplete (the phone stopped writing it too early). Update the app and record again."
+        j.update(status="error", progress="failed", error=msg)
         schedules.notify("note", "🎙 Voice note failed", j["error"][:200])
 
 
@@ -130,7 +133,7 @@ async def finalize(text: str, segments: list, lang: str, duration: float, add_ta
                 pass
     schedules.notify("note", "🎙 " + title, f"Summary ready · {len(items)} action items" +
                      (f", {added} added to tasks" if added else ""), sess["id"])
-    return {"session_id": sess["id"], "title": title, "tasks_added": added, "items": len(items)}
+    return {"session_id": sess["id"], "title": title, "tasks_added": added, "items": len(items), "file": str(f)}
 
 
 @router.post("/api/notes/voice")
@@ -154,3 +157,31 @@ async def voice_note(file: UploadFile = File(...), device: str = Form("cpu"), ad
 @router.get("/api/notes/voice")
 async def voice_jobs():
     return sorted(jobs.values(), key=lambda j: -j["started"])
+
+
+def _drop_result(session_id: str, file: str):
+    """Delete a finished job's chat and its saved .md file (only inside the workspace)."""
+    if session_id and db.get_session(session_id):
+        db.delete_session(session_id)
+    if file:
+        p = Path(file)
+        try:
+            if p.is_file() and p.resolve().is_relative_to(Path(config["workspace"]).resolve()):
+                p.unlink()
+        except OSError:
+            pass
+
+
+@router.delete("/api/notes/voice/{jid}")
+async def voice_delete(jid: str, with_chat: bool = False):
+    j = jobs.get(jid)
+    if not j:
+        raise HTTPException(404)
+    if j["status"] == "running":
+        raise HTTPException(409, "still being transcribed - wait for it to finish")
+    for a in (DATA_DIR / "uploads" / "voice").glob(jid + ".*"):   # the uploaded recording
+        a.unlink(missing_ok=True)
+    if with_chat:
+        _drop_result(j.get("session_id", ""), j.get("file", ""))
+    jobs.pop(jid, None)
+    return {"ok": True}

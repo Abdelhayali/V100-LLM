@@ -35,6 +35,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -87,6 +88,17 @@ fun ResearchScreen(vm: MainViewModel, openDrawer: () -> Unit) {
     var q by remember { mutableStateOf("") }
     var depth by remember { mutableStateOf("normal") }
     var runs by remember { mutableStateOf<List<ResearchRun>>(emptyList()) }
+    var deleting by remember { mutableStateOf<ResearchRun?>(null) }
+    deleting?.let { r ->
+        DeleteDialog("Delete this research?", r.status == "done", onDismiss = { deleting = null }) { withChat ->
+            deleting = null
+            scope.launch {
+                runCatching { vm.api?.deletePath("/api/research/${r.id}?with_chat=$withChat") }
+                    .onSuccess { runs = runs.filter { it.id != r.id }; if (withChat) vm.refreshAll() }
+                    .onFailure { vm.toast = it.message }
+            }
+        }
+    }
     LaunchedEffect(Unit) {
         while (true) {
             runCatching { vm.api?.research() }.getOrNull()?.let { runs = it }
@@ -113,7 +125,10 @@ fun ResearchScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             Card(Modifier.fillMaxWidth().clickable(enabled = r.status != "running") { vm.screen = Screen.CHAT; vm.openSession(r.sessionId) },
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(r.question, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(r.question, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        if (r.status != "running") IconButton(onClick = { deleting = r }) { Icon(Icons.Default.Delete, "Delete") }
+                    }
                     when (r.status) {
                         "running" -> { LinearProgressIndicator(Modifier.fillMaxWidth()); Text(r.progress, style = MaterialTheme.typography.bodySmall) }
                         "done" -> Text("✓ Report ready · ${r.sources} sources · tap to read", style = MaterialTheme.typography.bodySmall)
@@ -136,6 +151,17 @@ fun NotesScreen(vm: MainViewModel, openDrawer: () -> Unit) {
     var addTasks by remember { mutableStateOf(true) }
     var uploading by remember { mutableStateOf(false) }
     var jobs by remember { mutableStateOf<List<VoiceJob>>(emptyList()) }
+    var deleting by remember { mutableStateOf<VoiceJob?>(null) }
+    deleting?.let { j ->
+        DeleteDialog("Delete this voice note?", j.status == "done", onDismiss = { deleting = null }) { withChat ->
+            deleting = null
+            scope.launch {
+                runCatching { vm.api?.deletePath("/api/notes/voice/${j.id}?with_chat=$withChat") }
+                    .onSuccess { jobs = jobs.filter { it.id != j.id }; if (withChat) vm.refreshAll() }
+                    .onFailure { vm.toast = it.message }
+            }
+        }
+    }
     val mic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         if (ok) { RecordService.start(ctx); recording = true } else vm.toast = "Recording needs the microphone permission"
     }
@@ -190,7 +216,10 @@ fun NotesScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             Card(Modifier.fillMaxWidth().clickable(enabled = j.status == "done") { vm.screen = Screen.CHAT; vm.openSession(j.sessionId) },
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(j.title.ifBlank { "Voice note" }, fontWeight = FontWeight.SemiBold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(j.title.ifBlank { "Voice note" }, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                        if (j.status != "running") IconButton(onClick = { deleting = j }) { Icon(Icons.Default.Delete, "Delete") }
+                    }
                     when (j.status) {
                         "running" -> { LinearProgressIndicator(Modifier.fillMaxWidth()); Text(j.progress, style = MaterialTheme.typography.bodySmall) }
                         "done" -> Text("✓ Notes ready" + (if (j.tasksAdded > 0) " · ${j.tasksAdded} tasks added" else "") + " · tap to open",
@@ -289,4 +318,22 @@ fun ProjectsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             }
         }
     }
+}
+
+/** Remove an item from the list; when it has a result, optionally delete its chat and saved file too. */
+@Composable
+private fun DeleteDialog(title: String, hasResult: Boolean, onDismiss: () -> Unit, onDelete: (withChat: Boolean) -> Unit) {
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(title) },
+        text = { Text(if (hasResult) "Remove it from this list only, or also delete its chat and the saved .md file on the PC? That cannot be undone."
+                      else "It will be removed from this list.") },
+        confirmButton = {
+            if (hasResult) TextButton(onClick = { onDelete(true) }) { Text("Delete with chat", color = MaterialTheme.colorScheme.error) }
+            else TextButton(onClick = { onDelete(false) }) { Text("Delete") }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+                if (hasResult) TextButton(onClick = { onDelete(false) }) { Text("List only") }
+            }
+        })
 }
