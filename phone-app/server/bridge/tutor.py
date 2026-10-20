@@ -14,6 +14,11 @@ from pydantic import BaseModel
 
 router = APIRouter()
 LANG = {"en": "English", "ar": "Arabic (Modern Standard Arabic; write it with tashkeel)"}
+# everyday situations for the pronunciation drill, so the sentences are ones people really use
+SITUATIONS = ["ordering at a cafe", "asking for directions", "greeting a friend", "at the supermarket", "at the doctor",
+              "making plans for the weekend", "talking about the weather", "at work with a colleague", "on the phone",
+              "at a restaurant", "taking a taxi", "at the airport", "shopping for clothes", "at a hotel", "asking for help",
+              "talking about family", "thanking someone", "apologizing for being late", "at the bank", "inviting someone home"]
 
 
 class Turn(BaseModel):
@@ -67,11 +72,16 @@ async def tutor_turn(b: Turn):
 
 @router.post("/api/tutor/sentence")
 async def tutor_sentence(b: SentenceIn):
+    import random
     lang = LANG.get(b.lang, "English")
-    raw = await _llm([{"role": "user", "content": f"Write one {lang} sentence for a {b.level} learner to read aloud for "
-                       f"pronunciation practice{' about ' + b.topic if b.topic else ''}: 8-16 words, everyday language, with "
-                       "a few sounds that are hard for Arabic speakers" + (" (p/b, v/f, th, short vowels)" if b.lang == "en" else
-                       " (ح/ه, ع/ء, ق/ك, ض/د)") + ". Reply with only the sentence."}], 120)
+    topic = b.topic or random.choice(SITUATIONS)
+    words = {"beginner": "5-9", "intermediate": "8-13", "advanced": "11-16"}.get(b.level, "8-13")
+    raw = await _llm([{"role": "user", "content": f"Write one very common {lang} sentence that people really say every "
+                       f"day, in this situation: {topic}. {words} words, natural spoken {lang} for a {b.level} learner, no rare "
+                       "words or names, no quotes. If it naturally fits, include a sound that is hard for Arabic speakers"
+                       + (" (p/b, v/f, th)" if b.lang == "en" else " (ح/ه, ع/ء, ق/ك, ض/د)")
+                       + (". Write it in Modern Standard Arabic with full tashkeel" if b.lang == "ar" else "")
+                       + ". Reply with only the sentence."}], 120)
     return {"sentence": raw.strip().strip('"“”')}
 
 

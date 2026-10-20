@@ -416,8 +416,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val em = emailAccess || onceEmail
                 val org = organizerAccess || onceOrganizer
                 onceEmail = false; onceOrganizer = false
-                consume(a.chat(sid, text, atts.map { it.id }, currentModel.ifBlank { null }, webSearch, autoApprove,
-                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = thinking, ocr = ocr, sandbox = sandbox, voice = voiceTurn, pc = pcActions))
+                consume(a.chat(sid, text, atts.map { it.id }, currentModel.ifBlank { null }, webSearch, autoApprove && !driving,
+                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = if (driving) "off" else thinking, ocr = ocr, sandbox = sandbox, voice = voiceTurn,
+                    pc = pcActions && !driving, drive = driving))
             } catch (e: com.localai.bridge.data.ApiException) {
                 if (e.code == 409) {
                     // the PC is still finishing the previous reply (e.g. the phone was off): show it instead of failing

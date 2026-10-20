@@ -188,9 +188,15 @@ db._conn.execute("CREATE TABLE IF NOT EXISTS message_context(message_id INTEGER 
 db._conn.commit()
 
 
-def attach_context(mid: int, content: str, voice: bool = False, translate: bool = False):
+def attach_context(mid: int, content: str, voice: bool = False, translate: bool = False, drive: bool = False):
     """Sent-time + memories related to this message, stored once with the message."""
     parts = [f"sent {time.strftime('%Y-%m-%d %H:%M (%A)')}"]
+    if drive and not translate:   # car mode: a spoken conversation only
+        parts.append("CAR MODE: the user is driving and can only listen and speak. Just talk with them: never write code, "
+                     "never offer numbered choices or options to pick from, never ask them to approve, confirm or choose "
+                     "anything, and do not start tasks on the PC. If something needs the screen, say in one sentence that "
+                     "it can be done later in the app")
+        voice = True
     if translate:   # translate mode (driving): the message is to be translated, not answered
         parts.append("TRANSLATE MODE: do not answer or comment on the message. If it is in Arabic, reply with only its "
                      "natural English translation. If it is in English or another language, reply with only its Arabic "
@@ -351,11 +357,16 @@ async def compress_turn(run, model: str | None):
 
 
 # ---------------------------------------------------------------- chat engine
+# car mode: read-only tools that never ask the user anything
+DRIVE_TOOLS = {"web_search", "fetch_url", "search_chats"}
+
+
 class Run:
     """A chat turn running in the background; survives phone disconnects."""
 
-    def __init__(self, sid, web=False, auto_approve=False, compress_at=0.0, email=False, organizer=False, thinking="auto", ocr="off", sandbox=False, pc=False):
+    def __init__(self, sid, web=False, auto_approve=False, compress_at=0.0, email=False, organizer=False, thinking="auto", ocr="off", sandbox=False, pc=False, drive=False):
         self.sid = sid
+        self.drive = bool(drive)   # car mode: only the DRIVE_TOOLS, nothing that needs the screen
         self.thinking = thinking
         self.ocr = ocr if ocr in ocr_mod.MODES else "off"
         self.sandbox = bool(sandbox)
@@ -585,6 +596,10 @@ async def chat_turn(run: Run, model: str | None):
                         payload["tools"].append(projects.note_tool_schema())
                     if run.ocr != "off":
                         payload["tools"].append(ocr_mod.schema())
+                    if run.drive:
+                        payload["tools"] = [s for s in payload["tools"] if s["function"]["name"] in DRIVE_TOOLS]
+                        if not payload["tools"]:
+                            del payload["tools"]
                 try:
                     content, reasoning, tool_calls, stats = await stream_completion(client, payload, run)
                 except httpx.HTTPStatusError as e:
@@ -616,7 +631,8 @@ async def chat_turn(run: Run, model: str | None):
                     blocked = ((name in tools.EMAIL_TOOLS and not run.email)
                                or (name in tools.ORGANIZER_TOOLS and not run.organizer)
                                or (name in pc_tools.TOOL_NAMES and not run.pc)
-                               or (name == "save_memory" and privacy.is_private(sid)))
+                               or (name == "save_memory" and privacy.is_private(sid))
+                               or (run.drive and name not in DRIVE_TOOLS))
                     approval = "auto" if name in tools.NEEDS_APPROVAL else "not needed"
                     if blocked:
                         approval = "blocked"   # the model asked for a tool the user did not switch on: refuse, never run it
@@ -625,6 +641,9 @@ async def chat_turn(run: Run, model: str | None):
                                 else "tasks, notes and calendar")
                         result, atts = (f"Access denied: the user has not allowed {what} access in this chat. Tell them to "
                                         f"switch on '{what}' access in the app (paperclip menu) if they want you to use it."), []
+                        if run.drive and name not in DRIVE_TOOLS:
+                            result = ("Not available: the user is driving (car mode). Do not use tools, do not offer "
+                                      "choices; just answer by talking, in a few short sentences.")
                     elif name == "ask_user":
                         result, atts = await ask_user(run, tc["id"], args), []
                     elif name == "ocr_document":
@@ -838,6 +857,7 @@ class ChatIn(BaseModel):
     voice: bool = False          # asked by voice (mic / driving mode): the reply is read aloud, so keep it short
     translate: bool = False      # translate mode: translate the message (Arabic <-> English) instead of answering it
     pc: bool = False             # PC actions: look at the screen, open, move files, run saved scripts (approved)
+    drive: bool = False          # car mode: talk only - no code, no approvals, no questions with choices
 
 
 class ApprovalIn(BaseModel):
@@ -897,7 +917,7 @@ async def chat(sid: str, body: ChatIn):
             atts.append({"id": a["id"], "filename": a["filename"], "kind": a["kind"], "mime": a["mime"]})
     mid = db.add_message(sid, "user", body.content, attachments=atts or None)
     try:
-        await asyncio.to_thread(attach_context, mid, body.content, body.voice, body.translate)
+        await asyncio.to_thread(attach_context, mid, body.content, body.voice, body.translate, body.drive)
     except Exception:
         pass   # memory is optional: the chat goes on without it
     if s["title"] == "New chat":  # name the chat right away, not after the reply
@@ -909,7 +929,7 @@ async def chat(sid: str, body: ChatIn):
     run = Run(sid, web=body.web, auto_approve=body.auto_approve, compress_at=max(0.0, min(body.compress_at, 0.98)),
               email=body.email, organizer=body.organizer,
               thinking=body.thinking if body.thinking in THINKING or body.thinking == "auto" else "auto",
-              ocr=body.ocr, sandbox=body.sandbox, pc=body.pc)
+              ocr=body.ocr, sandbox=body.sandbox, pc=body.pc and not body.drive, drive=body.drive)
     runs[sid] = run
     resp = sse_response(run)
     run.task = asyncio.create_task(chat_turn(run, model))

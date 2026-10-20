@@ -39,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -190,6 +191,12 @@ fun TutorScreen(vm: MainViewModel, openDrawer: () -> Unit) {
     var sentence by remember { mutableStateOf("") }
     var result by remember { mutableStateOf<PronounceResult?>(null) }
     val rec = if (lang == "en") "en-US" else "ar-EG"
+    val ctx = LocalContext.current
+    var reading by remember { mutableStateOf(false) }
+    var heard by remember { mutableStateOf("") }
+    val reader = remember { LiveReader(ctx) }
+    DisposableEffect(Unit) { onDispose { reader.release() } }
+    val mic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (!ok) vm.toast = "Needs the microphone" }
 
     val listen = rememberListener { text ->
         if (mode == "talk") {
@@ -212,6 +219,23 @@ fun TutorScreen(vm: MainViewModel, openDrawer: () -> Unit) {
     fun newSentence() { busy = true; result = null; scope.launch {
         runCatching { vm.api?.tutorSentence(lang, level) }.onSuccess { sentence = it.orEmpty() }.onFailure { vm.toast = it.message }
         busy = false } }
+    fun readAloud() {
+        if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            mic.launch(Manifest.permission.RECORD_AUDIO); return
+        }
+        vm.speaker.stop(); result = null; heard = ""; reading = true
+        reader.start(rec, onPartial = { heard = it }, onFinal = { text ->
+            reading = false; heard = text
+            if (text.isBlank()) vm.toast = "I did not hear anything - try again"
+            else {
+                busy = true
+                scope.launch {
+                    runCatching { vm.api?.tutorPronounce(lang, sentence, text) }.onSuccess { result = it }.onFailure { vm.toast = it.message }
+                    busy = false
+                }
+            }
+        })
+    }
 
     Page("Language tutor", openDrawer) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -253,25 +277,45 @@ fun TutorScreen(vm: MainViewModel, openDrawer: () -> Unit) {
             }
             if (chat.isNotEmpty()) TextButton(onClick = { chat.clear() }) { Text("New conversation") }
         } else {
-            Small("Read the sentence aloud. Words the recognizer could not understand are marked, with tips.")
+            Small("Tap Read and say the sentence. It stays on screen, and each word lights up as you say it.")
             if (sentence.isNotBlank()) {
-                Text(sentence, style = MaterialTheme.typography.headlineSmall)
+                val words = remember(sentence) { sentence.split(Regex("\\s+")).filter { it.isNotBlank() } }
+                val done = if (result == null) followWords(words, heard) else 0
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                    FlowRow(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        words.forEachIndexed { i, w ->
+                            val mark = result?.words?.takeIf { it.size == words.size }?.getOrNull(i)
+                            Text(w, style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = if (reading && i == done) FontWeight.Bold else FontWeight.Normal,
+                                color = when {
+                                    mark != null -> if (mark.ok) Color(0xFF2E9D57) else MaterialTheme.colorScheme.error
+                                    i < done -> Color(0xFF2E9D57)
+                                    reading && i == done -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.onSurface
+                                },
+                                modifier = Modifier.clickable { vm.speaker.speak(w) })
+                        }
+                    }
+                }
+                if (reading) Text("🎤 Listening… $heard", color = MaterialTheme.colorScheme.primary)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { vm.speaker.speak(sentence) }) { Text("▶ Hear it") }
-                    Button(onClick = { vm.speaker.stop(); listen(rec, sentence) }, enabled = !busy) { Text("🎤 Read it") }
-                    TextButton(onClick = { newSentence() }, enabled = !busy) { Text("Next") }
+                    OutlinedButton(onClick = { vm.speaker.speak(sentence) }, enabled = !reading) { Text("▶ Hear it") }
+                    if (reading) Button(onClick = { reader.stop() }) { Text("■ Done") }
+                    else Button(onClick = { readAloud() }, enabled = !busy) { Text("🎤 Read it") }
+                    TextButton(onClick = { reader.cancel(); reading = false; heard = ""; newSentence() }, enabled = !busy) { Text("Next") }
                 }
             }
             result?.let { r ->
                 Text("Score: ${r.score}%", style = MaterialTheme.typography.titleLarge,
                     color = if (r.score >= 85) Color(0xFF2E9D57) else if (r.score >= 60) Color(0xFFC27C0E) else MaterialTheme.colorScheme.error)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (r.words.size != sentence.split(Regex("\\s+")).count { it.isNotBlank() }) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     r.words.forEach { w ->
                         Text(w.word, color = if (w.ok) Color(0xFF2E9D57) else MaterialTheme.colorScheme.error,
                             fontWeight = if (w.ok) FontWeight.Normal else FontWeight.Bold,
                             modifier = Modifier.clickable { vm.speaker.speak(w.word) })
                     }
                 }
+                Small("Tap a word to hear it.")
                 if (r.tips.isNotBlank()) Text(r.tips, style = MaterialTheme.typography.bodyMedium)
             }
         }
@@ -394,4 +438,64 @@ fun ProfileCard(vm: MainViewModel) {
             }) { Text("Rebuild now") }
         }
     }
+}
+
+// ------------------------------------------------------------------ reading along (pronunciation)
+private fun norm(w: String) = w.lowercase().replace(Regex("[\u064B-\u0652\u0670\u0640]"), "")   // no tashkeel / tatweel
+    .replace(Regex("[أإآ]"), "ا").replace("ة", "ه").replace("ى", "ي").filter { it.isLetterOrDigit() }
+
+/** How many words of the sentence have been said so far (in order, allowing a skipped or misheard word). */
+internal fun followWords(words: List<String>, heard: String): Int {
+    val target = words.map(::norm)
+    var pos = 0
+    for (h in heard.split(Regex("\\s+")).map(::norm).filter { it.isNotEmpty() }) {
+        val hit = (pos until minOf(pos + 3, target.size)).firstOrNull { j ->
+            target[j] == h || (h.length > 3 && target[j].length > 3 && target[j].startsWith(h.take(3))
+                && kotlin.math.abs(target[j].length - h.length) <= 2)
+        }
+        if (hit != null) pos = hit + 1
+    }
+    return pos
+}
+
+/** In-app speech recognizer with live partial results, so the sentence stays visible while you read it. */
+class LiveReader(private val ctx: android.content.Context) {
+    private var sr: android.speech.SpeechRecognizer? = null
+    private var finished = false
+
+    fun start(lang: String, onPartial: (String) -> Unit, onFinal: (String) -> Unit) {
+        cancel()
+        finished = false
+        var last = ""
+        fun finish(text: String) { if (!finished) { finished = true; onFinal(text) } }
+        sr = android.speech.SpeechRecognizer.createSpeechRecognizer(ctx).apply {
+            setRecognitionListener(object : android.speech.RecognitionListener {
+                override fun onPartialResults(b: android.os.Bundle?) {
+                    b?.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+                        ?.takeIf { it.isNotBlank() }?.let { last = it; onPartial(it) }
+                }
+                override fun onResults(b: android.os.Bundle?) =
+                    finish(b?.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.ifBlank { last } ?: last)
+                override fun onError(error: Int) = finish(last)
+                override fun onReadyForSpeech(p: android.os.Bundle?) {}
+                override fun onBeginningOfSpeech() {}
+                override fun onRmsChanged(v: Float) {}
+                override fun onBufferReceived(b: ByteArray?) {}
+                override fun onEndOfSpeech() {}
+                override fun onEvent(t: Int, b: android.os.Bundle?) {}
+            })
+            startListening(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE, lang).putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, lang)
+                .putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, true)
+                .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                // let the learner pause between words without the recognizer giving up
+                .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+                .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L))
+        }
+    }
+
+    fun stop() { sr?.stopListening() }          // ends now; the result still arrives
+    fun cancel() { finished = true; sr?.destroy(); sr = null }
+    fun release() = cancel()
 }
