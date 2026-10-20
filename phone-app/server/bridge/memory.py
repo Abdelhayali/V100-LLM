@@ -231,7 +231,8 @@ def search_chats(query: str, limit: int = 8) -> str:
     """Find earlier chats by words (user and assistant messages), newest first, with the chat title and date."""
     words = [w for w in re.findall(r"\w+", query.lower()) if len(w) > 2] or [query.lower()]
     rows = db._q("SELECT m.session_id, m.role, m.content, m.created, s.title FROM messages m JOIN sessions s ON s.id=m.session_id "
-                 "WHERE m.role IN ('user','assistant') AND m.content <> '' ORDER BY m.id DESC LIMIT 4000")
+                 "WHERE m.role IN ('user','assistant') AND m.content <> '' AND m.session_id NOT IN "
+                 "(SELECT session_id FROM session_kind) ORDER BY m.id DESC LIMIT 4000")
     hits = []
     for r in rows:
         low = r["content"].lower()

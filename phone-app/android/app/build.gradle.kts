@@ -13,8 +13,8 @@ android {
         applicationId = "com.localai.bridge.v100"
         minSdk = 26
         targetSdk = 36
-        versionCode = 14
-        versionName = "3.1-v100"
+        versionCode = 15
+        versionName = "3.2-v100"
     }
 
     buildTypes {
@@ -55,4 +55,5 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation("androidx.work:work-runtime-ktx:2.10.3")
+    implementation("androidx.biometric:biometric:1.1.0")
 }

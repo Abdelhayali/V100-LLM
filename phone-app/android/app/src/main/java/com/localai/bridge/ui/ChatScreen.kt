@@ -205,6 +205,10 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                 title = {
                     Column {
                         Text(vm.currentTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (vm.tempChat) Text("🕶 Temporary · no memory · deleted when you leave", style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary)
+                        if (vm.vaultChat) Text("🔒 Private vault · encrypted on the PC", style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary)
                         Box {
                             Row(Modifier.clickable { modelMenu = true; vm.refreshModels() }, verticalAlignment = Alignment.CenterVertically) {
                                 Text(shortModel(vm.currentModel.ifBlank { "auto model" }), style = MaterialTheme.typography.labelMedium,

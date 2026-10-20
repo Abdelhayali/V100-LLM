@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
 from . import db, memory, tools
+from . import privacy  # noqa: E402  (patches db first: vault encryption, temporary chats)
 from . import ocr as ocr_mod
 from .config import DATA_DIR, config, llm_api_base
 
@@ -71,6 +72,7 @@ async def require_auth(req: Request):
     if not token or not secrets.compare_digest(token.encode(), config["auth_token"].encode()):
         q.append(now)
         raise HTTPException(401, "Invalid token")
+    privacy.vault_key.set(privacy.key_from_header(req.headers.get("x-vault-key")))   # only while the phone unlocked it
 
 
 Auth = Depends(require_auth)
@@ -174,6 +176,10 @@ def system_prompt(message: str = "") -> str:
              "one of several options), call ask_user instead of guessing or ending your reply with a question.",
              "Some user messages end with a [Context …] block from the app: when the message was sent and what you "
              "remember about the user that relates to it. Use it naturally; never mention the block."]
+    from . import profile
+    pb = profile.prompt_block()      # changes at most once a day: the prompt cache keeps working
+    if pb:
+        parts.append(pb)
     return "\n\n".join(parts)
 
 
@@ -609,11 +615,13 @@ async def chat_turn(run: Run, model: str | None):
                     from . import pc_tools
                     blocked = ((name in tools.EMAIL_TOOLS and not run.email)
                                or (name in tools.ORGANIZER_TOOLS and not run.organizer)
-                               or (name in pc_tools.TOOL_NAMES and not run.pc))
+                               or (name in pc_tools.TOOL_NAMES and not run.pc)
+                               or (name == "save_memory" and privacy.is_private(sid)))
                     approval = "auto" if name in tools.NEEDS_APPROVAL else "not needed"
                     if blocked:
                         approval = "blocked"   # the model asked for a tool the user did not switch on: refuse, never run it
                         what = ("email" if name in tools.EMAIL_TOOLS else "PC actions" if name in pc_tools.TOOL_NAMES
+                                else "memory (this is a private / temporary chat)" if name == "save_memory"
                                 else "tasks, notes and calendar")
                         result, atts = (f"Access denied: the user has not allowed {what} access in this chat. Tell them to "
                                         f"switch on '{what}' access in the app (paperclip menu) if they want you to use it."), []
@@ -668,7 +676,7 @@ async def chat_turn(run: Run, model: str | None):
             db.update_session(sid, title=title)
             run.emit({"type": "title", "title": title})
         run.emit({"type": "done"})
-        if not run.stopped:   # remember lasting facts from this exchange, after the reply (does not delay it)
+        if not run.stopped and not privacy.is_private(sid):   # remember lasting facts (never from temp / vault chats)
             msgs = db.get_messages(sid)
             u = next((m["content"] for m in reversed(msgs) if m["role"] == "user"), "")
             a = next((m["content"] for m in reversed(msgs) if m["role"] == "assistant" and m["content"]), "")
@@ -1289,6 +1297,16 @@ app.include_router(notes.router, dependencies=[Auth])
 from . import research  # noqa: E402
 
 app.include_router(research.router, dependencies=[Auth])
+app.include_router(privacy.router, dependencies=[Auth])
+from . import profile  # noqa: E402
+
+app.include_router(profile.router, dependencies=[Auth])
+from . import live  # noqa: E402
+
+app.include_router(live.router, dependencies=[Auth])
+from . import tutor  # noqa: E402
+
+app.include_router(tutor.router, dependencies=[Auth])
 from . import audit  # noqa: E402
 
 app.include_router(audit.router, dependencies=[Auth])

@@ -29,6 +29,9 @@ def _summary(tool: str, args: dict) -> str:
 def log(session_id: str, tool: str, args: dict, approval: str, result: str, source: str = "chat"):
     if tool in SKIP:
         return
+    from . import privacy
+    if session_id and privacy.kind(session_id) == "vault":   # never write vault contents into the log
+        args, result = {}, "(private vault chat)"
     r = str(result or "")
     bad = r.startswith(("Error", "OCR failed", "Access denied", "The user denied")) or '"exit_code": -' in r[:200] or \
         ('"exit_code": ' in r[:200] and '"exit_code": 0' not in r[:200])

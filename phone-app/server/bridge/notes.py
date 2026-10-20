@@ -88,42 +88,49 @@ async def _process(jid: str, audio: Path, device: str, add_tasks: bool):
         if not text.strip():
             raise RuntimeError("no speech was found in the recording")
         j["progress"] = "writing the summary"
-        notes = await _summarize(text, lang)
-        title = (notes.get("title") or "Voice note").strip()[:70]
-        md = [f"# {title}", f"*{time.strftime('%Y-%m-%d %H:%M')} · {_clock(res.get('duration', 0))} · {lang}*", "",
-              "## Summary", str(notes.get("summary", "")).strip(), ""]
-        for key, head in (("key_points", "Key points"), ("decisions", "Decisions")):
-            if notes.get(key):
-                md += [f"## {head}"] + [f"- {x}" for x in notes[key]] + [""]
-        items = [x for x in notes.get("action_items") or [] if isinstance(x, dict) and x.get("task")]
-        if items:
-            md += ["## Action items"] + [f"- [ ] {x['task']}" + (f" — {x['owner']}" if x.get("owner") else "") +
-                                         (f" (due {x['due']})" if x.get("due") else "") for x in items] + [""]
-        md += ["## Transcript"] + [f"`{_clock(s['start'])}` {s['text']}" for s in res.get("segments", [])]
-        body = "\n".join(md)
-        out_dir = Path(config["workspace"]) / "notes"
-        out_dir.mkdir(parents=True, exist_ok=True)
-        f = out_dir / f"{time.strftime('%Y-%m-%d-%H%M')}-{re.sub(r'[^\w]+', '-', title.lower())[:40].strip('-') or 'note'}.md"
-        f.write_text(body, encoding="utf-8")
-        sess = db.create_session("🎙 " + title, "")
-        db.add_message(sess["id"], "user", f"Voice note ({_clock(res.get('duration', 0))}) - please keep these notes.")
-        db.add_message(sess["id"], "assistant", body, attachments=[tools.share_file(f)])
-        added = 0
-        if add_tasks and items:
-            from . import organizer
-            for x in items:
-                try:
-                    organizer.task_save(title=x["task"] + (f" ({x['owner']})" if x.get("owner") else ""), due=x.get("due") or None, notes="from a voice note")
-                    added += 1
-                except Exception:
-                    pass
-        j.update(status="done", progress="done", session_id=sess["id"], title=title, tasks_added=added,
+        r = await finalize(text, res.get("segments", []), lang, res.get("duration", 0), add_tasks, "Voice note")
+        j.update(status="done", progress="done", session_id=r["session_id"], title=r["title"], tasks_added=r["tasks_added"],
                  duration=res.get("duration", 0), stt_seconds=res.get("seconds", 0))
-        schedules.notify("note", "🎙 " + title, f"Summary ready · {len(items)} action items" +
-                         (f", {added} added to tasks" if added else ""), sess["id"])
     except Exception as e:
         j.update(status="error", progress="failed", error=f"{type(e).__name__}: {e}")
         schedules.notify("note", "🎙 Voice note failed", j["error"][:200])
+
+
+async def finalize(text: str, segments: list, lang: str, duration: float, add_tasks: bool, kind: str = "Voice note") -> dict:
+    """Summary + chat + .md file + optional tasks + notification for a transcript (voice notes and live meetings)."""
+    notes = await _summarize(text, lang)
+    title = (notes.get("title") or kind).strip()[:70]
+    md = [f"# {title}", f"*{time.strftime('%Y-%m-%d %H:%M')} · {_clock(duration)} · {lang}*", "",
+          "## Summary", str(notes.get("summary", "")).strip(), ""]
+    for key, head in (("key_points", "Key points"), ("decisions", "Decisions")):
+        if notes.get(key):
+            md += [f"## {head}"] + [f"- {x}" for x in notes[key]] + [""]
+    items = [x for x in notes.get("action_items") or [] if isinstance(x, dict) and x.get("task")]
+    if items:
+        md += ["## Action items"] + [f"- [ ] {x['task']}" + (f" — {x['owner']}" if x.get("owner") else "") +
+                                     (f" (due {x['due']})" if x.get("due") else "") for x in items] + [""]
+    md += ["## Transcript"] + [f"`{_clock(s['start'])}` {s['text']}" for s in segments]
+    body = "\n".join(md)
+    out_dir = Path(config["workspace"]) / "notes"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    f = out_dir / f"{time.strftime('%Y-%m-%d-%H%M')}-{re.sub(r'[^\w]+', '-', title.lower())[:40].strip('-') or 'note'}.md"
+    f.write_text(body, encoding="utf-8")
+    sess = db.create_session("🎙 " + title, "")
+    db.add_message(sess["id"], "user", f"{kind} ({_clock(duration)}) - please keep these notes.")
+    db.add_message(sess["id"], "assistant", body, attachments=[tools.share_file(f)])
+    added = 0
+    if add_tasks and items:
+        from . import organizer
+        for x in items:
+            try:
+                organizer.task_save(title=x["task"] + (f" ({x['owner']})" if x.get("owner") else ""), due=x.get("due") or None,
+                                    notes=f"from a {kind.lower()}")
+                added += 1
+            except Exception:
+                pass
+    schedules.notify("note", "🎙 " + title, f"Summary ready · {len(items)} action items" +
+                     (f", {added} added to tasks" if added else ""), sess["id"])
+    return {"session_id": sess["id"], "title": title, "tasks_added": added, "items": len(items)}
 
 
 @router.post("/api/notes/voice")

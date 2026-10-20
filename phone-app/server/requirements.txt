@@ -11,3 +11,4 @@ numpy>=1.26
 pandas>=2.1
 ddgs>=9.0
 fastembed>=0.4   # multilingual embeddings for long-term memory
+cryptography>=42

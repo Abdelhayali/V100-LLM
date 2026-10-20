@@ -1,5 +1,7 @@
 package com.localai.bridge.ui
 
+import com.localai.bridge.data.tempSession
+import com.localai.bridge.data.vaultNew
 import com.localai.bridge.data.v100Status
 import com.localai.bridge.data.rotateToken
 
@@ -30,7 +32,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-enum class Screen { CHAT, FILES, TERMINAL, MEMORY, SETTINGS, TASKS, AGENT, MODELS, API, ORGANIZER, SCHEDULES, TRANSLATE, RESEARCH, NOTES, PROJECTS, AUDIT }
+enum class Screen { CHAT, FILES, TERMINAL, MEMORY, SETTINGS, TASKS, AGENT, MODELS, API, ORGANIZER, SCHEDULES, TRANSLATE, RESEARCH, NOTES, PROJECTS, AUDIT, VAULT, TUTOR, LIVE }
 
 sealed interface ChatItem {
     val key: String
@@ -236,7 +238,45 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         sessions.clear(); sessions.addAll(list)
     }
 
+    // ---------------------------------------------------------------- temporary chat + private vault
+    var tempChat by mutableStateOf(false)          // the open chat is temporary: deleted when you leave it
+    var vaultChat by mutableStateOf(false)         // the open chat is in the private vault
+    var vaultUnlocked by mutableStateOf(false)
+
+    private fun leaveTemp() {
+        val sid = currentSessionId
+        if (tempChat && sid != null) viewModelScope.launch { runCatching { api?.deleteSession(sid) }; loadSessions() }
+        tempChat = false
+    }
+
+    fun newTempChat() = viewModelScope.launch {
+        val a = api ?: return@launch
+        newChat()
+        runCatching { a.tempSession() }.onSuccess { s ->
+            currentSessionId = s.id; currentTitle = "⏳ Temporary chat"; tempChat = true
+            toast = "Temporary chat: not saved, no memories, deleted when you leave it"
+        }.onFailure { toast = it.message }
+    }
+
+    fun setVaultKey(key: String?) {
+        com.localai.bridge.data.Api.vaultKey = key
+        vaultUnlocked = key != null
+        if (key == null && vaultChat) { vaultChat = false; newChat() }
+    }
+
+    fun newVaultChat() = viewModelScope.launch {
+        val a = api ?: return@launch
+        newChat()
+        runCatching { a.vaultNew() }.onSuccess { s ->
+            currentSessionId = s.id; currentTitle = "🔒 Private chat"; vaultChat = true; screen = Screen.CHAT
+        }.onFailure { toast = it.message }
+    }
+
+    fun openVaultChat(id: String) { openSession(id).invokeOnCompletion { vaultChat = true } }
+
     fun newChat() {
+        leaveTemp()
+        vaultChat = false
         streamJob?.cancel()
         streaming = false
         currentSessionId = null
@@ -249,6 +289,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openSession(id: String) = viewModelScope.launch {
         val a = api ?: return@launch
+        if (id != currentSessionId) leaveTemp()
+        vaultChat = false
         streamJob?.cancel()
         streaming = false
         screen = Screen.CHAT
@@ -480,6 +522,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onAppBackground() {
         tasksJob?.cancel(); pcJob?.cancel(); notifyJob?.cancel(); backgroundAtMs = System.currentTimeMillis()
+        if (vaultUnlocked && !streaming) setVaultKey(null)   // the vault locks itself when you leave the app
         val sid = currentSessionId
         if (streaming && notifyDone && sid != null)   // keep watching the reply and say when it is ready
             com.localai.bridge.ReplyWatchService.start(getApplication(), prefs.serverUrl, prefs.token, sid, currentTitle)
@@ -569,6 +612,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             }
             "models" -> screen = Screen.MODELS
             "notes" -> screen = Screen.NOTES
+            "live" -> screen = Screen.LIVE
         }
         intent.removeExtra("widget_action")
         if (intent.action == android.content.Intent.ACTION_ASSIST || intent.action == android.content.Intent.ACTION_VOICE_COMMAND) {

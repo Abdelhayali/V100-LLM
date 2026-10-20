@@ -189,6 +189,9 @@ async def loop():
     await asyncio.sleep(20)
     while True:
         try:
+            from . import privacy, profile
+            privacy.cleanup_temp()
+            await profile.daily()
             now = time.time()
             for s in db._q("SELECT * FROM schedules WHERE enabled=1 AND next_run <= ?", (now,)):
                 asyncio.create_task(_run_schedule(s))

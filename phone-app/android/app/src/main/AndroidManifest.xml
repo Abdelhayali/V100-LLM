@@ -93,6 +93,12 @@
                 android:resource="@xml/widget_gpu_info" />
         </receiver>
 
+        <!-- live meeting: records and sends 20-second pieces while recording -->
+        <service
+            android:name=".LiveService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
         <!-- records voice notes / meetings with the screen off -->
         <service
             android:name=".RecordService"

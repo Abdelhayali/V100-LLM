@@ -351,6 +351,8 @@ fun SettingsScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                 Text("Workspace: ${i.workspace}")
             }
             HorizontalDivider()
+            ProfileCard(vm)
+            HorizontalDivider()
             Text("Assistant", style = MaterialTheme.typography.titleMedium)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {

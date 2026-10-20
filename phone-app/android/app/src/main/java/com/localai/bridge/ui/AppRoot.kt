@@ -34,6 +34,9 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Workspaces
 import androidx.compose.material.icons.filled.KeyboardVoice
@@ -190,6 +193,9 @@ fun MainShell(vm: MainViewModel) {
                 Button(onClick = { vm.newChat(); scope.launch { drawer.close() } }, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.Add, null); Spacer(Modifier.size(6.dp)); Text("New chat")
                 }
+                TextButton(onClick = { vm.newTempChat(); scope.launch { drawer.close() } }, modifier = Modifier.fillMaxWidth()) {
+                    Text("🕶 New temporary chat (no memory, deleted after 24 h)")
+                }
                 Spacer(Modifier.height(8.dp))
                 // compact 3-row grid instead of 9 full-width rows, so the session list below has room
                 val tiles = listOf(
@@ -201,6 +207,9 @@ fun MainShell(vm: MainViewModel) {
                     Triple(Screen.NOTES, "Voice\nnotes", Icons.Default.KeyboardVoice),
                     Triple(Screen.PROJECTS, "Projects", Icons.Default.Workspaces),
                     Triple(Screen.AUDIT, "Audit\nlog", Icons.Default.History),
+                    Triple(Screen.VAULT, "Private\nvault", Icons.Default.Lock),
+                    Triple(Screen.TUTOR, "Language\ntutor", Icons.Default.School),
+                    Triple(Screen.LIVE, "Live\nmeeting", Icons.Default.RecordVoiceOver),
                     Triple(Screen.TASKS, "Running" + if (vm.backgroundTaskCount > 0) " (${vm.backgroundTaskCount})" else "", Icons.Default.Memory),
                     Triple(Screen.API, "API key", Icons.Default.Key),
                     Triple(Screen.AGENT, "Code\nagent", Icons.Default.Code),
@@ -256,6 +265,9 @@ fun MainShell(vm: MainViewModel) {
             Screen.NOTES -> NotesScreen(vm, openDrawer)
             Screen.PROJECTS -> ProjectsScreen(vm, openDrawer)
             Screen.AUDIT -> AuditScreen(vm, openDrawer)
+            Screen.VAULT -> VaultScreen(vm, openDrawer)
+            Screen.TUTOR -> TutorScreen(vm, openDrawer)
+            Screen.LIVE -> LiveScreen(vm, openDrawer)
         }
     }
 

@@ -36,6 +36,10 @@ import java.util.concurrent.TimeUnit
 class ApiException(val code: Int, message: String) : IOException(message)
 
 class Api(private val baseUrl: String, private val token: String) {
+    companion object {
+        /** The private vault's key while it is unlocked (base64); sent with every request, never stored on the PC. */
+        @Volatile var vaultKey: String? = null
+    }
 
     val json = Json { ignoreUnknownKeys = true; explicitNulls = false; coerceInputValues = true }
 
@@ -54,6 +58,7 @@ class Api(private val baseUrl: String, private val token: String) {
 
     private fun req(path: String, query: Map<String, String> = emptyMap()) =
         Request.Builder().url(url(path, query)).header("Authorization", "Bearer $token")
+            .apply { vaultKey?.let { header("X-Vault-Key", it) } }
 
     private suspend fun exec(r: Request): String = withContext(Dispatchers.IO) {
         client.newCall(r).execute().use { resp -> checked(resp).body!!.string() }
@@ -189,6 +194,14 @@ class Api(private val baseUrl: String, private val token: String) {
             .addFormDataPart("file", file.name, file.asRequestBody("audio/mp4".toMediaType()))
             .addFormDataPart("device", device).addFormDataPart("add_tasks", addTasks.toString()).build()
         return exec(req("/api/notes/voice").post(body).build())
+    }
+
+    /** One 20-second piece of a live meeting (blocking: called from the recorder's thread). */
+    fun uploadLiveChunkBlocking(id: String, wav: File, idx: Int, offsetSec: Double): Boolean {
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", wav.name, wav.asRequestBody("audio/wav".toMediaType()))
+            .addFormDataPart("idx", idx.toString()).addFormDataPart("offset", offsetSec.toString()).build()
+        return client.newCall(req("/api/live/$id/chunk").post(body).build()).execute().use { it.isSuccessful }
     }
 
     /** WAV audio of [text] spoken by a PC voice (Piper on the PC). Blocking call: use from a background thread. */

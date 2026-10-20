@@ -149,3 +149,68 @@ suspend fun Api.projectSchedule(p: ProjectDto, at: String, prompt: String): Sche
 data class PcVoice(val id: String = "", val lang: String = "", val name: String = "", val quality: String = "")
 
 suspend fun Api.pcVoices(): List<PcVoice> = getJson("/api/tts/voices")
+
+// ------------------------------------------------------------------ temporary chats, private vault, profile
+suspend fun Api.tempSession(): SessionDto = sendJson("POST", "/api/sessions/temp", JsonObject(emptyMap()))
+suspend fun Api.vaultUnlock(): JsonObject = sendJson("POST", "/api/vault/unlock", JsonObject(emptyMap()))
+suspend fun Api.vaultSessions(): List<SessionDto> = getJson("/api/vault/sessions")
+suspend fun Api.vaultNew(): SessionDto = sendJson("POST", "/api/vault/sessions", JsonObject(emptyMap()))
+
+@Serializable
+data class ProfileDto(val text: String = "", val enabled: Int = 1, val updated: Double = 0.0, val building: Int = 0)
+
+suspend fun Api.profile(): ProfileDto = getJson("/api/profile")
+suspend fun Api.profileSave(enabled: Boolean, text: String?): ProfileDto =
+    sendJson("PUT", "/api/profile", buildJsonObject { put("enabled", enabled); if (text != null) put("text", text) })
+suspend fun Api.profileRebuild(): ProfileDto = sendJson("POST", "/api/profile/rebuild", JsonObject(emptyMap()))
+
+// ------------------------------------------------------------------ language tutor
+@Serializable
+data class Correction(val wrong: String = "", val right: String = "", val why: String = "")
+
+@Serializable
+data class TutorTurn(val reply: String = "", val corrections: List<Correction> = emptyList(), val better: String = "",
+                     val score: Double? = null)
+
+@Serializable
+data class WordMark(val word: String = "", val ok: Boolean = true)
+
+@Serializable
+data class PronounceResult(val score: Int = 0, val words: List<WordMark> = emptyList(), val missed: List<String> = emptyList(),
+                           val tips: String = "")
+
+@Serializable
+data class SentenceDto(val sentence: String = "")
+
+suspend fun Api.tutorTurn(lang: String, level: String, text: String, history: List<Pair<String, String>>): TutorTurn =
+    sendJson("POST", "/api/tutor/turn", buildJsonObject {
+        put("lang", lang); put("level", level); put("text", text)
+        put("history", kotlinx.serialization.json.JsonArray(history.map { (r, c) -> buildJsonObject { put("role", r); put("content", c) } }))
+    })
+suspend fun Api.tutorSentence(lang: String, level: String): String =
+    sendJson<SentenceDto>("POST", "/api/tutor/sentence", buildJsonObject { put("lang", lang); put("level", level) }).sentence
+suspend fun Api.tutorPronounce(lang: String, target: String, heard: String): PronounceResult =
+    sendJson("POST", "/api/tutor/pronounce", buildJsonObject { put("lang", lang); put("target", target); put("heard", heard) })
+
+// ------------------------------------------------------------------ live meeting
+@Serializable
+data class LiveLine(val t: Double = 0.0, val text: String = "")
+
+@Serializable
+data class LiveResult(@SerialName("session_id") val sessionId: String = "", val title: String = "", val error: String = "",
+                      @SerialName("tasks_added") val tasksAdded: Int = 0)
+
+@Serializable
+data class LiveState(val id: String = "", val status: String = "", val lines: List<LiveLine> = emptyList(), val total: Int = 0,
+                     val behind: Int = 0, val elapsed: Int = 0, val result: LiveResult? = null)
+
+@Serializable
+data class LiveStart(val id: String = "")
+
+@Serializable
+data class AnswerDto(val answer: String = "")
+
+suspend fun Api.liveStart(lang: String): String = sendJson<LiveStart>("POST", "/api/live/start", buildJsonObject { put("lang", lang) }).id
+suspend fun Api.liveState(id: String, after: Int): LiveState = getJson("/api/live/$id?after=$after")
+suspend fun Api.liveAsk(id: String, q: String): String = sendJson<AnswerDto>("POST", "/api/live/$id/ask", buildJsonObject { put("question", q) }).answer
+suspend fun Api.liveStop(id: String, addTasks: Boolean): JsonObject = sendJson("POST", "/api/live/$id/stop", buildJsonObject { put("add_tasks", addTasks) })
