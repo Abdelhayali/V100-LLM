@@ -26,6 +26,7 @@ for (const fn of ['replaceChildren', 'append']) {
 class ApiError extends Error { constructor(code, msg) { super(msg); this.code = code; } }
 async function api(path, { method = 'GET', body, form, raw } = {}) {
   const opt = { method, headers: {} };
+  if (S.vaultKey) opt.headers['X-Vault-Key'] = S.vaultKey;
   if (form) opt.body = form;
   else if (body !== undefined) { opt.body = JSON.stringify(body); opt.headers['Content-Type'] = 'application/json'; }
   const r = await fetch(path, opt);
@@ -44,7 +45,9 @@ const qs = o => Object.entries(o).filter(([, v]) => v !== undefined && v !== '')
 
 /** Server-Sent Events from a POST/GET: calls onEvent(obj) per event; resolves when the stream ends. */
 async function sse(path, { method = 'GET', body, signal } = {}, onEvent) {
-  const r = await fetch(path, { method, signal, headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+  const headers = body ? { 'Content-Type': 'application/json' } : {};
+  if (S.vaultKey) headers['X-Vault-Key'] = S.vaultKey;
+  const r = await fetch(path, { method, signal, headers, body: body ? JSON.stringify(body) : undefined });
   if (!r.ok) {
     let msg = `HTTP ${r.status}`;
     try { const j = await r.json(); msg = j.detail || msg; } catch {}
@@ -69,7 +72,7 @@ async function sse(path, { method = 'GET', body, signal } = {}, onEvent) {
 const S = {
   view: 'chat', sessions: [], sid: null, title: 'New chat', model: '', info: null, items: [], streaming: false,
   approvals: [], questions: [], plan: [], stats: null, phase: '', phaseTool: '', liveTokens: 0, liveTps: null,
-  streamStart: 0, pending: [], pc: null, abort: null, editId: null,
+  streamStart: 0, pending: [], pc: null, abort: null, editId: null, vaultKey: null, vaultChat: false, tempChat: false,
   prefs: { theme: 'system', web: false, autoApprove: false, email: false, organizer: false, autoRead: false, rate: 1,
            autoCompress: true, compressAt: 75, thinking: 'auto', ocr: 'off' },
 };

@@ -429,6 +429,7 @@ async function viewSettings(main) {
     card(h('h3', {}, 'Read aloud'), sw('Read replies aloud', 'Every finished reply is spoken, in Arabic or English (detected per sentence).', 'autoRead'), rl, rate,
       h('div', { class: 'row' }, h('button', { onclick: () => Speech.speak('Hello, I will read the replies for you. مرحباً، سأقرأ لك الردود.') }, 'Test voice'), h('button', { onclick: () => Speech.stop() }, 'Stop')),
       h('p', { class: 'muted small' }, 'Voices come from Windows and Edge. For Arabic, add Arabic in Windows Settings > Time & language > Speech if no voice is found.')),
+    await profileCard(), await voicesCard(),
     card(h('h3', {}, 'Appearance'), h('div', { class: 'chips' }, ...[['system', 'System'], ['light', 'Light'], ['dark', 'Dark']].map(([k, v]) =>
       h('button', { class: 'chip' + (p.theme === k ? ' on' : ''), onclick: () => { p.theme = k; savePrefs(); applyTheme(); viewSettings(main); } }, v)))),
     card(h('h3', {}, 'About'), h('p', { class: 'small' }, 'LocalAI Bridge Desktop: the phone app\'s features for Windows. Part of V100-LLM.'))));

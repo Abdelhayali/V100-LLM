@@ -33,6 +33,16 @@ Microsoft Edge's app mode, which is built into Windows 10 and 11.
 | From email | Scan all email of a period for tasks and emails that need your reply; add or dismiss |
 | Memory | Search by meaning, categories, edit, forget, auto-remember switch |
 | Files, terminal, running tasks | Browse / upload / download PC files, run code, stop chats and processes |
+| Projects | Goal, notes, knowledge files (PDF, Word, PowerPoint, Excel, text, figures; drag and drop) and named chats; daily work |
+| Deep research | Web research in the background, report with numbered sources, delete with or without its chat |
+| Voice notes | Record here (or upload an audio file); transcript, summary, decisions, action items; CPU or GPU |
+| Live meeting | Live transcript from the laptop microphone, ask questions during the meeting, notes at the end |
+| Language tutor | English / Arabic conversation with corrections, pronunciation with words that light up as you read, your own text |
+| Translator, schedules & alerts | Direct Arabic / English translation; prompts the PC runs by itself; GPU / CPU temperature limits |
+| Private vault, temporary chats | Open the phone's encrypted chats with the vault's recovery code (kept only in memory); chats with no memory |
+| Images | Ask for a picture in any chat: Qwen-Image on the PC (the chat model is unloaded for about a minute) |
+| Profile, PC voices, audit log | Personal profile (view, edit, rebuild), natural PC voices for reading aloud, every tool action the AI took |
+| Chat extras | PC actions switch, click the title to rename, auto-approve applies to a reply that is already running |
 
 ## How it works
 

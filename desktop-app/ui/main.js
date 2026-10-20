@@ -2,17 +2,22 @@
 'use strict';
 
 const NAV = [
-  ['chat', '💬', 'Chat'], ['organizer', '📅', 'Notes, tasks & calendar'], ['models', '🧩', 'Models'], ['api', '🔑', 'API key'],
-  ['memory', '🧠', 'Memory'], ['files', '📁', 'Files on PC'], ['terminal', '⌨', 'Terminal'], ['running', '⚙', 'Running tasks'], ['settings', '⚙️', 'Settings'],
+  ['chat', '💬', 'Chat'], ['organizer', '📅', 'Notes, tasks & calendar'], ['projects', '📁', 'Projects'], ['research', '🔎', 'Deep research'],
+  ['notes', '🎙', 'Voice notes'], ['live', '🗣', 'Live meeting'], ['tutor', '🎓', 'Language tutor'], ['translate', '🌐', 'Translator'],
+  ['schedules', '⏰', 'Schedules & alerts'], ['vault', '🔒', 'Private vault'], ['models', '🧩', 'Models'], ['api', '🔑', 'API key'],
+  ['memory', '🧠', 'Memory'], ['files', '🗂', 'Files on PC'], ['terminal', '⌨', 'Terminal'], ['running', '⚙', 'Running tasks'],
+  ['audit', '🧾', 'Audit log'], ['settings', '⚙️', 'Settings'],
 ];
 
 function go(view) { S.view = view; render(); }
 function render() {
   renderNav();
   const main = $('#main');
-  main._refresh = null;
+  main._refresh = null; main._poll = null;
   ({ chat: renderChat, organizer: viewOrganizer, models: viewModels, api: viewApi, memory: viewMemory, files: viewFiles,
-     terminal: viewTerminal, running: viewRunning, settings: viewSettings })[S.view](main);
+     terminal: viewTerminal, running: viewRunning, settings: viewSettings, projects: viewProjects, research: viewResearch,
+     notes: viewNotes, live: viewLive, tutor: viewTutor, translate: viewTranslate, schedules: viewSchedules, vault: viewVault,
+     audit: viewAudit })[S.view](main);
 }
 function renderNav() {
   $('#nav').replaceChildren(...NAV.map(([k, ic, label]) => h('button', { class: 'navbtn' + (S.view === k ? ' on' : ''), onclick: () => go(k) },
@@ -76,6 +81,7 @@ async function start() {
   clearInterval(start.ss); start.ss = setInterval(() => { if (!S.streaming) loadSessions(); }, 20000);
 }
 $('#newchat').onclick = () => newChat();
+$('#newtemp').onclick = () => newTempChat();
 $('#pcbar').onclick = () => go('models');
 $('#sessq').oninput = renderSessions;
 $('#theme').onclick = () => { S.prefs.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; savePrefs(); applyTheme(); };

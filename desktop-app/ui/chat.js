@@ -56,13 +56,19 @@ async function loadSessions() {
   try { S.sessions = await api('/api/sessions'); } catch (e) { return fail(e); }
   renderSessions();
 }
+function leaveSpecial() {   // a temporary chat is deleted when you leave it (like the phone app)
+  if (S.tempChat && S.sid) { const id = S.sid; api(`/api/sessions/${id}`, { method: 'DELETE' }).then(loadSessions).catch(() => {}); }
+  S.tempChat = false; S.vaultChat = false;
+}
 function newChat() {
+  leaveSpecial();
   if (S.abort) S.abort.abort();
   Object.assign(S, { sid: null, title: 'New chat', items: [], approvals: [], questions: [], plan: [], stats: null, streaming: false, editId: null, pending: [] });
   S.model = S.info?.default_model || '';
   S.view = 'chat'; render();
 }
 async function openSession(sid) {
+  if (sid !== S.sid) leaveSpecial();
   if (S.abort) S.abort.abort();
   S.view = 'chat'; S.sid = sid; S.streaming = false; S.items = []; render();
   try {
@@ -103,7 +109,7 @@ async function send(text = null, { email = false, organizer = false } = {}) {
   render(); scrollDown(true);
   const body = { content: text, attachments: atts.map(a => a.id), model: S.model || null, web: S.prefs.web, auto_approve: S.prefs.autoApprove,
                  compress_at: S.prefs.autoCompress ? S.prefs.compressAt / 100 : 0,
-                 email: S.prefs.email || email, organizer: S.prefs.organizer || organizer, thinking: S.prefs.thinking || 'auto', ocr: S.prefs.ocr || 'off', sandbox: !!S.prefs.sandbox };
+                 email: S.prefs.email || email, organizer: S.prefs.organizer || organizer, thinking: S.prefs.thinking || 'auto', ocr: S.prefs.ocr || 'off', sandbox: !!S.prefs.sandbox, pc: !!S.prefs.pc };
   const sid = S.sid;
   startStream();
   try { await sse(`/api/sessions/${sid}/chat`, { method: 'POST', body, signal: S.abort.signal }, onEvent); }
@@ -440,7 +446,14 @@ function renderHeader() {
     h('option', { value: '' }, 'auto model'), ...models.map(m => h('option', { value: m, selected: m === S.model }, shortModel(m))));
   const p = S.prefs;
   const flip = async (k, msg) => { p[k] = !p[k]; savePrefs(); toast(msg(p[k])); renderHeader(); };
-  el.replaceChildren(h('div', { class: 'ttl' }, h('div', { class: 'title', dir: 'auto' }, S.title), sel),
+  const rename = async () => {
+    if (!S.sid) return;
+    const t = await promptBox('Rename chat', S.title); if (!t?.trim()) return;
+    try { await api(`/api/sessions/${S.sid}`, { method: 'PATCH', body: { title: t.trim() } }); S.title = t.trim(); loadSessions(); renderHeader(); } catch (e) { fail(e); }
+  };
+  el.replaceChildren(h('div', { class: 'ttl' }, h('div', { class: 'title', dir: 'auto', title: 'Click to rename', style: 'cursor:pointer', onclick: rename }, S.title), sel,
+      S.tempChat ? h('div', { class: 'small muted' }, '🕶 Temporary · no memory · deleted when you leave') : null,
+      S.vaultChat ? h('div', { class: 'small muted' }, '🔒 Private vault · encrypted on the PC') : null),
     h('div', { class: 'toggles' },
       thinkingSelect(p),
       ocrSelect(p),
@@ -448,10 +461,17 @@ function renderHeader() {
       toggleChip('🛡 Sandbox', 'sandbox', p.sandbox, () => flip('sandbox', v => v ? 'Sandbox ON: code runs without network and without access to your files' : 'Sandbox OFF')),
       toggleChip('✉ Email', 'email', p.email, () => flip('email', v => v ? 'Email access ON: the AI can read mail and write drafts (sending asks you)' : 'Email access OFF')),
       toggleChip('📅 Tasks', 'organizer', p.organizer, () => flip('organizer', v => 'Tasks & calendar access ' + (v ? 'ON' : 'OFF'))),
+      toggleChip('🖥 PC actions', 'pc', p.pc, () => flip('pc', v => v ? 'PC actions ON: the AI may look at the screen, open files / apps and run your saved scripts (each asks you)' : 'PC actions OFF')),
       toggleChip('🔊 Read', 'autoRead', p.autoRead, () => { flip('autoRead', v => 'Read replies aloud ' + (v ? 'ON' : 'OFF')); if (p.autoRead) Speech.stop(); }),
       toggleChip('⚡ Auto-approve', 'autoApprove', p.autoApprove, async () => {
         if (!p.autoApprove && !await confirmBox('Turn on auto-approve?', 'The AI will run code and write files on your PC without asking. A malicious web page, PDF or file the AI reads could trick it into running harmful commands. Sending email and Google events still ask.', 'Turn on', true)) return;
         flip('autoApprove', v => 'Auto-approve ' + (v ? 'ON' : 'OFF'));
+        if (S.sid && S.streaming) {   // a reply is running: it uses the new setting at once (and on approves what waits)
+          try {
+            const r = await api(`/api/sessions/${S.sid}/auto_approve`, { method: 'POST', body: { on: p.autoApprove } });
+            if (r.approved) { S.approvals = []; closeModal(); renderChatParts(); }
+          } catch (e) { fail(e); }
+        }
       }),
       h('button', { class: 'toggle', title: 'Summarize older messages to free context', onclick: compressNow }, '⇊ Compress')));
 }

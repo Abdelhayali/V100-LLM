@@ -155,6 +155,10 @@ async def free_gpu():
     from . import ocr
     before = _gpu_used()
     stopped_ocr = await asyncio.to_thread(ocr.free_gpu_now)
+    from . import imagegen
+    if imagegen._current["pid"]:      # an image being drawn: stop it too (its files live under ocr\image)
+        await asyncio.to_thread(imagegen._kill)
+        stopped_ocr = True
     if await _reachable():
         try:
             await _post("/api/stop", {})

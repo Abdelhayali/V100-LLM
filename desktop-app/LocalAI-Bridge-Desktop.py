@@ -193,7 +193,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             c, u = _conn(url)
             hdr = {"Authorization": "Bearer " + token}
-            for h in ("Content-Type", "Accept"):
+            for h in ("Content-Type", "Accept", "X-Vault-Key"):   # X-Vault-Key: the private vault, only while unlocked
                 if self.headers.get(h):
                     hdr[h] = self.headers[h]
             c.request(self.command, (u.path.rstrip("/") or "") + self.path, body=body or None, headers=hdr)

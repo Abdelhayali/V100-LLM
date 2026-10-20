@@ -597,6 +597,9 @@ async def chat_turn(run: Run, model: str | None):
                         payload["tools"].append(projects.knowledge_tool_schema())
                     if run.ocr != "off":
                         payload["tools"].append(ocr_mod.schema())
+                    from . import imagegen
+                    if imagegen.ready():
+                        payload["tools"].append(imagegen.schema())
                     if run.drive:
                         payload["tools"] = [s for s in payload["tools"] if s["function"]["name"] in DRIVE_TOOLS]
                         if not payload["tools"]:
@@ -647,6 +650,11 @@ async def chat_turn(run: Run, model: str | None):
                                       "choices; just answer by talking, in a few short sentences.")
                     elif name == "ask_user":
                         result, atts = await ask_user(run, tc["id"], args), []
+                    elif name == "generate_image":
+                        from . import imagegen
+                        run.emit({"type": "phase", "phase": "tool", "name": name})
+                        result, atts = await imagegen.generate(args, lambda m: run.emit({"type": "notice", "text": m}),
+                                                               lambda: run.stopped)
                     elif name == "ocr_document":
                         run.emit({"type": "phase", "phase": "tool", "name": name})
                         result, atts = await ocr_mod.run(run.ocr, args,
