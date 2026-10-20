@@ -68,6 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.RadioButton
 import androidx.compose.ui.Modifier
+import com.localai.bridge.data.pcVoices
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -490,6 +491,31 @@ private fun VoicePicker(vm: MainViewModel) {
                 TextButton(onClick = { vm.speaker.test(v.name, arabic) }) { Text("▶") }
             }
         }
+    }
+    // PC voices: natural offline neural voices (Piper) made on the PC; the phone voice stays the fallback
+    var pc by remember { mutableStateOf<List<com.localai.bridge.data.PcVoice>?>(null) }
+    LaunchedEffect(Unit) { pc = runCatching { vm.api?.pcVoices() }.getOrNull() ?: emptyList() }
+    Text("PC voices (offline neural, on your PC)", style = MaterialTheme.typography.titleSmall)
+    @Composable
+    fun pcList(arabic: Boolean, chosen: String) {
+        val mine = pc.orEmpty().filter { if (arabic) it.lang == "ar" else it.lang == "en" }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { vm.choosePcVoice(arabic, "") }) {
+            RadioButton(selected = chosen.isBlank(), onClick = { vm.choosePcVoice(arabic, "") })
+            Text(if (arabic) "Arabic: phone voice (below)" else "English: phone voice (below)", style = MaterialTheme.typography.bodyMedium)
+        }
+        mine.forEach { v ->
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { vm.choosePcVoice(arabic, v.id) }) {
+                RadioButton(selected = chosen == v.id, onClick = { vm.choosePcVoice(arabic, v.id) })
+                Text("${if (arabic) "Arabic" else "English"}: PC voice ${v.name} (${v.id.substringBefore('-')}, ${v.quality})",
+                    style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+    when {
+        pc == null -> Text("Loading PC voices…", style = MaterialTheme.typography.bodySmall)
+        pc!!.isEmpty() -> Text("No PC voices (the PC needs ocr/setup-ocr.bat, or it is not reachable).",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        else -> { pcList(true, vm.pcArabicVoice); pcList(false, vm.pcEnglishVoice) }
     }
     list("Arabic voice", ar, vm.arabicVoice, true)
     list("English voice", en, vm.englishVoice, false)

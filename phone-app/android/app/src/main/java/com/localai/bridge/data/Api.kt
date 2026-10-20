@@ -114,7 +114,7 @@ class Api(private val baseUrl: String, private val token: String) {
     fun chat(
         sessionId: String, content: String, attachments: List<String>, model: String?,
         web: Boolean = false, autoApprove: Boolean = false, compressAt: Double = 0.0,
-        email: Boolean = false, organizer: Boolean = false, thinking: String = "auto", ocr: String = "off", sandbox: Boolean = false, voice: Boolean = false, translate: Boolean = false,
+        email: Boolean = false, organizer: Boolean = false, thinking: String = "auto", ocr: String = "off", sandbox: Boolean = false, voice: Boolean = false, translate: Boolean = false, pc: Boolean = false,
     ): Flow<JsonObject> {
         val body = buildJsonObject {
             put("content", content)
@@ -128,6 +128,7 @@ class Api(private val baseUrl: String, private val token: String) {
             put("sandbox", sandbox)
             put("voice", voice)
             put("translate", translate)
+            put("pc", pc)
             putJsonArray("attachments") { attachments.forEach { add(it) } }
             if (!model.isNullOrBlank()) put("model", model)
         }
@@ -188,6 +189,12 @@ class Api(private val baseUrl: String, private val token: String) {
             .addFormDataPart("file", file.name, file.asRequestBody("audio/mp4".toMediaType()))
             .addFormDataPart("device", device).addFormDataPart("add_tasks", addTasks.toString()).build()
         return exec(req("/api/notes/voice").post(body).build())
+    }
+
+    /** WAV audio of [text] spoken by a PC voice (Piper on the PC). Blocking call: use from a background thread. */
+    fun ttsAudioBlocking(text: String, voice: String): ByteArray? {
+        val body = buildJsonObject { put("text", text); put("voice", voice) }.toString().toRequestBody(jsonType)
+        return client.newCall(req("/api/tts").post(body).build()).execute().use { r -> if (r.isSuccessful) r.body?.bytes() else null }
     }
 
     // ---- filesystem

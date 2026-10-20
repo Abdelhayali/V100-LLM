@@ -373,9 +373,11 @@ def tool_schemas(web: bool = False, email: bool = False, organizer_access: bool 
     return s
 
 
-NEEDS_APPROVAL = {"run_code", "write_file", "gmail_send", "gmail_send_draft", "google_calendar_add"}
+NEEDS_APPROVAL = {"run_code", "write_file", "gmail_send", "gmail_send_draft", "google_calendar_add",
+                  "look_at_screen", "open_on_pc", "move_file", "run_saved_script"}
 # these ask even when auto-approve is on: they act outside the PC, in the user's name (email, Google Calendar)
-ALWAYS_APPROVE = {"gmail_send", "gmail_send_draft", "google_calendar_add"}
+ALWAYS_APPROVE = {"gmail_send", "gmail_send_draft", "google_calendar_add",
+                  "open_on_pc", "move_file", "run_saved_script"}   # PC actions: always the user's call
 
 
 def execute_tool(name: str, args: dict) -> tuple[str, list[dict]]:
@@ -405,7 +407,9 @@ def execute_tool(name: str, args: dict) -> tuple[str, list[dict]]:
                 raise ToolError(f"Not a file: {p}")
             a = share_file(p)
             return f"Sent {p.name} to the user (displayed in their chat).", [a]
-        from . import organizer, google_api
+        from . import organizer, google_api, pc_tools
+        if name in pc_tools.TOOL_NAMES:
+            return pc_tools.execute(name, args)
         if name in organizer.TOOL_NAMES:
             return organizer.execute(name, args), []
         if name in google_api.TOOL_NAMES:

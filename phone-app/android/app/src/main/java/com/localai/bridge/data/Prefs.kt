@@ -93,6 +93,17 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean("drive_barge_in", false)
         set(v) = prefs.edit().putBoolean("drive_barge_in", v).apply()
 
+    /** PC voices (Piper ids, "" = phone voice) and the PC actions switch. */
+    var pcArabicVoice: String
+        get() = prefs.getString("pc_ar_voice", "") ?: ""
+        set(v) = prefs.edit().putString("pc_ar_voice", v).apply()
+    var pcEnglishVoice: String
+        get() = prefs.getString("pc_en_voice", "") ?: ""
+        set(v) = prefs.edit().putString("pc_en_voice", v).apply()
+    var pcActions: Boolean
+        get() = prefs.getBoolean("pc_actions", false)
+        set(v) = prefs.edit().putBoolean("pc_actions", v).apply()
+
     var autoApprove: Boolean
         get() = prefs.getBoolean("auto_approve", false)
         set(v) = prefs.edit().putBoolean("auto_approve", v).apply()

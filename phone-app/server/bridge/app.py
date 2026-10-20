@@ -348,11 +348,12 @@ async def compress_turn(run, model: str | None):
 class Run:
     """A chat turn running in the background; survives phone disconnects."""
 
-    def __init__(self, sid, web=False, auto_approve=False, compress_at=0.0, email=False, organizer=False, thinking="auto", ocr="off", sandbox=False):
+    def __init__(self, sid, web=False, auto_approve=False, compress_at=0.0, email=False, organizer=False, thinking="auto", ocr="off", sandbox=False, pc=False):
         self.sid = sid
         self.thinking = thinking
         self.ocr = ocr if ocr in ocr_mod.MODES else "off"
         self.sandbox = bool(sandbox)
+        self.pc = bool(pc)
         self.compress_at = compress_at
         self.web = web
         self.email, self.organizer = email, organizer      # access switches from the phone (off = no such tools)
@@ -571,7 +572,9 @@ async def chat_turn(run: Run, model: str | None):
                 apply_thinking(payload, run.thinking)
                 if use_tools:
                     payload["tools"] = tools.tool_schemas(web=run.web, email=run.email, organizer_access=run.organizer)
-                    from . import projects
+                    from . import projects, pc_tools
+                    if run.pc:
+                        payload["tools"] += pc_tools.schemas()
                     if projects.of_session(sid):
                         payload["tools"].append(projects.note_tool_schema())
                     if run.ocr != "off":
@@ -603,12 +606,15 @@ async def chat_turn(run: Run, model: str | None):
                     except json.JSONDecodeError:
                         args = {}
                     run.emit({"type": "tool_call", "id": tc["id"], "name": name, "args": args})
+                    from . import pc_tools
                     blocked = ((name in tools.EMAIL_TOOLS and not run.email)
-                               or (name in tools.ORGANIZER_TOOLS and not run.organizer))
+                               or (name in tools.ORGANIZER_TOOLS and not run.organizer)
+                               or (name in pc_tools.TOOL_NAMES and not run.pc))
                     approval = "auto" if name in tools.NEEDS_APPROVAL else "not needed"
                     if blocked:
                         approval = "blocked"   # the model asked for a tool the user did not switch on: refuse, never run it
-                        what = "email" if name in tools.EMAIL_TOOLS else "tasks, notes and calendar"
+                        what = ("email" if name in tools.EMAIL_TOOLS else "PC actions" if name in pc_tools.TOOL_NAMES
+                                else "tasks, notes and calendar")
                         result, atts = (f"Access denied: the user has not allowed {what} access in this chat. Tell them to "
                                         f"switch on '{what}' access in the app (paperclip menu) if they want you to use it."), []
                     elif name == "ask_user":
@@ -823,6 +829,7 @@ class ChatIn(BaseModel):
     sandbox: bool = False        # run_code in a Windows AppContainer: no network, no access to the user's files
     voice: bool = False          # asked by voice (mic / driving mode): the reply is read aloud, so keep it short
     translate: bool = False      # translate mode: translate the message (Arabic <-> English) instead of answering it
+    pc: bool = False             # PC actions: look at the screen, open, move files, run saved scripts (approved)
 
 
 class ApprovalIn(BaseModel):
@@ -894,7 +901,7 @@ async def chat(sid: str, body: ChatIn):
     run = Run(sid, web=body.web, auto_approve=body.auto_approve, compress_at=max(0.0, min(body.compress_at, 0.98)),
               email=body.email, organizer=body.organizer,
               thinking=body.thinking if body.thinking in THINKING or body.thinking == "auto" else "auto",
-              ocr=body.ocr, sandbox=body.sandbox)
+              ocr=body.ocr, sandbox=body.sandbox, pc=body.pc)
     runs[sid] = run
     resp = sse_response(run)
     run.task = asyncio.create_task(chat_turn(run, model))
@@ -1270,6 +1277,9 @@ app.include_router(models_ctl.router, dependencies=[Auth])
 from . import bench  # noqa: E402
 
 app.include_router(bench.router, dependencies=[Auth])
+from . import tts  # noqa: E402
+
+app.include_router(tts.router, dependencies=[Auth])
 from . import projects  # noqa: E402
 
 app.include_router(projects.router, dependencies=[Auth])

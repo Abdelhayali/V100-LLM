@@ -14,6 +14,17 @@ if not exist .venv\Scripts\python.exe (
 rem speech-to-text for voice notes: faster-whisper large-v3-turbo (~1.6 GB)
 .venv\Scripts\python.exe -m pip install faster-whisper==1.2.1 || goto :fail
 .venv\Scripts\python.exe -c "from huggingface_hub import snapshot_download; snapshot_download('mobiuslabsgmbh/faster-whisper-large-v3-turbo', local_dir='whisper')" || goto :fail
+rem PC voices for read-aloud: Piper (offline neural TTS) + Arabic / English voices (~310 MB)
+.venv\Scripts\python.exe -m pip install piper-tts==1.3.0 || goto :fail
+if not exist piper mkdir piper
+curl.exe -sSfL --retry 10 -o piper\ar_JO-kareem-medium.onnx https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ar/ar_JO/kareem/medium/ar_JO-kareem-medium.onnx || goto :fail
+curl.exe -sSfL --retry 10 -o piper\ar_JO-kareem-medium.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ar/ar_JO/kareem/medium/ar_JO-kareem-medium.onnx.json || goto :fail
+curl.exe -sSfL --retry 10 -o piper\en_US-amy-medium.onnx https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/amy/medium/en_US-amy-medium.onnx || goto :fail
+curl.exe -sSfL --retry 10 -o piper\en_US-amy-medium.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/amy/medium/en_US-amy-medium.onnx.json || goto :fail
+curl.exe -sSfL --retry 10 -o piper\en_US-ryan-high.onnx https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/high/en_US-ryan-high.onnx || goto :fail
+curl.exe -sSfL --retry 10 -o piper\en_US-ryan-high.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/high/en_US-ryan-high.onnx.json || goto :fail
+curl.exe -sSfL --retry 10 -o piper\en_GB-alba-medium.onnx https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_GB/alba/medium/en_GB-alba-medium.onnx || goto :fail
+curl.exe -sSfL --retry 10 -o piper\en_GB-alba-medium.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_GB/alba/medium/en_GB-alba-medium.onnx.json || goto :fail
 echo.
 echo OCR ready. Choose OCR A (GPU) or B (CPU) in the app.
 pause

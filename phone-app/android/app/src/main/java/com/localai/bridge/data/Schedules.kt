@@ -143,3 +143,9 @@ suspend fun Api.projectSchedule(p: ProjectDto, at: String, prompt: String): Sche
         put("every_min", 60); put("web", true); put("email", false); put("organizer", true); put("enabled", true)
         put("project_id", p.id)
     })
+
+// ------------------------------------------------------------------ PC voices (Piper on the PC)
+@Serializable
+data class PcVoice(val id: String = "", val lang: String = "", val name: String = "", val quality: String = "")
+
+suspend fun Api.pcVoices(): List<PcVoice> = getJson("/api/tts/voices")

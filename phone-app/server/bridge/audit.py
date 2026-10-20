@@ -20,7 +20,7 @@ def _summary(tool: str, args: dict) -> str:
     if tool == "run_code":
         code = str(a.get("code", "")).strip().splitlines()
         return f"{a.get('language', 'python')}: " + (code[0][:140] if code else "") + (f" (+{len(code) - 1} lines)" if len(code) > 1 else "")
-    for k in ("path", "query", "url", "to", "subject", "title", "question", "content", "text", "root"):
+    for k in ("path", "target", "source", "name", "query", "url", "to", "subject", "title", "question", "content", "text", "root"):
         if a.get(k):
             return f"{k}: {str(a[k])[:160]}"
     return json.dumps(a, ensure_ascii=False)[:160]

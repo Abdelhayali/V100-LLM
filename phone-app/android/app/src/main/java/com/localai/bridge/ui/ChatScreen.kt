@@ -3,6 +3,7 @@ package com.localai.bridge.ui
 import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Shield
 import android.Manifest
@@ -316,13 +317,17 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                 }
             }
             // ---- active modes (tap to turn off) - kept out of the input row so the text field stays wide
-            if (vm.webSearch || vm.autoApprove || vm.emailAccess || vm.organizerAccess || vm.thinking != "auto" || vm.ocr != "off" || vm.sandbox) {
+            if (vm.webSearch || vm.autoApprove || vm.emailAccess || vm.organizerAccess || vm.thinking != "auto" || vm.ocr != "off" || vm.sandbox || vm.pcActions) {
                 // one line that scrolls sideways: several chips must never squeeze each other into tall columns
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(start = 12.dp, end = 12.dp, top = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (vm.thinking != "auto") InputChip(selected = vm.thinking != "off", onClick = { thinkMenu = true },
                         label = { Text("Thinking: " + (THINKING_MODES.firstOrNull { it.first == vm.thinking }?.second ?: vm.thinking), maxLines = 1, softWrap = false) },
                         leadingIcon = { Icon(Icons.Default.Psychology, null, Modifier.size(16.dp)) })
+                    if (vm.pcActions) InputChip(selected = true, onClick = { vm.togglePcActions() },
+                        label = { Text("PC actions", maxLines = 1, softWrap = false) },
+                        leadingIcon = { Icon(Icons.Default.Computer, null, Modifier.size(16.dp)) },
+                        trailingIcon = { Icon(Icons.Default.Close, "Turn off", Modifier.size(14.dp)) })
                     if (vm.sandbox) InputChip(selected = true, onClick = { vm.toggleSandbox() },
                         label = { Text("Sandbox", maxLines = 1, softWrap = false) },
                         leadingIcon = { Icon(Icons.Default.Shield, null, Modifier.size(16.dp)) },
@@ -384,6 +389,9 @@ fun ChatScreen(vm: MainViewModel, openDrawer: () -> Unit) {
                             })
                         DropdownMenuItem(text = { Text("Driving mode (hands-free)") }, leadingIcon = { Icon(Icons.Default.DirectionsCar, null) },
                             onClick = { attachMenu = false; driveOn() })
+                        DropdownMenuItem(text = { Text("PC actions (screen, open, files, scripts)") }, leadingIcon = { Icon(Icons.Default.Computer, null) },
+                            trailingIcon = { Switch(checked = vm.pcActions, onCheckedChange = null) },
+                            onClick = { vm.togglePcActions() })
                         DropdownMenuItem(text = { Text("Run code in sandbox") }, leadingIcon = { Icon(Icons.Default.Shield, null) },
                             trailingIcon = { Switch(checked = vm.sandbox, onCheckedChange = null) },
                             onClick = { vm.toggleSandbox() })

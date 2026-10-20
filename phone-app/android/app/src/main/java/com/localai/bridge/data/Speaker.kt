@@ -10,6 +10,16 @@ import java.util.Locale
  * Arabic and English are detected per sentence, so a mixed reply switches voice in the middle.
  */
 class Speaker(context: Context) {
+    private val appCtx = context.applicationContext
+    /** PC voices (Piper on the PC) by language; "" = the phone's voice. fetcher(text, voice) returns WAV bytes. */
+    var pcArabic = ""
+    var pcEnglish = ""
+    var fetcher: ((String, String) -> ByteArray?)? = null
+    @Volatile private var gen = 0
+    @Volatile private var pcMode = false
+    private var player: android.media.MediaPlayer? = null
+    private var waitId = ""
+    private var latch: java.util.concurrent.CountDownLatch? = null
     /** One voice the phone can speak with. */
     data class VoiceInfo(val name: String, val label: String, val quality: Int, val online: Boolean)
 
@@ -73,20 +83,24 @@ class Speaker(context: Context) {
 
     init {
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(id: String?) = onState(true)
-            override fun onDone(id: String?) { if (id == lastId) onState(false) }
+            override fun onStart(id: String?) { if (!pcMode) onState(true) }
+            override fun onDone(id: String?) { if (id == waitId) latch?.countDown(); if (!pcMode && id == lastId) onState(false) }
             @Deprecated("Deprecated in Java")
-            override fun onError(id: String?) = onState(false)
-            override fun onStop(id: String?, interrupted: Boolean) = onState(false)
+            override fun onError(id: String?) { if (id == waitId) latch?.countDown(); if (!pcMode) onState(false) }
+            override fun onStop(id: String?, interrupted: Boolean) { latch?.countDown(); if (!pcMode) onState(false) }
         })
     }
 
     fun speak(text: String) {
         if (!ready) { pending = text; return }
         tts.stop()
+        stopPlayer()
         tts.setSpeechRate(rate)
         val parts = segments(clean(text))
         if (parts.isEmpty()) return
+        val f = fetcher
+        if (f != null && parts.any { (ar, _) -> (if (ar) pcArabic else pcEnglish).isNotBlank() }) { speakPc(parts, f); return }
+        pcMode = false
         var warned = false
         parts.forEachIndexed { i, (arabic, s) ->
             val loc = if (arabic) Locale("ar") else Locale.US
@@ -101,7 +115,68 @@ class Speaker(context: Context) {
         }
     }
 
-    fun stop() { tts.stop(); onState(false) }
+    /** PC voice for the languages that have one, the phone's voice for the others, one part after the other. */
+    private fun speakPc(parts: List<Pair<Boolean, String>>, f: (String, String) -> ByteArray?) {
+        val my = ++gen
+        pcMode = true
+        onState(true)
+        kotlin.concurrent.thread(isDaemon = true) {
+            var next: java.util.concurrent.Future<ByteArray?>? = null
+            val pool = java.util.concurrent.Executors.newSingleThreadExecutor()
+            fun fetch(i: Int) = parts.getOrNull(i)?.let { (ar, s) ->
+                val v = if (ar) pcArabic else pcEnglish
+                if (v.isBlank()) null else pool.submit<ByteArray?> { runCatching { f(s, v) }.getOrNull() }
+            }
+            next = fetch(0)
+            for (i in parts.indices) {
+                if (gen != my) break
+                val (ar, s) = parts[i]
+                val audio = next?.let { runCatching { it.get() }.getOrNull() }
+                next = fetch(i + 1)                                    // prepare the next part while this one plays
+                if ((if (ar) pcArabic else pcEnglish).isNotBlank() && audio != null) playBlocking(audio, my)
+                else phoneBlocking(ar, s, my)                          // no PC voice (or PC unreachable): phone voice
+            }
+            pool.shutdownNow()
+            if (gen == my) { pcMode = false; onState(false) }
+        }
+    }
+
+    private fun playBlocking(wav: ByteArray, my: Int) {
+        val file = java.io.File(appCtx.cacheDir, "tts_${System.nanoTime()}.wav").apply { writeBytes(wav) }
+        val done = java.util.concurrent.CountDownLatch(1)
+        runCatching {
+            val mp = android.media.MediaPlayer()
+            mp.setDataSource(file.absolutePath)
+            mp.setPlaybackParams(mp.playbackParams.setSpeed(rate.coerceIn(0.6f, 1.8f)))
+            mp.setOnCompletionListener { done.countDown() }
+            mp.setOnErrorListener { _, _, _ -> done.countDown(); true }
+            mp.prepare()
+            synchronized(this) { player = mp }
+            if (gen == my) mp.start() else done.countDown()
+        }.onFailure { done.countDown() }
+        while (gen == my && !done.await(200, java.util.concurrent.TimeUnit.MILLISECONDS)) { }
+        stopPlayer()
+        file.delete()
+    }
+
+    private fun phoneBlocking(arabic: Boolean, s: String, my: Int) {
+        if (gen != my) return
+        val voice = pick(arabic)
+        if (voice != null) tts.voice = voice else tts.setLanguage(if (arabic) Locale("ar") else Locale.US)
+        val l = java.util.concurrent.CountDownLatch(1)
+        latch = l
+        waitId = "p${System.nanoTime()}"
+        tts.speak(s, TextToSpeech.QUEUE_FLUSH, null, waitId)
+        while (gen == my && !l.await(200, java.util.concurrent.TimeUnit.MILLISECONDS)) { }
+    }
+
+    private fun stopPlayer() = synchronized(this) {
+        runCatching { player?.stop() }
+        runCatching { player?.release() }
+        player = null
+    }
+
+    fun stop() { gen++; tts.stop(); stopPlayer(); latch?.countDown(); pcMode = false; onState(false) }
     fun shutdown() = tts.shutdown()
 
     companion object {

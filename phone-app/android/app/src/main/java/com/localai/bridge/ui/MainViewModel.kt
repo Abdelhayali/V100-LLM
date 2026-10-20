@@ -110,6 +110,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val speaker: com.localai.bridge.data.Speaker = com.localai.bridge.data.Speaker(app).also { s ->
         s.rate = prefs.speechRate
         s.arabicVoice = prefs.arabicVoice
+        s.pcArabic = prefs.pcArabicVoice
+        s.pcEnglish = prefs.pcEnglishVoice
+        s.fetcher = { text, voice -> runCatching { api?.ttsAudioBlocking(text, voice) }.getOrNull() }
         s.englishVoice = prefs.englishVoice
         s.onState = { on ->
             speaking = on
@@ -372,7 +375,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val org = organizerAccess || onceOrganizer
                 onceEmail = false; onceOrganizer = false
                 consume(a.chat(sid, text, atts.map { it.id }, currentModel.ifBlank { null }, webSearch, autoApprove,
-                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = thinking, ocr = ocr, sandbox = sandbox, voice = voiceTurn))
+                    if (autoCompress) compressAt / 100.0 else 0.0, email = em, organizer = org, thinking = thinking, ocr = ocr, sandbox = sandbox, voice = voiceTurn, pc = pcActions))
             } catch (e: com.localai.bridge.data.ApiException) {
                 if (e.code == 409) {
                     // the PC is still finishing the previous reply (e.g. the phone was off): show it instead of failing
@@ -718,6 +721,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun updateAutoRead(on: Boolean) { autoRead = on; prefs.autoRead = on; if (!on) speaker.stop() }
     var arabicVoice by mutableStateOf(prefs.arabicVoice)
     var englishVoice by mutableStateOf(prefs.englishVoice)
+    var pcArabicVoice by mutableStateOf(prefs.pcArabicVoice)
+    var pcEnglishVoice by mutableStateOf(prefs.pcEnglishVoice)
+    fun choosePcVoice(arabic: Boolean, id: String) {
+        if (arabic) { pcArabicVoice = id; prefs.pcArabicVoice = id; speaker.pcArabic = id }
+        else { pcEnglishVoice = id; prefs.pcEnglishVoice = id; speaker.pcEnglish = id }
+        if (id.isNotBlank()) speaker.speak(if (arabic) "مَرْحَبًا، هَذَا صَوْتُ الْمُسَاعِدِ مِنْ جِهَازِ الْكُمْبِيُوتَر." else "Hello, this is your assistant's voice from your PC.")
+    }
+    var pcActions by mutableStateOf(prefs.pcActions)
+    fun togglePcActions() {
+        pcActions = !pcActions; prefs.pcActions = pcActions
+        toast = if (pcActions) "PC actions ON: the AI may look at the screen, open things, move files and run your saved scripts - each one asks you"
+                else "PC actions OFF"
+    }
+
     fun chooseVoice(arabic: Boolean, name: String) {
         if (arabic) { arabicVoice = name; prefs.arabicVoice = name; speaker.arabicVoice = name }
         else { englishVoice = name; prefs.englishVoice = name; speaker.englishVoice = name }
