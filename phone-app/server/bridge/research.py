@@ -34,7 +34,7 @@ async def _llm(messages, max_tokens=1500, think=False, temperature=0.3) -> str:
     model = await A.pick_model(None)
     payload = {"model": model, "stream": False, "max_tokens": max_tokens + (2048 if think else 0),
                "temperature": temperature, "messages": messages,
-               "chat_template_kwargs": {"enable_thinking": think}}
+               "chat_template_kwargs": {"enable_thinking": think, "reasoning_strength": "high" if think else "low"}}
     if think:
         payload["reasoning_budget_tokens"] = 2048
     async with httpx.AsyncClient(timeout=httpx.Timeout(900, connect=10)) as c:

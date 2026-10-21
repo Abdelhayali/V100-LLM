@@ -543,7 +543,10 @@ def apply_thinking(payload: dict, mode: str):
     if mode not in THINKING:
         return
     budget = THINKING[mode]
-    payload["chat_template_kwargs"] = {"enable_thinking": budget != 0}
+    # enable_thinking: Qwen / MiniCPM style templates; reasoning_strength: Muse Glimmer (no "off" level, so off = low).
+    # A template ignores the settings it does not use.
+    payload["chat_template_kwargs"] = {"enable_thinking": budget != 0,
+                                       "reasoning_strength": {"off": "low", "max": "xhigh"}.get(mode, mode)}
     if budget > 0:
         payload["reasoning_budget_tokens"] = budget
         payload["reasoning_budget_message"] = THINK_STOP
@@ -804,7 +807,7 @@ async def translate(body: TranslateIn):
     target = "Arabic (Modern Standard Arabic, written with tashkeel/diacritics)" if body.to == "ar" else "English"
     model = await pick_model(None)
     payload = {"model": model, "stream": False, "max_tokens": 1024, "temperature": 0.2,
-               "chat_template_kwargs": {"enable_thinking": False},
+               "chat_template_kwargs": {"enable_thinking": False, "reasoning_strength": "low"},
                "messages": [{"role": "system", "content": f"You are a translator. Translate the user's text into {target}. "
                              "Reply with only the translation: no quotes, notes, explanations or transliteration."},
                             {"role": "user", "content": text}]}

@@ -14,6 +14,7 @@ from pathlib import Path
 
 VRAM_GB = 16.0
 SHOP_PREFIX = "shop-"
+DRAFTER = re.compile(r"(dflash|dspark|eagle|[-_]mtp[-_.]|draft)", re.I)
 SPLIT = re.compile(r"-(\d{5})-of-(\d{5})\.gguf$", re.I)
 QUANT = re.compile(r"(IQ\d_[A-Z]+|Q\d_K(?:_[SMLX]{1,2})?|Q\d_\d|Q\d_K_XL|UD-[A-Z0-9_]+|MXFP4|BF16|F16|F32)", re.I)
 
@@ -64,6 +65,8 @@ def files(repo: str, token: str = "") -> dict:
         if "mmproj" in p.lower():
             mmproj.append(item)
             continue
+        if DRAFTER.search(Path(p).name) or item["size"] < 2e9 and "draft" in p.lower():
+            continue          # speculative-decoding drafters (DFlash / MTP / EAGLE) are not models on their own
         key = SPLIT.sub(".gguf", p)
         choices.setdefault(key, []).append(item)
     out = []

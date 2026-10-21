@@ -75,7 +75,7 @@ async def _ask_model(client: httpx.AsyncClient, emails: list[dict]) -> list[dict
                        for i, e in enumerate(emails))
     body = {"model": "local", "temperature": 0, "max_tokens": 1500, "stream": False,
             "messages": [{"role": "user", "content": PROMPT.format(today=dt.date.today().isoformat(), emails=text)}],
-            "chat_template_kwargs": {"enable_thinking": False}, "response_format": {"type": "json_object"}}
+            "chat_template_kwargs": {"enable_thinking": False, "reasoning_strength": "low"}, "response_format": {"type": "json_object"}}
     r = await client.post(llm_api_base() + "/chat/completions", json=body, headers=_llm_headers())
     if r.status_code == 400 and "response_format" in r.text:          # servers without JSON mode
         body.pop("response_format")

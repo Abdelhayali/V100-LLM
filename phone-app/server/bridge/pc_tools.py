@@ -64,7 +64,7 @@ def _look(question: str) -> tuple[str, list[dict]]:
         async with httpx.AsyncClient(timeout=httpx.Timeout(300, connect=10)) as c:
             r = await c.post(A.llm_api_base() + "/chat/completions", headers=A.llm_headers(), json={
                 "model": model, "stream": False, "max_tokens": 900, "temperature": 0.2,
-                "chat_template_kwargs": {"enable_thinking": False},
+                "chat_template_kwargs": {"enable_thinking": False, "reasoning_strength": "low"},
                 "messages": [{"role": "user", "content": [
                     {"type": "text", "text": f"This is a screenshot of the user's PC screen. {question}\nAnswer factually; "
                                              "quote any text you need exactly."},

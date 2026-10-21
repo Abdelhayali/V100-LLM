@@ -24,7 +24,7 @@ PY = sys.executable
 
 def chat(port, messages, max_tokens=512, tools=None, timeout=900):
     body = {"messages": messages, "max_tokens": max_tokens, "temperature": 0,
-            "chat_template_kwargs": {"enable_thinking": False}}
+            "chat_template_kwargs": {"enable_thinking": False, "reasoning_strength": "low"}}   # reasoning_strength: Muse Glimmer (no "off")
     if tools:
         body["tools"] = tools
     req = urllib.request.Request(f"http://127.0.0.1:{port}/v1/chat/completions", data=json.dumps(body).encode(),

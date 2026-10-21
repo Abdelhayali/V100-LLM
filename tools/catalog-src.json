@@ -4991,6 +4991,458 @@
      ]
     }
    ]
+  },
+  {
+   "id": "muse-glimmer-30b",
+   "name": "Muse Glimmer 30B UD-Q3_K_XL (Meta, dense, vision)",
+   "desc": "Meta's open-weight (Apache 2.0) dense 30B agentic model with image input, Unsloth Dynamic UD-Q3_K_XL (13.4 GB); vision projector Q8_0 on the CPU, DFlash drafter for speculative decoding.",
+   "files": [
+    [
+     "unsloth/Muse-Glimmer-30B-GGUF",
+     "Muse-Glimmer-30B-UD-Q3_K_XL.gguf"
+    ],
+    [
+     "unsloth/Muse-Glimmer-30B-GGUF",
+     "mmproj-Muse-Glimmer-30B-Q8_0.gguf"
+    ],
+    [
+     "unsloth/Muse-Glimmer-30B-GGUF",
+     "dflash-kquant.gguf"
+    ]
+   ],
+   "model": "Muse-Glimmer-30B-UD-Q3_K_XL.gguf",
+   "mmproj": "mmproj-Muse-Glimmer-30B-Q8_0.gguf",
+   "presets": [
+    {
+     "id": "fast-32k-df7",
+     "name": "FAST: 32k context, DFlash 7 (45 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "44.9 tok/s (code 58.0 / chat 31.7), DFlash 7, draft accepted 35%, 14.9 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-dflash",
+       "DFlash block-diffusion drafter"
+      ],
+      [
+       "--spec-draft-model",
+       "{model:dflash-kquant.gguf}",
+       ""
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "7",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "32768",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q8_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q8_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "1.0",
+       "Meta's defaults"
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "64",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "long-128k-df7",
+     "name": "128k context, DFlash 7, q4 KV (44 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "44.0 tok/s (code 57.6 / chat 30.5), DFlash 7, q4 KV, 14.8 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-dflash",
+       "DFlash block-diffusion drafter"
+      ],
+      [
+       "--spec-draft-model",
+       "{model:dflash-kquant.gguf}",
+       ""
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "7",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "131072",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "1.0",
+       "Meta's defaults"
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "64",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "full-262k-df7",
+     "name": "FULL 262k context, DFlash 7, q4 KV (43 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "43.3 tok/s (code 56.5 / chat 30.1), DFlash 7, q4 KV, 15.1 GB VRAM; image ok (speeds with a short prompt)",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-dflash",
+       "DFlash block-diffusion drafter"
+      ],
+      [
+       "--spec-draft-model",
+       "{model:dflash-kquant.gguf}",
+       ""
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "7",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "128",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "1.0",
+       "Meta's defaults"
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "64",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "plain-32k",
+     "name": "32k context, no drafter (23 tok/s, more free VRAM)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "22.8 tok/s (code 23.3 / chat 22.4), no drafter, 12.8 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "32768",
+       "context"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "1.0",
+       "Meta's defaults"
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "64",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
   }
  ]
 }

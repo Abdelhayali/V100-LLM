@@ -195,7 +195,7 @@ async def review_turn(user: str, assistant: str):
     body = {"model": "local", "temperature": 0, "max_tokens": 600, "stream": False,
             "messages": [{"role": "user", "content": REVIEW.format(cats=", ".join(CATEGORIES), today=dt.date.today().isoformat(),
                                                                     existing=existing, user=user[:3000], assistant=assistant[:2000])}],
-            "chat_template_kwargs": {"enable_thinking": False}, "response_format": {"type": "json_object"}}
+            "chat_template_kwargs": {"enable_thinking": False, "reasoning_strength": "low"}, "response_format": {"type": "json_object"}}
     key = config.data.get("llm_api_key", "")
     try:
         async with httpx.AsyncClient(timeout=180) as c:

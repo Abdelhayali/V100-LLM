@@ -1123,7 +1123,7 @@
     {
      "name": "MiniCPM-V-4_7-35B-A3B-IQ3_XS.gguf",
      "repo": "openbmb/MiniCPM-V-4.7-35B-A3B-gguf",
-     "sha256": "f14888b2a0c279e92d6c488fd194419c45cd142871398a7f70b100a1d63fb129",
+     "sha256": "a01df9378ee4c53ad2f7c2fda93bb2e2ece8a40112a81687b204717ed8896d32",
      "size": 14483689408,
      "url": "https://huggingface.co/openbmb/MiniCPM-V-4.7-35B-A3B-gguf/resolve/main/MiniCPM-V-4_7-35B-A3B-IQ3_XS.gguf"
     },
@@ -2453,7 +2453,7 @@
     {
      "name": "MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf",
      "repo": "openbmb/MiniCPM-V-4.7-35B-A3B-gguf",
-     "sha256": "51e32201f0ddaf87dbb9689ceef9e3aa1a1543a1366706aa2abbf3aabb34df6b",
+     "sha256": "9c18b44db370a72aefc3dc33dc8ab1bd004076829eac68a5d803ecbe3f7a69fc",
      "size": 15503944896,
      "url": "https://huggingface.co/openbmb/MiniCPM-V-4.7-35B-A3B-gguf/resolve/main/MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf"
     },
@@ -2920,7 +2920,7 @@
     {
      "name": "Qwen3.8-27B-DFlash2-Q4_K_M.gguf",
      "repo": "incoai/Qwen3.8-27B-DFlash2-GGUF",
-     "sha256": "1a25c56858e1ebe93f2718ac1d49d1151f9323325c1bbfd6209370f4db131ebd",
+     "sha256": "d169ad335929adc0d77e10e2523f968f3e75f547637ad739b0a137ccde111b5f",
      "size": 1143006816,
      "url": "https://huggingface.co/incoai/Qwen3.8-27B-DFlash2-GGUF/resolve/main/Qwen3.8-27B-DFlash2-Q4_K_M.gguf"
     }
@@ -4464,7 +4464,7 @@
     {
      "name": "Qwen3.8-27B-DFlash2-Q4_K_M.gguf",
      "repo": "incoai/Qwen3.8-27B-DFlash2-GGUF",
-     "sha256": "1a25c56858e1ebe93f2718ac1d49d1151f9323325c1bbfd6209370f4db131ebd",
+     "sha256": "d169ad335929adc0d77e10e2523f968f3e75f547637ad739b0a137ccde111b5f",
      "size": 1143006816,
      "url": "https://huggingface.co/incoai/Qwen3.8-27B-DFlash2-GGUF/resolve/main/Qwen3.8-27B-DFlash2-Q4_K_M.gguf"
     },
@@ -5143,6 +5143,467 @@
       [
        "--top-p",
        "0.8",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "muse-glimmer-30b",
+   "name": "Muse Glimmer 30B UD-Q3_K_XL (Meta, dense, vision)",
+   "desc": "Meta's open-weight (Apache 2.0) dense 30B agentic model with image input, Unsloth Dynamic UD-Q3_K_XL (13.4 GB); vision projector Q8_0 on the CPU, DFlash drafter for speculative decoding.",
+   "files": [
+    {
+     "name": "Muse-Glimmer-30B-UD-Q3_K_XL.gguf",
+     "repo": "unsloth/Muse-Glimmer-30B-GGUF",
+     "sha256": "820d18e00c59376331eba62dd716a6bcdcaa305c2316f5da3a2fab36c7c37e15",
+     "size": 13360983072,
+     "url": "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/main/Muse-Glimmer-30B-UD-Q3_K_XL.gguf"
+    },
+    {
+     "name": "mmproj-Muse-Glimmer-30B-Q8_0.gguf",
+     "repo": "unsloth/Muse-Glimmer-30B-GGUF",
+     "sha256": "01ff73c95108e1754a4c145176c6d3ba44338942285cb87dcac7f4f193192ea2",
+     "size": 2051685088,
+     "url": "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/main/mmproj-Muse-Glimmer-30B-Q8_0.gguf"
+    },
+    {
+     "name": "dflash-kquant.gguf",
+     "repo": "unsloth/Muse-Glimmer-30B-GGUF",
+     "sha256": "27d9a805fa29b943cfb6ad4843367cd4eaaaf06bd452d8cc3e00a2cd18a677bc",
+     "size": 1631205312,
+     "url": "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/main/dflash-kquant.gguf"
+    }
+   ],
+   "model": "Muse-Glimmer-30B-UD-Q3_K_XL.gguf",
+   "mmproj": "mmproj-Muse-Glimmer-30B-Q8_0.gguf",
+   "presets": [
+    {
+     "id": "fast-32k-df7",
+     "name": "FAST: 32k context, DFlash 7 (45 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "44.9 tok/s (code 58.0 / chat 31.7), DFlash 7, draft accepted 35%, 14.9 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-dflash",
+       "DFlash block-diffusion drafter"
+      ],
+      [
+       "--spec-draft-model",
+       "{model:dflash-kquant.gguf}",
+       ""
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "7",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "32768",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q8_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q8_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "1.0",
+       "Meta's defaults"
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "64",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "long-128k-df7",
+     "name": "128k context, DFlash 7, q4 KV (44 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "44.0 tok/s (code 57.6 / chat 30.5), DFlash 7, q4 KV, 14.8 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-dflash",
+       "DFlash block-diffusion drafter"
+      ],
+      [
+       "--spec-draft-model",
+       "{model:dflash-kquant.gguf}",
+       ""
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "7",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "131072",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "1.0",
+       "Meta's defaults"
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "64",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "full-262k-df7",
+     "name": "FULL 262k context, DFlash 7, q4 KV (43 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "43.3 tok/s (code 56.5 / chat 30.1), DFlash 7, q4 KV, 15.1 GB VRAM; image ok (speeds with a short prompt)",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-dflash",
+       "DFlash block-diffusion drafter"
+      ],
+      [
+       "--spec-draft-model",
+       "{model:dflash-kquant.gguf}",
+       ""
+      ],
+      [
+       "--spec-draft-ngl",
+       "all",
+       ""
+      ],
+      [
+       "--spec-draft-n-max",
+       "7",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "128",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "1.0",
+       "Meta's defaults"
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "64",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "plain-32k",
+     "name": "32k context, no drafter (23 tok/s, more free VRAM)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "22.8 tok/s (code 23.3 / chat 22.4), no drafter, 12.8 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "32768",
+       "context"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "1.0",
+       "Meta's defaults"
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "64",
        ""
       ],
       [

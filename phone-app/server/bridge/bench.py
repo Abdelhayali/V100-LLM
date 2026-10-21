@@ -47,7 +47,7 @@ async def _speed():
         for name, prompt in SPEED_PROMPTS:
             r = await c.post(llm_api_base() + "/chat/completions", json={
                 "messages": [{"role": "user", "content": prompt}], "max_tokens": 300, "temperature": 0,
-                "chat_template_kwargs": {"enable_thinking": False}})
+                "chat_template_kwargs": {"enable_thinking": False, "reasoning_strength": "low"}})
             t = r.json().get("timings") or {}
             tps[name] = round(t.get("predicted_per_second") or 0, 1)
             _log(f"speed {name}: {tps[name]} tok/s")
