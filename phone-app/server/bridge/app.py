@@ -547,6 +547,9 @@ def apply_thinking(payload: dict, mode: str):
     # A template ignores the settings it does not use.
     payload["chat_template_kwargs"] = {"enable_thinking": budget != 0,
                                        "reasoning_strength": {"off": "low", "max": "xhigh"}.get(mode, mode)}
+    if budget == 0:   # off: also ends reasoning at once for models with no thinking switch (e.g. Flint)
+        payload["reasoning_budget_tokens"] = 0
+        payload["reasoning_budget_message"] = ""
     if budget > 0:
         payload["reasoning_budget_tokens"] = budget
         payload["reasoning_budget_message"] = THINK_STOP

@@ -7,6 +7,7 @@ results/<label>.json. Standard library only.
 import argparse
 import base64
 import json
+import os
 import re
 import subprocess
 import sys
@@ -23,6 +24,8 @@ PY = sys.executable
 
 
 def chat(port, messages, max_tokens=512, tools=None, timeout=900):
+    # models that always reason first (no thinking switch, e.g. Flint) get more room: "eval_token_scale" in the catalog
+    max_tokens = int(max_tokens * float(os.environ.get("EVAL_TOKEN_SCALE") or 1))
     body = {"messages": messages, "max_tokens": max_tokens, "temperature": 0,
             "chat_template_kwargs": {"enable_thinking": False, "reasoning_strength": "low"}}   # reasoning_strength: Muse Glimmer (no "off")
     if tools:

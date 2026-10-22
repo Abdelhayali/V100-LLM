@@ -71,6 +71,19 @@
      "url": "https://github.com/Abdelhayali/V100-LLM/releases/download/kernels-v1/kernel-kvstream.zip"
     }
    ]
+  },
+  "llamacpp-b11804": {
+   "name": "llama.cpp b11804 official (CUDA 12.4, sm_70)",
+   "desc": "Upstream llama.cpp release b11804 (2026-10-22), unpatched: Flint and other models newer than the patched kernel.",
+   "exe": "llama-server.exe",
+   "download": [
+    {
+     "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11804/llama-b11804-bin-win-cuda-12.4-x64.zip"
+    },
+    {
+     "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11804/cudart-llama-bin-win-cuda-12.4-x64.zip"
+    }
+   ]
   }
  },
  "models": [
@@ -6504,6 +6517,669 @@
        "--temp",
        "0.7",
        "Qwen's non-thinking defaults"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "flint-40b-a2b",
+   "name": "Flint 40B-A2B UD-IQ3_XXS (Recursive, MoE, coding)",
+   "desc": "Recursive's open-weight (Apache 2.0) coding model: 40B mixture-of-experts with ~2.5B active, unsloth UD-IQ3_XXS (14.5 GB) so every expert fits on the V100. Text only. Runs on the official llama.cpp b11804.",
+   "files": [
+    {
+     "name": "flint-UD-IQ3_XXS.gguf",
+     "repo": "unsloth/flint-GGUF",
+     "sha256": "7a0a095dde1d931063a5d571e19497d997edbc783eb1ed6b86529bfab9d94804",
+     "size": 14535427520,
+     "url": "https://huggingface.co/unsloth/flint-GGUF/resolve/main/flint-UD-IQ3_XXS.gguf"
+    }
+   ],
+   "model": "flint-UD-IQ3_XXS.gguf",
+   "mmproj": "",
+   "eval_token_scale": 4,
+   "presets": [
+    {
+     "id": "fast-64k",
+     "name": "FAST: 64k context (87 tok/s)",
+     "kernel": "llamacpp-b11804",
+     "kernels": [
+      "llamacpp-b11804"
+     ],
+     "bench": "86.6 tok/s (code 86.3 / chat 86.9), every expert on the GPU, 16.0 GB VRAM",
+     "params": [
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "65536",
+       "context"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.6",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "fast-64k-noreason",
+     "name": "64k context, no reasoning (87 tok/s, much shorter replies)",
+     "kernel": "llamacpp-b11804",
+     "kernels": [
+      "llamacpp-b11804"
+     ],
+     "bench": "same speed; reasoning ended at once (a coding answer: ~500 tokens instead of ~2,080)",
+     "params": [
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "65536",
+       "context"
+      ],
+      [
+       "--reasoning-budget",
+       "0",
+       "answer without reasoning (about 4x faster replies)"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.6",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "long-128k",
+     "name": "128k context, q4 KV (78 tok/s)",
+     "kernel": "llamacpp-b11804",
+     "kernels": [
+      "llamacpp-b11804"
+     ],
+     "bench": "77.9 tok/s, q4 KV, 15.4 GB VRAM",
+     "params": [
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "131072",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.6",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "full-262k",
+     "name": "FULL 262k context, q4 KV, 4 expert layers in RAM (65 tok/s)",
+     "kernel": "llamacpp-b11804",
+     "kernels": [
+      "llamacpp-b11804"
+     ],
+     "bench": "65.3 tok/s, q4 KV, 4 layers of experts in RAM, 16.1 GB VRAM (speed with a short prompt)",
+     "params": [
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       "context"
+      ],
+      [
+       "--n-cpu-moe",
+       "4",
+       "layers of experts in system RAM"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "128",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.6",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sage-a1.5",
+   "name": "Sage-A1.5 35B-A3B IQ3_XXS (InternScience, MoE, MTP, vision)",
+   "desc": "Shanghai AI Lab's Sage-A1.5 agentic 35B mixture-of-experts (3B active), Apache 2.0. Built here as IQ3_XXS (14.1 GB) from the official Q8_0 with an importance matrix, MTP layer kept at q8_0 / q4_K, so every expert fits on the V100. Download missing runs tools/make-sage.py (~39 GB download, ~45 min conversion).",
+   "setup": {
+    "cmd": [
+     "{python}",
+     "{model}\\..\\..\\..\\tools\\make-sage.py"
+    ]
+   },
+   "files": [
+    {
+     "name": "Sage-A1.5-IQ3_XXS.gguf",
+     "size": null,
+     "sha256": null
+    },
+    {
+     "name": "Sage-A1.5-mmproj.gguf",
+     "size": null,
+     "sha256": null
+    }
+   ],
+   "model": "Sage-A1.5-IQ3_XXS.gguf",
+   "mmproj": "Sage-A1.5-mmproj.gguf",
+   "presets": [
+    {
+     "id": "fast-64k-mtp2",
+     "name": "FAST: 64k context, MTP 2 (113 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "113.2 tok/s (code 115.6 / chat 110.8), MTP 2, draft accepted 73%, 15.5 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "the MTP layer built into the model"
+      ],
+      [
+       "--spec-draft-n-max",
+       "2",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "65536",
+       "context"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "Qwen-family non-thinking defaults"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "long-128k-mtp2",
+     "name": "128k context, MTP 2, q4 KV (104 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "103.7 tok/s (code 108.1 / chat 99.3), MTP 2, q4 KV, 15.3 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "the MTP layer built into the model"
+      ],
+      [
+       "--spec-draft-n-max",
+       "2",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "--spec-draft-type-k",
+       "q4_0",
+       ""
+      ],
+      [
+       "--spec-draft-type-v",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "131072",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "Qwen-family non-thinking defaults"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "full-262k",
+     "name": "FULL 262k context, q4 KV, no MTP (92 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "91.5 tok/s, no MTP, q4 KV, 15.2 GB VRAM; image ok (speed with a short prompt)",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "128",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "Qwen-family non-thinking defaults"
       ],
       [
        "--top-p",

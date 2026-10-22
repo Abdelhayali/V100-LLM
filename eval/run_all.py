@@ -8,6 +8,7 @@ then rebuild the leaderboard (results/leaderboard.html + .png + .md).
   python eval/run_all.py --redo                   re-run models that already have results
 """
 import json
+import os
 import re
 import subprocess
 import sys
@@ -80,7 +81,8 @@ def main():
             print("    did not become ready, skipped")
             continue
         skip = [] if m.get("mmproj") or "--vision" in [x[0] for x in p["params"]] else ["vision"]
-        subprocess.run([sys.executable, str(HERE / runner), "--label", label] + (["--skip"] + skip if skip else []) + (["--only"] + only if only else []), cwd=HERE)
+        env = dict(os.environ, EVAL_TOKEN_SCALE=str(m.get("eval_token_scale") or 1))   # always-reasoning models get more room
+        subprocess.run([sys.executable, str(HERE / runner), "--label", label] + (["--skip"] + skip if skip else []) + (["--only"] + only if only else []), cwd=HERE, env=env)
         meta = HERE / resdir / f"{label}.json"
         if meta.exists():
             d = json.loads(meta.read_text(encoding="utf-8-sig"))

@@ -1,5 +1,6 @@
 models/*/model/
 models/*/kernel/
+models/*/src/
 models/*/*.log
 models/*/setup.log
 _kernels/
