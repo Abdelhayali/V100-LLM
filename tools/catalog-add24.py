@@ -13,7 +13,9 @@ p = Path(__file__).resolve().parent / "catalog-src.json"
 c = json.loads(p.read_text(encoding="utf-8-sig"))
 GGUF = "Sage-A1.5-IQ3_XXS.gguf"
 MM = "Sage-A1.5-mmproj.gguf"
-SAMPLING = [["--temp", "0.7", "Qwen-family non-thinking defaults"], ["--top-p", "0.8", ""], ["--top-k", "20", ""], ["--min-p", "0", ""]]
+# the model card's settings: at temperature 0-0.7 Sage loops on tool calls (keeps re-verifying, never answers;
+# eval/debug_search.py), at 1.0 it usually breaks out
+SAMPLING = [["--temp", "1.0", "model card settings (lower values loop on tool calls)"], ["--top-p", "0.95", ""], ["--top-k", "20", ""], ["--min-p", "0", ""]]
 BENCH = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {
     "fast-64k-mtp2": "113.2 tok/s (code 115.6 / chat 110.8), MTP 2, draft accepted 73%, 15.5 GB VRAM; image ok",
     "long-128k-mtp2": "103.7 tok/s (code 108.1 / chat 99.3), MTP 2, q4 KV, 15.3 GB VRAM; image ok",

@@ -6779,12 +6779,12 @@
       ],
       [
        "--temp",
-       "0.7",
-       "Qwen-family non-thinking defaults"
+       "1.0",
+       "model card settings (lower values loop on tool calls)"
       ],
       [
        "--top-p",
-       "0.8",
+       "0.95",
        ""
       ],
       [
@@ -6895,12 +6895,12 @@
       ],
       [
        "--temp",
-       "0.7",
-       "Qwen-family non-thinking defaults"
+       "1.0",
+       "model card settings (lower values loop on tool calls)"
       ],
       [
        "--top-p",
-       "0.8",
+       "0.95",
        ""
       ],
       [
@@ -6986,12 +6986,12 @@
       ],
       [
        "--temp",
-       "0.7",
-       "Qwen-family non-thinking defaults"
+       "1.0",
+       "model card settings (lower values loop on tool calls)"
       ],
       [
        "--top-p",
-       "0.8",
+       "0.95",
        ""
       ],
       [
