@@ -60,17 +60,21 @@ async def host_guard(req: Request, call_next):
 
 
 async def require_auth(req: Request):
+    # the wrong-key lock is for guesses through the tunnel; a program on this PC can read config.json anyway, so a local
+    # app with an old key (after Change access key) only gets 401, and never locks itself out
+    local = is_local_request(req)
     ip = client_ip(req)
     q = _failures[ip]
     now = time.time()
     while q and now - q[0] > 600:
         q.popleft()
-    if len(q) >= 10:
+    if not local and len(q) >= 10:
         raise HTTPException(429, "Too many failed attempts, try again later")
     auth = req.headers.get("authorization", "")
     token = auth[7:] if auth.lower().startswith("bearer ") else ""
     if not token or not secrets.compare_digest(token.encode(), config["auth_token"].encode()):
-        q.append(now)
+        if not local:
+            q.append(now)
         raise HTTPException(401, "Invalid token")
     privacy.vault_key.set(privacy.key_from_header(req.headers.get("x-vault-key")))   # only while the phone unlocked it
 
