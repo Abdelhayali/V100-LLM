@@ -86,11 +86,13 @@ class Tunnel:
         self.port, self.on_url, self.log = port, on_url, log
         self.proc: subprocess.Popen | None = None
         self.url: str | None = None
+        self._stopped, self._tries = False, 0
 
     def start(self):
         mode = config["tunnel_mode"]
         if mode == "off":
             return
+        self._stopped = False
         kill_stale_tunnels(self.port, self.log)
         exe = find_cloudflared(self.log)
         if mode == "named":
@@ -115,7 +117,7 @@ class Tunnel:
         threading.Thread(target=self._watchdog, daemon=True).start()
 
     def _set_url(self, url):
-        self.url = url
+        self.url, self._tries = url, 0
         (DATA_DIR / "tunnel_url.txt").write_text(url, encoding="utf-8")
         if self.on_url:
             self.on_url(url)
@@ -126,13 +128,22 @@ class Tunnel:
                 line = line.rstrip()
                 logf.write(line + "\n")
                 logf.flush()
-                if not self.url:
-                    m = URL_RE.search(line)
+                if not self.url and "failed" not in line.lower():
+                    # api.trycloudflare.com is Cloudflare's own service, named in errors such as
+                    # 'failed to request quick Tunnel: Post "https://api.trycloudflare.com/tunnel": ... timeout'
+                    m = next((u for u in URL_RE.findall(line) if u != "https://api.trycloudflare.com"), None)
                     if m:
-                        self._set_url(m.group(0))
+                        self._set_url(m)
                 if " ERR " in line or "failed" in line.lower():
                     self.log("[cloudflared] " + line[-200:])
         self.log(f"cloudflared exited (code {self.proc.poll()}). See server/data/cloudflared.log")
+        # a quick tunnel that never got an address (e.g. 'failed to request quick Tunnel ... timeout'): try again
+        if not self._stopped and not self.url and config["tunnel_mode"] != "named" and self._tries < 5:
+            self._tries += 1
+            self.log(f"No tunnel address; trying again in 15 s ({self._tries}/5) ...")
+            time.sleep(15)
+            if not self._stopped:
+                self.start()
 
     def _watchdog(self):
         time.sleep(45)
@@ -141,6 +152,7 @@ class Tunnel:
                      "or see server/data/cloudflared.log")
 
     def stop(self):
+        self._stopped = True
         if self.proc and self.proc.poll() is None:
             self.proc.kill()
         self.url = None
