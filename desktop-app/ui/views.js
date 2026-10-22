@@ -39,7 +39,12 @@ async function unload() { try { await api('/api/v100/unload', { method: 'POST', 
 
 // ---------------------------------------------------------------- PC status (sidebar)
 async function pollPc() {
-  try { S.pc = await api('/api/v100/status'); } catch { S.pc = null; }
+  try { S.pc = await api('/api/v100/status'); } catch (e) {
+    S.pc = null;
+    // a wrong key (401) or the bridge's lock after repeated wrong keys (429): stop retrying - every retry with the
+    // old key would keep the lock on - and ask to connect again
+    if (e.code === 401 || e.code === 429) { stopPolling(); return keyRejected(e.code); }
+  }
   renderPcBar();
   if (S.pc?.health === 'ready' && !pollPc.ready) refreshInfo();
   pollPc.ready = S.pc?.health === 'ready';

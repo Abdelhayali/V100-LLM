@@ -65,6 +65,15 @@ async function pairScreen(again = false) {
     err, again && local.paired ? h('button', { class: 'link', onclick: start }, 'Cancel') : null));
 }
 
+function stopPolling() { clearInterval(start.pc); clearInterval(start.ss); }
+function keyRejected(code) {
+  pairScreen(true);
+  const msg = code === 429
+    ? 'The bridge is blocking this PC for a few minutes after repeated wrong keys. Wait about 10 minutes, then click "Connect to the server on this PC".'
+    : 'The access key was changed (for example with Change access key in the phone app). Connect again: on this PC click "Connect to the server on this PC".';
+  setTimeout(() => { const e = $('#main .err'); if (e) e.textContent = msg; }, 50);
+}
+
 // ---------------------------------------------------------------- start-up
 async function start() {
   let local;
