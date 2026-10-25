@@ -7007,6 +7007,266 @@
      ]
     }
    ]
+  },
+  {
+   "id": "nanbeige4.3-33b",
+   "name": "Nanbeige4.3-33B IQ3_XXS (Nanbeige, dense)",
+   "desc": "Nanbeige's dense 33B (Apache 2.0, Llama architecture, text only), the teacher model of the Nanbeige4.3 series aimed at agentic coding. Built here as IQ3_XXS (~13 GB) from the Q8_0 with an importance matrix so a usable cache fits on the V100. Download missing runs tools/make-nanbeige.py (~35 GB download, ~45 min).",
+   "setup": {
+    "cmd": [
+     "{python}",
+     "{model}\\..\\..\\..\\tools\\make-nanbeige.py"
+    ]
+   },
+   "files": [
+    {
+     "name": "Nanbeige4.3-33B-IQ3_XXS.gguf",
+     "size": null,
+     "sha256": null
+    }
+   ],
+   "model": "Nanbeige4.3-33B-IQ3_XXS.gguf",
+   "mmproj": "",
+   "presets": [
+    {
+     "id": "fast-8k",
+     "name": "FAST: 8k context (32 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "31.7 tok/s (code 33.7 / chat 29.8), 14.1 GB VRAM",
+     "params": [
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "8192",
+       "context"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.6",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "mid-16k",
+     "name": "16k context (30 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "29.7 tok/s (code 31.4 / chat 28.0), 15.8 GB VRAM",
+     "params": [
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "16384",
+       "context"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.6",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "long-48k",
+     "name": "48k context, q4 KV (29 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "28.6 tok/s (code 30.4 / chat 26.9), q4 KV, 15.4 GB VRAM (64k does not fit)",
+     "params": [
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "49152",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "128",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.6",
+       ""
+      ],
+      [
+       "--top-p",
+       "0.95",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
   }
  ]
 }

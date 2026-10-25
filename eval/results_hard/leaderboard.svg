@@ -10,142 +10,147 @@
 <text x="142" y="142.8" font-size="11" fill="#9aa1ab" text-anchor="end">75</text>
 <line x1="150" x2="1160" y1="70.0" y2="70.0" stroke="#e5e7eb" stroke-dasharray="3 3"/>
 <text x="142" y="74.0" font-size="11" fill="#9aa1ab" text-anchor="end">100</text>
-<rect x="155.2" y="90.3" width="26.9" height="254.7" rx="3" fill="#bfe3c4"/>
-<text x="168.7" y="222.7" font-size="14" font-weight="600" fill="#222" text-anchor="middle">93</text>
-<text x="168.7" y="84.3" font-size="10" fill="#666" text-anchor="middle">48 t/s</text>
-<circle cx="168.7" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(172.7,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Muse Glimmer 30B UD-Q3_K_XL</text>
-<rect x="192.6" y="98.1" width="26.9" height="246.9" rx="3" fill="#bfe3c4"/>
-<text x="206.1" y="226.5" font-size="14" font-weight="600" fill="#222" text-anchor="middle">90</text>
-<text x="206.1" y="92.1" font-size="10" fill="#666" text-anchor="middle">60 t/s</text>
-<text x="206.1" y="80.1" font-size="10" fill="#666" text-anchor="middle">code 66</text>
-<circle cx="206.1" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(210.1,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">OrcaCyber-Nano 27B</text>
-<rect x="230.1" y="98.6" width="26.9" height="246.4" rx="3" fill="#bfe3c4"/>
-<text x="243.5" y="226.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">90</text>
-<text x="243.5" y="92.6" font-size="10" fill="#666" text-anchor="middle">16 t/s</text>
-<circle cx="243.5" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(247.5,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Gemma 4 31B Q3_K_S</text>
-<rect x="267.5" y="101.3" width="26.9" height="243.7" rx="3" fill="#b9d3f5"/>
-<text x="280.9" y="228.2" font-size="14" font-weight="600" fill="#222" text-anchor="middle">89</text>
-<text x="280.9" y="95.3" font-size="10" fill="#666" text-anchor="middle">42 t/s</text>
-<circle cx="280.9" cy="359" r="5" fill="#4f86d1"/>
-<text transform="translate(284.9,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">HauhauCS IQ3_XS</text>
-<rect x="304.9" y="101.9" width="26.9" height="243.1" rx="3" fill="#bfe3c4"/>
-<text x="318.3" y="228.4" font-size="14" font-weight="600" fill="#222" text-anchor="middle">88</text>
-<text x="318.3" y="95.9" font-size="10" fill="#666" text-anchor="middle">119 t/s</text>
-<circle cx="318.3" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(322.3,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Qwen3.6-35B-A3B UD-IQ3_XXS</text>
-<rect x="342.3" y="101.9" width="26.9" height="243.1" rx="3" fill="#bfe3c4"/>
-<text x="355.7" y="228.4" font-size="14" font-weight="600" fill="#222" text-anchor="middle">88</text>
-<text x="355.7" y="95.9" font-size="10" fill="#666" text-anchor="middle">52 t/s</text>
-<circle cx="355.7" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(359.7,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Qwen3.8-27B Unsloth UD-IQ3_S</text>
-<rect x="379.7" y="104.4" width="26.9" height="240.6" rx="3" fill="#bfe3c4"/>
-<text x="393.1" y="229.7" font-size="14" font-weight="600" fill="#222" text-anchor="middle">88</text>
-<text x="393.1" y="98.4" font-size="10" fill="#666" text-anchor="middle">93 t/s</text>
-<circle cx="393.1" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(397.1,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">MiniCPM-V 4.7 Q3 mix</text>
-<rect x="417.1" y="104.7" width="26.9" height="240.3" rx="3" fill="#bfe3c4"/>
-<text x="430.6" y="229.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">87</text>
-<text x="430.6" y="98.7" font-size="10" fill="#666" text-anchor="middle">50 t/s</text>
-<circle cx="430.6" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(434.6,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Qwen3.8-27B Ridge 3.7bpw</text>
-<rect x="454.5" y="105.2" width="26.9" height="239.8" rx="3" fill="#bfe3c4"/>
-<text x="468.0" y="230.1" font-size="14" font-weight="600" fill="#222" text-anchor="middle">87</text>
-<text x="468.0" y="99.2" font-size="10" fill="#666" text-anchor="middle">84 t/s</text>
-<circle cx="468.0" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(472.0,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">MiniCPM-V 4.7 IQ3_XS</text>
-<rect x="491.9" y="106.0" width="26.9" height="239.0" rx="3" fill="#bfe3c4"/>
-<text x="505.4" y="230.5" font-size="14" font-weight="600" fill="#222" text-anchor="middle">87</text>
-<text x="505.4" y="100.0" font-size="10" fill="#666" text-anchor="middle">38 t/s</text>
-<circle cx="505.4" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(509.4,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">MiniCPM-V 4.7 Uncensored</text>
-<rect x="529.3" y="107.9" width="26.9" height="237.1" rx="3" fill="#bfe3c4"/>
-<text x="542.8" y="231.5" font-size="14" font-weight="600" fill="#222" text-anchor="middle">86</text>
-<text x="542.8" y="101.9" font-size="10" fill="#666" text-anchor="middle">40 t/s</text>
-<circle cx="542.8" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(546.8,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">MiniCPM-V 4.7 CRACK</text>
-<rect x="566.7" y="109.1" width="26.9" height="235.9" rx="3" fill="#f7d9a8"/>
-<text x="580.2" y="232.0" font-size="14" font-weight="600" fill="#222" text-anchor="middle">86</text>
-<text x="580.2" y="103.1" font-size="10" fill="#666" text-anchor="middle">35 t/s</text>
-<circle cx="580.2" cy="359" r="5" fill="#c98a1f"/>
-<text transform="translate(584.2,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Strata Q2_0</text>
-<rect x="604.1" y="109.3" width="26.9" height="235.7" rx="3" fill="#f7d9a8"/>
-<text x="617.6" y="232.2" font-size="14" font-weight="600" fill="#222" text-anchor="middle">86</text>
-<text x="617.6" y="103.3" font-size="10" fill="#666" text-anchor="middle">34 t/s</text>
-<circle cx="617.6" cy="359" r="5" fill="#c98a1f"/>
-<text transform="translate(621.6,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Strata IQ2_XS</text>
-<rect x="641.5" y="110.2" width="26.9" height="234.8" rx="3" fill="#f7d9a8"/>
-<text x="655.0" y="232.6" font-size="14" font-weight="600" fill="#222" text-anchor="middle">85</text>
-<text x="655.0" y="104.2" font-size="10" fill="#666" text-anchor="middle">30 t/s</text>
-<circle cx="655.0" cy="359" r="5" fill="#c98a1f"/>
-<text transform="translate(659.0,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Strata Coder IQ1_M</text>
-<rect x="678.9" y="112.6" width="26.9" height="232.4" rx="3" fill="#bfe3c4"/>
-<text x="692.4" y="233.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">84</text>
-<text x="692.4" y="106.6" font-size="10" fill="#666" text-anchor="middle">98 t/s</text>
-<circle cx="692.4" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(696.4,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Gemma 4 26B-A4B QAT UD-Q4_K_XL</text>
-<rect x="716.3" y="122.0" width="26.9" height="223.0" rx="3" fill="#bfe3c4"/>
-<text x="729.8" y="238.5" font-size="14" font-weight="600" fill="#222" text-anchor="middle">81</text>
-<text x="729.8" y="116.0" font-size="10" fill="#666" text-anchor="middle">52 t/s</text>
-<circle cx="729.8" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(733.8,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">ISTA-DASLab GSQ IQ3_S</text>
-<rect x="753.8" y="126.4" width="26.9" height="218.6" rx="3" fill="#bfe3c4"/>
-<text x="767.2" y="240.7" font-size="14" font-weight="600" fill="#222" text-anchor="middle">80</text>
-<text x="767.2" y="120.4" font-size="10" fill="#666" text-anchor="middle">50 t/s</text>
-<circle cx="767.2" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(771.2,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Huihui abliterated GSQ IQ3_S</text>
-<rect x="791.2" y="126.7" width="26.9" height="218.3" rx="3" fill="#bfe3c4"/>
-<text x="804.6" y="240.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">79</text>
-<text x="804.6" y="120.7" font-size="10" fill="#666" text-anchor="middle">17 t/s</text>
-<circle cx="804.6" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(808.6,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Nemotron-3.5 Bolt 74B</text>
-<rect x="828.6" y="129.1" width="26.9" height="215.9" rx="3" fill="#bfe3c4"/>
-<text x="842.0" y="242.1" font-size="14" font-weight="600" fill="#222" text-anchor="middle">78</text>
-<text x="842.0" y="123.1" font-size="10" fill="#666" text-anchor="middle">42 t/s</text>
-<circle cx="842.0" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(846.0,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">HauhauCS Q2_K_P</text>
-<rect x="866.0" y="131.3" width="26.9" height="213.7" rx="3" fill="#bfe3c4"/>
-<text x="879.4" y="243.2" font-size="14" font-weight="600" fill="#222" text-anchor="middle">78</text>
-<text x="879.4" y="125.3" font-size="10" fill="#666" text-anchor="middle">108 t/s</text>
-<circle cx="879.4" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(883.4,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Sage-A1.5 35B-A3B IQ3_XXS</text>
-<rect x="903.4" y="133.5" width="26.9" height="211.5" rx="3" fill="#bfe3c4"/>
-<text x="916.9" y="244.3" font-size="14" font-weight="600" fill="#222" text-anchor="middle">77</text>
-<text x="916.9" y="127.5" font-size="10" fill="#666" text-anchor="middle">55 t/s</text>
-<circle cx="916.9" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(920.9,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Qwen3.8-27B Unsloth UD-Q3_K_XL</text>
-<rect x="940.8" y="134.6" width="26.9" height="210.4" rx="3" fill="#d9c8f2"/>
-<text x="954.3" y="244.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">76</text>
-<text x="954.3" y="128.6" font-size="10" fill="#666" text-anchor="middle">40 t/s</text>
-<circle cx="954.3" cy="359" r="5" fill="#8a63c9"/>
-<text transform="translate(958.3,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Bonsai-2 27B Heretic</text>
-<rect x="978.2" y="139.0" width="26.9" height="206.0" rx="3" fill="#bfe3c4"/>
-<text x="991.7" y="247.0" font-size="14" font-weight="600" fill="#222" text-anchor="middle">75</text>
-<text x="991.7" y="133.0" font-size="10" fill="#666" text-anchor="middle">47 t/s</text>
-<circle cx="991.7" cy="359" r="5" fill="#3f9a52"/>
-<text transform="translate(995.7,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Saluki 27B (MTP)</text>
-<rect x="1015.6" y="142.6" width="26.9" height="202.4" rx="3" fill="#f6c7b6"/>
-<text x="1029.1" y="248.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">74</text>
-<text x="1029.1" y="136.6" font-size="10" fill="#666" text-anchor="middle">70 t/s</text>
-<circle cx="1029.1" cy="359" r="5" fill="#c9785c"/>
-<text transform="translate(1033.1,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">PXA-Fusion4 35B</text>
-<rect x="1053.0" y="148.9" width="26.9" height="196.1" rx="3" fill="#f6c7b6"/>
-<text x="1066.5" y="252.0" font-size="14" font-weight="600" fill="#222" text-anchor="middle">71</text>
-<text x="1066.5" y="142.9" font-size="10" fill="#666" text-anchor="middle">20 t/s</text>
-<circle cx="1066.5" cy="359" r="5" fill="#c9785c"/>
-<text transform="translate(1070.5,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Qwen3.8-27B PXQ3</text>
-<rect x="1090.4" y="164.3" width="26.9" height="180.7" rx="3" fill="#ddd"/>
-<text x="1103.9" y="259.7" font-size="14" font-weight="600" fill="#222" text-anchor="middle">66</text>
-<text x="1103.9" y="158.3" font-size="10" fill="#666" text-anchor="middle">79 t/s</text>
-<circle cx="1103.9" cy="359" r="5" fill="#888"/>
-<text transform="translate(1107.9,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Flint 40B-A2B UD-IQ3_XXS</text>
-<rect x="1127.8" y="177.5" width="26.9" height="167.5" rx="3" fill="#f6c7b6"/>
-<text x="1141.3" y="266.3" font-size="14" font-weight="600" fill="#222" text-anchor="middle">61</text>
-<text x="1141.3" y="171.5" font-size="10" fill="#666" text-anchor="middle">64 t/s</text>
-<circle cx="1141.3" cy="359" r="5" fill="#c9785c"/>
-<text transform="translate(1145.3,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Ornith-1.5 35B</text>
+<rect x="155.1" y="90.3" width="26.0" height="254.7" rx="3" fill="#bfe3c4"/>
+<text x="168.0" y="222.7" font-size="14" font-weight="600" fill="#222" text-anchor="middle">93</text>
+<text x="168.0" y="84.3" font-size="10" fill="#666" text-anchor="middle">48 t/s</text>
+<circle cx="168.0" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(172.0,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Muse Glimmer 30B UD-Q3_K_XL</text>
+<rect x="191.1" y="98.1" width="26.0" height="246.9" rx="3" fill="#bfe3c4"/>
+<text x="204.1" y="226.5" font-size="14" font-weight="600" fill="#222" text-anchor="middle">90</text>
+<text x="204.1" y="92.1" font-size="10" fill="#666" text-anchor="middle">60 t/s</text>
+<text x="204.1" y="80.1" font-size="10" fill="#666" text-anchor="middle">code 66</text>
+<circle cx="204.1" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(208.1,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">OrcaCyber-Nano 27B</text>
+<rect x="227.2" y="98.6" width="26.0" height="246.4" rx="3" fill="#bfe3c4"/>
+<text x="240.2" y="226.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">90</text>
+<text x="240.2" y="92.6" font-size="10" fill="#666" text-anchor="middle">16 t/s</text>
+<circle cx="240.2" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(244.2,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Gemma 4 31B Q3_K_S</text>
+<rect x="263.3" y="101.3" width="26.0" height="243.7" rx="3" fill="#b9d3f5"/>
+<text x="276.2" y="228.2" font-size="14" font-weight="600" fill="#222" text-anchor="middle">89</text>
+<text x="276.2" y="95.3" font-size="10" fill="#666" text-anchor="middle">42 t/s</text>
+<circle cx="276.2" cy="359" r="5" fill="#4f86d1"/>
+<text transform="translate(280.2,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">HauhauCS IQ3_XS</text>
+<rect x="299.3" y="101.9" width="26.0" height="243.1" rx="3" fill="#bfe3c4"/>
+<text x="312.3" y="228.4" font-size="14" font-weight="600" fill="#222" text-anchor="middle">88</text>
+<text x="312.3" y="95.9" font-size="10" fill="#666" text-anchor="middle">119 t/s</text>
+<circle cx="312.3" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(316.3,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Qwen3.6-35B-A3B UD-IQ3_XXS</text>
+<rect x="335.4" y="101.9" width="26.0" height="243.1" rx="3" fill="#bfe3c4"/>
+<text x="348.4" y="228.4" font-size="14" font-weight="600" fill="#222" text-anchor="middle">88</text>
+<text x="348.4" y="95.9" font-size="10" fill="#666" text-anchor="middle">52 t/s</text>
+<circle cx="348.4" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(352.4,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Qwen3.8-27B Unsloth UD-IQ3_S</text>
+<rect x="371.5" y="104.4" width="26.0" height="240.6" rx="3" fill="#bfe3c4"/>
+<text x="384.5" y="229.7" font-size="14" font-weight="600" fill="#222" text-anchor="middle">88</text>
+<text x="384.5" y="98.4" font-size="10" fill="#666" text-anchor="middle">93 t/s</text>
+<circle cx="384.5" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(388.5,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">MiniCPM-V 4.7 Q3 mix</text>
+<rect x="407.6" y="104.7" width="26.0" height="240.3" rx="3" fill="#bfe3c4"/>
+<text x="420.5" y="229.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">87</text>
+<text x="420.5" y="98.7" font-size="10" fill="#666" text-anchor="middle">50 t/s</text>
+<circle cx="420.5" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(424.5,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Qwen3.8-27B Ridge 3.7bpw</text>
+<rect x="443.6" y="105.2" width="26.0" height="239.8" rx="3" fill="#bfe3c4"/>
+<text x="456.6" y="230.1" font-size="14" font-weight="600" fill="#222" text-anchor="middle">87</text>
+<text x="456.6" y="99.2" font-size="10" fill="#666" text-anchor="middle">84 t/s</text>
+<circle cx="456.6" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(460.6,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">MiniCPM-V 4.7 IQ3_XS</text>
+<rect x="479.7" y="106.0" width="26.0" height="239.0" rx="3" fill="#bfe3c4"/>
+<text x="492.7" y="230.5" font-size="14" font-weight="600" fill="#222" text-anchor="middle">87</text>
+<text x="492.7" y="100.0" font-size="10" fill="#666" text-anchor="middle">38 t/s</text>
+<circle cx="492.7" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(496.7,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">MiniCPM-V 4.7 Uncensored</text>
+<rect x="515.8" y="107.9" width="26.0" height="237.1" rx="3" fill="#bfe3c4"/>
+<text x="528.7" y="231.5" font-size="14" font-weight="600" fill="#222" text-anchor="middle">86</text>
+<text x="528.7" y="101.9" font-size="10" fill="#666" text-anchor="middle">40 t/s</text>
+<circle cx="528.7" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(532.7,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">MiniCPM-V 4.7 CRACK</text>
+<rect x="551.8" y="109.1" width="26.0" height="235.9" rx="3" fill="#f7d9a8"/>
+<text x="564.8" y="232.0" font-size="14" font-weight="600" fill="#222" text-anchor="middle">86</text>
+<text x="564.8" y="103.1" font-size="10" fill="#666" text-anchor="middle">35 t/s</text>
+<circle cx="564.8" cy="359" r="5" fill="#c98a1f"/>
+<text transform="translate(568.8,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Strata Q2_0</text>
+<rect x="587.9" y="109.3" width="26.0" height="235.7" rx="3" fill="#f7d9a8"/>
+<text x="600.9" y="232.2" font-size="14" font-weight="600" fill="#222" text-anchor="middle">86</text>
+<text x="600.9" y="103.3" font-size="10" fill="#666" text-anchor="middle">34 t/s</text>
+<circle cx="600.9" cy="359" r="5" fill="#c98a1f"/>
+<text transform="translate(604.9,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Strata IQ2_XS</text>
+<rect x="624.0" y="110.2" width="26.0" height="234.8" rx="3" fill="#f7d9a8"/>
+<text x="637.0" y="232.6" font-size="14" font-weight="600" fill="#222" text-anchor="middle">85</text>
+<text x="637.0" y="104.2" font-size="10" fill="#666" text-anchor="middle">30 t/s</text>
+<circle cx="637.0" cy="359" r="5" fill="#c98a1f"/>
+<text transform="translate(641.0,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Strata Coder IQ1_M</text>
+<rect x="660.0" y="112.6" width="26.0" height="232.4" rx="3" fill="#bfe3c4"/>
+<text x="673.0" y="233.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">84</text>
+<text x="673.0" y="106.6" font-size="10" fill="#666" text-anchor="middle">98 t/s</text>
+<circle cx="673.0" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(677.0,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Gemma 4 26B-A4B QAT UD-Q4_K_XL</text>
+<rect x="696.1" y="122.0" width="26.0" height="223.0" rx="3" fill="#bfe3c4"/>
+<text x="709.1" y="238.5" font-size="14" font-weight="600" fill="#222" text-anchor="middle">81</text>
+<text x="709.1" y="116.0" font-size="10" fill="#666" text-anchor="middle">52 t/s</text>
+<circle cx="709.1" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(713.1,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">ISTA-DASLab GSQ IQ3_S</text>
+<rect x="732.2" y="126.4" width="26.0" height="218.6" rx="3" fill="#bfe3c4"/>
+<text x="745.2" y="240.7" font-size="14" font-weight="600" fill="#222" text-anchor="middle">80</text>
+<text x="745.2" y="120.4" font-size="10" fill="#666" text-anchor="middle">50 t/s</text>
+<circle cx="745.2" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(749.2,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Huihui abliterated GSQ IQ3_S</text>
+<rect x="768.3" y="126.7" width="26.0" height="218.3" rx="3" fill="#bfe3c4"/>
+<text x="781.2" y="240.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">79</text>
+<text x="781.2" y="120.7" font-size="10" fill="#666" text-anchor="middle">17 t/s</text>
+<circle cx="781.2" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(785.2,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Nemotron-3.5 Bolt 74B</text>
+<rect x="804.3" y="129.1" width="26.0" height="215.9" rx="3" fill="#bfe3c4"/>
+<text x="817.3" y="242.1" font-size="14" font-weight="600" fill="#222" text-anchor="middle">78</text>
+<text x="817.3" y="123.1" font-size="10" fill="#666" text-anchor="middle">42 t/s</text>
+<circle cx="817.3" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(821.3,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">HauhauCS Q2_K_P</text>
+<rect x="840.4" y="131.3" width="26.0" height="213.7" rx="3" fill="#bfe3c4"/>
+<text x="853.4" y="243.2" font-size="14" font-weight="600" fill="#222" text-anchor="middle">78</text>
+<text x="853.4" y="125.3" font-size="10" fill="#666" text-anchor="middle">108 t/s</text>
+<circle cx="853.4" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(857.4,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Sage-A1.5 35B-A3B IQ3_XXS</text>
+<rect x="876.5" y="133.5" width="26.0" height="211.5" rx="3" fill="#bfe3c4"/>
+<text x="889.5" y="244.3" font-size="14" font-weight="600" fill="#222" text-anchor="middle">77</text>
+<text x="889.5" y="127.5" font-size="10" fill="#666" text-anchor="middle">55 t/s</text>
+<circle cx="889.5" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(893.5,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Qwen3.8-27B Unsloth UD-Q3_K_XL</text>
+<rect x="912.5" y="134.6" width="26.0" height="210.4" rx="3" fill="#d9c8f2"/>
+<text x="925.5" y="244.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">76</text>
+<text x="925.5" y="128.6" font-size="10" fill="#666" text-anchor="middle">40 t/s</text>
+<circle cx="925.5" cy="359" r="5" fill="#8a63c9"/>
+<text transform="translate(929.5,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Bonsai-2 27B Heretic</text>
+<rect x="948.6" y="139.0" width="26.0" height="206.0" rx="3" fill="#bfe3c4"/>
+<text x="961.6" y="247.0" font-size="14" font-weight="600" fill="#222" text-anchor="middle">75</text>
+<text x="961.6" y="133.0" font-size="10" fill="#666" text-anchor="middle">47 t/s</text>
+<circle cx="961.6" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(965.6,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Saluki 27B (MTP)</text>
+<rect x="984.7" y="142.6" width="26.0" height="202.4" rx="3" fill="#f6c7b6"/>
+<text x="997.7" y="248.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">74</text>
+<text x="997.7" y="136.6" font-size="10" fill="#666" text-anchor="middle">70 t/s</text>
+<circle cx="997.7" cy="359" r="5" fill="#c9785c"/>
+<text transform="translate(1001.7,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">PXA-Fusion4 35B</text>
+<rect x="1020.8" y="148.9" width="26.0" height="196.1" rx="3" fill="#f6c7b6"/>
+<text x="1033.8" y="252.0" font-size="14" font-weight="600" fill="#222" text-anchor="middle">71</text>
+<text x="1033.8" y="142.9" font-size="10" fill="#666" text-anchor="middle">20 t/s</text>
+<circle cx="1033.8" cy="359" r="5" fill="#c9785c"/>
+<text transform="translate(1037.8,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Qwen3.8-27B PXQ3</text>
+<rect x="1056.8" y="156.6" width="26.0" height="188.4" rx="3" fill="#bfe3c4"/>
+<text x="1069.8" y="255.8" font-size="14" font-weight="600" fill="#222" text-anchor="middle">68</text>
+<text x="1069.8" y="150.6" font-size="10" fill="#666" text-anchor="middle">22 t/s</text>
+<circle cx="1069.8" cy="359" r="5" fill="#3f9a52"/>
+<text transform="translate(1073.8,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Nanbeige4.3-33B IQ3_XXS</text>
+<rect x="1092.9" y="164.3" width="26.0" height="180.7" rx="3" fill="#ddd"/>
+<text x="1105.9" y="259.7" font-size="14" font-weight="600" fill="#222" text-anchor="middle">66</text>
+<text x="1105.9" y="158.3" font-size="10" fill="#666" text-anchor="middle">79 t/s</text>
+<circle cx="1105.9" cy="359" r="5" fill="#888"/>
+<text transform="translate(1109.9,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Flint 40B-A2B UD-IQ3_XXS</text>
+<rect x="1129.0" y="177.5" width="26.0" height="167.5" rx="3" fill="#f6c7b6"/>
+<text x="1142.0" y="266.3" font-size="14" font-weight="600" fill="#222" text-anchor="middle">61</text>
+<text x="1142.0" y="171.5" font-size="10" fill="#666" text-anchor="middle">64 t/s</text>
+<circle cx="1142.0" cy="359" r="5" fill="#c9785c"/>
+<text transform="translate(1146.0,373) rotate(-40)" font-size="12" fill="#333" text-anchor="end">Ornith-1.5 35B</text>
 <circle cx="1065" cy="42" r="0"/>
 <circle cx="1065" cy="42" r="0"/>
 <circle cx="1065" cy="42" r="0"/>
