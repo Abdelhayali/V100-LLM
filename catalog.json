@@ -7752,6 +7752,299 @@
      ]
     }
    ]
+  },
+  {
+   "id": "groot-19b-a3b-q5",
+   "name": "Groot-19B-A3B Q5_K_M (GrootTeam, MoE, MTP, vision)",
+   "desc": "The same Groot-19B-A3B-261023 as a Q5_K_M (13.6 GB, ~5.7 bits, MTP layer in the file; prithivMLmods) with the official vision projector: a little more precise than the Q4_K_M, with MTP only up to 64k context.",
+   "files": [
+    {
+     "name": "Groot-19B-A3B-261023.Q5_K_M.gguf",
+     "repo": "prithivMLmods/Groot-19B-A3B-261023-MTP-GGUF",
+     "sha256": "8d9ac40d5ec34ffbe5b6306e7c62709093009bd302e05b2b7b85ac4c0db68218",
+     "size": 13580412480,
+     "url": "https://huggingface.co/prithivMLmods/Groot-19B-A3B-261023-MTP-GGUF/resolve/main/Groot-19B-A3B-261023.Q5_K_M.gguf"
+    },
+    {
+     "name": "mmproj-Groot-19B-A3B-261023-BF16.gguf",
+     "repo": "GrootTeam/Groot-19B-A3B-261023-GGUF",
+     "sha256": "05a5c8a279b2589306824864d76d663063ba69ff1f399e6a283fae988fdff360",
+     "size": 902822016,
+     "url": "https://huggingface.co/GrootTeam/Groot-19B-A3B-261023-GGUF/resolve/main/mmproj-Groot-19B-A3B-261023-BF16.gguf"
+    }
+   ],
+   "model": "Groot-19B-A3B-261023.Q5_K_M.gguf",
+   "mmproj": "mmproj-Groot-19B-A3B-261023-BF16.gguf",
+   "presets": [
+    {
+     "id": "q5-fast-64k-mtp2",
+     "name": "FAST: 64k context, MTP 2 (109 tok/s, 123 on code)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "109.4 tok/s (code 122.5 / chat 96.3), MTP 2, draft accepted 61%, 14.8 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "the MTP layer built into the model file"
+      ],
+      [
+       "--spec-draft-n-max",
+       "2",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "65536",
+       "context"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "model card non-thinking settings"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "q5-chat-128k",
+     "name": "128k context, no MTP (102 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "101.7 tok/s (code 101.6 / chat 101.8), no MTP, 15.5 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "131072",
+       "context"
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "model card non-thinking settings"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "q5-full-262k",
+     "name": "FULL 262k context, q4 KV, no MTP (98 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "98.2 tok/s (code 98.0 / chat 98.4), no MTP, q4 KV, 15.0 GB VRAM; image ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "262144",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "model card non-thinking settings"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
   }
  ]
 }

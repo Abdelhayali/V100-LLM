@@ -45,21 +45,22 @@ Real-time screen recordings (not sped up) of the `fast-128k` preset: official Op
 | 12 | Strata: Qwen3.8-Flash-Next 125B Q2_0 | strata | 66.4 | 262k | 262k | 34.8 | 1207 | 94 | 90 | 42 | 88 | 100 | 88 | 100 | **85.8** |
 | 13 | Strata: Qwen3.8-Flash-Next 125B IQ2_XS | strata | 68.0 | 262k | 262k | 34.1 | 1163 | 88 | 100 | 50 | 88 | 100 | 75 | 100 | **85.7** |
 | 14 | Strata: Qwen3.8-Flash-Next 125B Coder IQ1_M | strata | 58.4 | 262k | 262k | 29.7 | 1247 | 94 | 100 | 42 | 88 | 100 | 75 | 100 | **85.4** |
-| 15 | Gemma 4 26B-A4B QAT UD-Q4_K_XL (Google, MoE, vision) | llamacpp | 14.2 | 32k | 262k | 97.9 | 1249 | 88 | 100 | 75 | 75 | 67 | 88 | 100 | **84.5** |
-| 16 | Groot-19B-A3B Q4_K_M (GrootTeam, MoE, MTP, vision) | llamacpp | 11.7 | 128k | 262k | 123.5 | 762 | 75 | 100 | 42 | 88 | 100 | 88 | 100 | **84.5** |
-| 17 | Qwen3.8-27B ISTA-DASLab GSQ-RCO-IQ3_S (MTP) | llamacpp | 12.1 | 32k | 192k | 52.4 | 480 | 94 | 95 | 42 | 100 | 100 | 88 | 50 | **81.1** |
-| 18 | Qwen3.8-27B Huihui abliterated GSQ-RCO-IQ3_S (MTP) | llamacpp | 12.1 | 32k | 192k | 50.2 | 471 | 69 | 100 | 50 | 100 | 100 | 88 | 50 | **79.5** |
-| 19 | NVIDIA Nemotron-3.5-Bolt-74B-A9B (2-bit) | llamacpp | 22.0 | 262k | 262k | 16.7 | 277 | 75 | 85 | 58 | 100 | 100 | 88 | 50 | **79.4** |
-| 20 | Qwen3.8-27B HauhauCS Aggressive Q2_K_P (long context) | llamacpp | 10.7 | 160k | 160k | 41.6 | 326 | 75 | 95 | 42 | 100 | 100 | 88 | 50 | **78.5** |
-| 21 | Sage-A1.5 35B-A3B IQ3_XXS (InternScience, MoE, MTP, vision) | llamacpp | 14.1 | 64k | 262k | 108.3 | 482 | 81 | 100 | 50 | 25 | 100 | 88 | 100 | **77.7** |
-| 22 | Qwen3.8-27B Unsloth UD-Q3_K_XL (DFlash2) | llamacpp | 14.3 | 32k | 32k | 55.4 | 508 | 94 | 90 | 42 | 100 | 100 | 62 | 50 | **76.9** |
-| 23 | Ternary-Bonsai-2-27B Uncensored Heretic | prism | 7.2 | 262k | 262k | 39.5 | 363 | 56 | 100 | 42 | 100 | 100 | 88 | 50 | **76.5** |
-| 24 | Underdog Saluki 27B (Qwen3.8 2-bit, MTP) | llamacpp | 8.3 | 262k | 262k | 46.8 | 351 | 62 | 95 | 42 | 88 | 100 | 88 | 50 | **74.9** |
-| 25 | PXA-Fusion4-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 70.0 | 2384 | 38 | 90 | 25 | 88 | 100 | 75 | 100 | **73.6** |
-| 26 | Qwen3.8-27B PXQ3 | pxa | 12.4 | 8k | 8k | 19.8 | 573 | 75 | 95 | 42 | 100 | 100 | 88 | 0 | **71.3** |
-| 27 | Nanbeige4.3-33B IQ3_XXS (Nanbeige, dense) | llamacpp | 13.1 | 48k | 48k | 22.0 | 282 | 69 | 90 | 33 | 88 | 100 | 0 | 100 | **68.5** |
-| 28 | Flint 40B-A2B UD-IQ3_XXS (Recursive, MoE, coding) | llamacpp-b11804 | 14.5 | 64k | 262k | 78.6 | 381 | 69 | 95 | 33 | 62 | 100 | 0 | 100 | **65.7** |
-| 29 | Ornith-1.5-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 64.1 | 2333 | 50 | 85 | 33 | 100 | 83 | 75 | 0 | **60.9** |
+| 15 | Groot-19B-A3B Q5_K_M (GrootTeam, MoE, MTP, vision) | llamacpp | 13.6 | 64k | 262k | 121.2 | 760 | 88 | 100 | 33 | 88 | 100 | 88 | 100 | **85.1** |
+| 16 | Gemma 4 26B-A4B QAT UD-Q4_K_XL (Google, MoE, vision) | llamacpp | 14.2 | 32k | 262k | 97.9 | 1249 | 88 | 100 | 75 | 75 | 67 | 88 | 100 | **84.5** |
+| 17 | Groot-19B-A3B Q4_K_M (GrootTeam, MoE, MTP, vision) | llamacpp | 11.7 | 128k | 262k | 123.5 | 762 | 75 | 100 | 42 | 88 | 100 | 88 | 100 | **84.5** |
+| 18 | Qwen3.8-27B ISTA-DASLab GSQ-RCO-IQ3_S (MTP) | llamacpp | 12.1 | 32k | 192k | 52.4 | 480 | 94 | 95 | 42 | 100 | 100 | 88 | 50 | **81.1** |
+| 19 | Qwen3.8-27B Huihui abliterated GSQ-RCO-IQ3_S (MTP) | llamacpp | 12.1 | 32k | 192k | 50.2 | 471 | 69 | 100 | 50 | 100 | 100 | 88 | 50 | **79.5** |
+| 20 | NVIDIA Nemotron-3.5-Bolt-74B-A9B (2-bit) | llamacpp | 22.0 | 262k | 262k | 16.7 | 277 | 75 | 85 | 58 | 100 | 100 | 88 | 50 | **79.4** |
+| 21 | Qwen3.8-27B HauhauCS Aggressive Q2_K_P (long context) | llamacpp | 10.7 | 160k | 160k | 41.6 | 326 | 75 | 95 | 42 | 100 | 100 | 88 | 50 | **78.5** |
+| 22 | Sage-A1.5 35B-A3B IQ3_XXS (InternScience, MoE, MTP, vision) | llamacpp | 14.1 | 64k | 262k | 108.3 | 482 | 81 | 100 | 50 | 25 | 100 | 88 | 100 | **77.7** |
+| 23 | Qwen3.8-27B Unsloth UD-Q3_K_XL (DFlash2) | llamacpp | 14.3 | 32k | 32k | 55.4 | 508 | 94 | 90 | 42 | 100 | 100 | 62 | 50 | **76.9** |
+| 24 | Ternary-Bonsai-2-27B Uncensored Heretic | prism | 7.2 | 262k | 262k | 39.5 | 363 | 56 | 100 | 42 | 100 | 100 | 88 | 50 | **76.5** |
+| 25 | Underdog Saluki 27B (Qwen3.8 2-bit, MTP) | llamacpp | 8.3 | 262k | 262k | 46.8 | 351 | 62 | 95 | 42 | 88 | 100 | 88 | 50 | **74.9** |
+| 26 | PXA-Fusion4-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 70.0 | 2384 | 38 | 90 | 25 | 88 | 100 | 75 | 100 | **73.6** |
+| 27 | Qwen3.8-27B PXQ3 | pxa | 12.4 | 8k | 8k | 19.8 | 573 | 75 | 95 | 42 | 100 | 100 | 88 | 0 | **71.3** |
+| 28 | Nanbeige4.3-33B IQ3_XXS (Nanbeige, dense) | llamacpp | 13.1 | 48k | 48k | 22.0 | 282 | 69 | 90 | 33 | 88 | 100 | 0 | 100 | **68.5** |
+| 29 | Flint 40B-A2B UD-IQ3_XXS (Recursive, MoE, coding) | llamacpp-b11804 | 14.5 | 64k | 262k | 78.6 | 381 | 69 | 95 | 33 | 62 | 100 | 0 | 100 | **65.7** |
+| 30 | Ornith-1.5-35B-A3B PXQ2 | pxa | 11.2 | 16k | 16k | 64.1 | 2333 | 50 | 85 | 33 | 100 | 83 | 75 | 0 | **60.9** |
 
 ¹ OrcaCyber-Nano: speed of its tuned `fast-32k` preset (MTP 3), measured as code 66.6 / chat 54.0 tok/s (mean 60.3); its mean over all eval replies is 56.9 tok/s.
 ² Muse Glimmer cannot turn thinking off: it is scored at its lowest level (`reasoning_strength: low`), where it writes about 100 tokens of reasoning before each answer; the other models answer with thinking off. Its speed is the mean over all eval replies with the DFlash drafter (`fast-32k-df7`: code 58.0 / chat 31.7 tok/s).
@@ -243,6 +244,7 @@ old key stops working at once, and other devices re-pair with the new QR.
 | **Sage-A1.5 35B-A3B IQ3_XXS** (Shanghai AI Lab, agentic MoE 3B active, MTP layer; built here from the official Q8_0) | llama.cpp (V100 patch) | 14.1 GB (+0.9 GB vision) | 64k / 128k / **262k** | **113 tok/s** at 64k (MTP 2), 104 at 128k, 92 at 262k (short prompt) | not run yet | CPU | not measured | 77.7: agent, reasoning; searches too long |
 | **Nanbeige4.3-33B IQ3_XXS** (Nanbeige, dense 33B, text only; built here from the Q8_0) | llama.cpp (V100 patch) | 13.1 GB | 8k / 16k / 48k | **32 tok/s** at 8k, 30 at 16k, 29 at 48k (64k does not fit) | not run yet | – | not measured | 68.5 (79.9 text only): agent, long context, search |
 | **Groot-19B-A3B Q4_K_M** (GrootTeam, MoE 3B active, post-trained from Qwen3.6-35B-A3B, MTP layer; official GGUF) | llama.cpp (V100 patch) | 11.7 GB (+0.9 GB vision) | 128k / **262k** | **109 tok/s** at 128k (MTP 3, code 126), 104 without MTP, **101 at the full 262k** (q8 KV, all on the GPU) | not run yet | CPU | not measured | **fastest here (124 over the suite)**, 84.5: reasoning, agent, long context |
+| **Groot-19B-A3B Q5_K_M** (same model, ~5.7 bits, MTP layer; prithivMLmods GGUF) | llama.cpp (V100 patch) | 13.6 GB (+0.9 GB vision) | 64k / 128k / **262k** | **109 tok/s** at 64k (MTP 2, code 123), 102 at 128k (no MTP), 98 at the full 262k (q4 KV) | not run yet | CPU | not measured | 85.1, coding 88 (Q4: 75); MTP only up to 64k |
 | **Flint 40B-A2B UD-IQ3_XXS** (Recursive, coding MoE ~2.5B active, text only) | llama.cpp b11804 (official) | 14.5 GB | 64k / 128k / **262k** | 87 tok/s at 64k, 78 at 128k, 65 at 262k (4 expert layers in RAM) | not run yet | – | not measured | 65.7 (76.6 text only), no reasoning preset |
 | **OrcaCyber-Nano-1.0 27B Mix-13G** (orcarouter, MTP built in; gated, sign in to download) | llama.cpp (V100 patch) / kvstream | 13.0 GB | 32k / 96k / 160k / **262k** | **60 tok/s** at 32k (MTP 3, code 66), 57 at 96k, 32 at 160k, 24 at 20k filled with 262k streaming | 19.6k ✓ all presets | CPU | ~2 GB (+ KV in RAM for 262k) | **#2 overall (89.8)**: fastest dense 27B here, cybersecurity + coding |
 | **Qwen3.8-27B Ridge 3.7bpw** (empero-ai, built-in MTP) | llama.cpp | 12.6 GB | 32k / 96k / 192k | 50 tok/s at 32k, 48 at 96k, 27 at 192k (no MTP) | not run yet | CPU | ~2 GB | official, balanced (87.4) |
