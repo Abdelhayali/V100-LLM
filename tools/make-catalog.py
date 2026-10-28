@@ -27,16 +27,21 @@ def tree(repo):
     return trees[repo]
 
 
+out = Path(__file__).resolve().parent.parent / "catalog.json"
+old = {m["id"]: m["files"] for m in json.loads(out.read_text(encoding="utf-8"))["models"]} if out.exists() else {}
 for m in src["models"]:
     if m["files"] and isinstance(m["files"][0], dict):   # already resolved (setup-managed models like Strata)
         continue
     files = []
     for repo, name in m["files"]:
-        f = tree(repo)[name]
+        f = tree(repo).get(name)
+        if f is None:   # moved or renamed upstream: keep the entry from the last catalog
+            print(f"   {name} not found in {repo}, keeping the previous entry")
+            files = old[m["id"]]
+            break
         files.append({"name": name, "repo": repo, "sha256": f["lfs"]["oid"], "size": f["lfs"]["size"],
                       "url": f"https://huggingface.co/{repo}/resolve/main/{name}"})
     m["files"] = files
     print(f"{m['id']:22} {sum(x['size'] for x in files) / 1e9:6.1f} GB  {len(files)} files")
-out = Path(__file__).resolve().parent.parent / "catalog.json"
 out.write_text(json.dumps(src, indent=1), encoding="utf-8")
 print("wrote", out)
