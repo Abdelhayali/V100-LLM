@@ -8045,6 +8045,1050 @@
      ]
     }
    ]
+  },
+  {
+   "id": "byteshape-qwen3.8-27b-iq4xs",
+   "name": "Qwen3.8-27B ByteShape IQ4_XS-3.84bpw (MTP built in)",
+   "desc": "ByteShape's ShapeLearn quantization of Qwen3.8-27B (Apache 2.0): the data type of every tensor is learned, 3.84 bits per weight in 13.1 GB, so a ~4-bit model with its MTP head and 96k context fits on the V100.",
+   "files": [
+    {
+     "name": "Qwen3.8-27B-IQ4_XS-3.84bpw.gguf",
+     "repo": "byteshape/Qwen3.8-27B-GGUF",
+     "sha256": "89434f23dc89c5f990894e3fe9fdad19d88c370f0d3638a176f29933f218b78b",
+     "size": 13083052416,
+     "url": "https://huggingface.co/byteshape/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-IQ4_XS-3.84bpw.gguf"
+    },
+    {
+     "name": "mmproj-bf16.gguf",
+     "repo": "byteshape/Qwen3.8-27B-GGUF",
+     "sha256": "e43a597863a21bfa48b0fbd4553a771ae4117e25bb172e66f1dbc3fc6d037131",
+     "size": 931145952,
+     "url": "https://huggingface.co/byteshape/Qwen3.8-27B-GGUF/resolve/main/mmproj-bf16.gguf"
+    }
+   ],
+   "model": "Qwen3.8-27B-IQ4_XS-3.84bpw.gguf",
+   "mmproj": "mmproj-bf16.gguf",
+   "presets": [
+    {
+     "id": "fast-32k-mtp3",
+     "name": "FAST: 32k context, MTP 3 (53 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "53.2 tok/s (code 60.6 / chat 45.7), MTP 3, q8 KV, 14.4 GB VRAM; image ok, 7k prompt ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "the MTP head built into the model file"
+      ],
+      [
+       "--spec-draft-n-max",
+       "3",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "--spec-draft-type-k",
+       "q8_0",
+       ""
+      ],
+      [
+       "--spec-draft-type-v",
+       "q8_0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "32768",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q8_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q8_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "Qwen's non-thinking defaults"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "long-96k-mtp3",
+     "name": "96k context, MTP 3, q4 KV (53 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "52.8 tok/s (code 59.8 / chat 45.8), MTP 3, q4 KV, 15.6 GB VRAM; image ok, 7k prompt ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "the MTP head built into the model file"
+      ],
+      [
+       "--spec-draft-n-max",
+       "3",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "--spec-draft-type-k",
+       "q4_0",
+       ""
+      ],
+      [
+       "--spec-draft-type-v",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "98304",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "Qwen's non-thinking defaults"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "max-128k",
+     "name": "128k context, q4 KV, no MTP (30 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "29.5 tok/s (code 30.6 / chat 28.3), q4 KV, 15.1 GB VRAM; image ok, 7k prompt ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "131072",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "Qwen's non-thinking defaults"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "swift15-qwen3.8-27b-gsq",
+   "name": "Swift-1.5 Qwen3.8-27B GSQ-RCO IQ3_S (MTP built in)",
+   "desc": "ukisai's Swift 1.5 (post-trained Qwen3.8-27B for agentic and coding work, ~58% fewer thinking tokens; Swift open license) with ISTA-DASLab's GSQ-RCO per-tensor allocation, IQ3_S tier with the MTP head (12.1 GB).",
+   "files": [
+    {
+     "name": "Swift-1.5-Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp.gguf",
+     "repo": "ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF",
+     "sha256": "9aecf1cd41b2cb2f32a74e0d889e33855ebef43b26f43b43feb5720239e677e5",
+     "size": 12120016896,
+     "url": "https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF/resolve/main/Swift-1.5-Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp.gguf"
+    },
+    {
+     "name": "mmproj-F16.gguf",
+     "repo": "unsloth/Qwen3.8-27B-GGUF",
+     "sha256": "cbb841a9ee0636b2ec172f5bb8df2ea8dfeb01e90fe7c6126581d662a0b4e43e",
+     "size": 927607488,
+     "url": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/mmproj-F16.gguf"
+    }
+   ],
+   "model": "Swift-1.5-Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp.gguf",
+   "mmproj": "mmproj-F16.gguf",
+   "presets": [
+    {
+     "id": "fast-32k-mtp3",
+     "name": "FAST: 32k context, MTP 3 (55 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "54.6 tok/s (code 61.9 / chat 47.2), MTP 3, q8 KV, 13.8 GB VRAM; image ok, 7k prompt ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "the MTP head built into the model file"
+      ],
+      [
+       "--spec-draft-n-max",
+       "3",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "--spec-draft-type-k",
+       "q8_0",
+       ""
+      ],
+      [
+       "--spec-draft-type-v",
+       "q8_0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "32768",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q8_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q8_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "Qwen's non-thinking defaults"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "long-96k-mtp3",
+     "name": "96k context, MTP 3, q4 KV (53 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "52.7 tok/s (code 60.3 / chat 45.0), MTP 3, q4 KV, 14.9 GB VRAM; image ok, 7k prompt ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "the MTP head built into the model file"
+      ],
+      [
+       "--spec-draft-n-max",
+       "3",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "--spec-draft-type-k",
+       "q4_0",
+       ""
+      ],
+      [
+       "--spec-draft-type-v",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "98304",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "Qwen's non-thinking defaults"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "max-128k",
+     "name": "128k context, q4 KV, no MTP (31 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "31.0 tok/s (code 32.0 / chat 29.9), q4 KV, 14.3 GB VRAM; image ok, 7k prompt ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "131072",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "Qwen's non-thinking defaults"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "coder390-qwen3.8-27b",
+   "name": "Qwen3.8-27B Coder390 EfficientThink 16G (MTP built in)",
+   "desc": "nerkyor's Coder390 (Qwen3.8-27B fine-tuned on coding distillations with SFT + RLOO, short thinking), Q3 'LynnStyle 16G' mix with the MTP head (13.3 GB) made for 16 GB cards.",
+   "files": [
+    {
+     "name": "GGUF/Qwen3.8-27B-Coder390-Q3LynnStyle16G-MTP.gguf",
+     "repo": "nerkyor/Qwen3.8-27B-Coder390-EfficientThink-Opus5.5-GPT6Astra-Grok4.7-DSV4Pro-K3-SFT-RLOO-MTP-DFlash2",
+     "sha256": "3872d17684a1b71d38fd36eb5ace047ac61bab11799926455de933fe0b3e60e1",
+     "size": 13276009920,
+     "url": "https://huggingface.co/nerkyor/Qwen3.8-27B-Coder390-EfficientThink-Opus5.5-GPT6Astra-Grok4.7-DSV4Pro-K3-SFT-RLOO-MTP-DFlash2/resolve/main/GGUF/Qwen3.8-27B-Coder390-Q3LynnStyle16G-MTP.gguf"
+    },
+    {
+     "name": "GGUF/mmproj-Qwen3.8-27B-Q8_0.gguf",
+     "repo": "nerkyor/Qwen3.8-27B-Coder390-EfficientThink-Opus5.5-GPT6Astra-Grok4.7-DSV4Pro-K3-SFT-RLOO-MTP-DFlash2",
+     "sha256": "cae9799dc9196449b0d83f716e64af89d5cf65147510462e5a629a2aa23adb32",
+     "size": 629247008,
+     "url": "https://huggingface.co/nerkyor/Qwen3.8-27B-Coder390-EfficientThink-Opus5.5-GPT6Astra-Grok4.7-DSV4Pro-K3-SFT-RLOO-MTP-DFlash2/resolve/main/GGUF/mmproj-Qwen3.8-27B-Q8_0.gguf"
+    }
+   ],
+   "model": "GGUF/Qwen3.8-27B-Coder390-Q3LynnStyle16G-MTP.gguf",
+   "mmproj": "GGUF/mmproj-Qwen3.8-27B-Q8_0.gguf",
+   "presets": [
+    {
+     "id": "fast-32k-mtp3",
+     "name": "FAST: 32k context, MTP 3 (53 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "52.6 tok/s (code 60.1 / chat 45.2), MTP 3, q8 KV, 14.4 GB VRAM; image ok, 7k prompt ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "the MTP head built into the model file"
+      ],
+      [
+       "--spec-draft-n-max",
+       "3",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "--spec-draft-type-k",
+       "q8_0",
+       ""
+      ],
+      [
+       "--spec-draft-type-v",
+       "q8_0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "32768",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q8_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q8_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "512",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "Qwen's non-thinking defaults"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "long-96k-mtp3",
+     "name": "96k context, MTP 3, q4 KV (54 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "54.5 tok/s (code 60.2 / chat 48.9), MTP 3, q4 KV, 15.6 GB VRAM; image ok, 7k prompt ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "--spec-type",
+       "draft-mtp",
+       "the MTP head built into the model file"
+      ],
+      [
+       "--spec-draft-n-max",
+       "3",
+       "tokens drafted per step"
+      ],
+      [
+       "--spec-draft-p-min",
+       "0",
+       ""
+      ],
+      [
+       "--spec-draft-type-k",
+       "q4_0",
+       ""
+      ],
+      [
+       "--spec-draft-type-v",
+       "q4_0",
+       ""
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "98304",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "Qwen's non-thinking defaults"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    },
+    {
+     "id": "max-128k",
+     "name": "128k context, q4 KV, no MTP (29 tok/s)",
+     "kernel": "llamacpp",
+     "kernels": [
+      "llamacpp"
+     ],
+     "bench": "29.1 tok/s (code 30.4 / chat 27.8), q4 KV, 15.1 GB VRAM; image ok, 7k prompt ok",
+     "params": [
+      [
+       "--no-mmproj-offload",
+       "",
+       "vision encoder on CPU"
+      ],
+      [
+       "-ngl",
+       "all",
+       ""
+      ],
+      [
+       "-c",
+       "131072",
+       "context"
+      ],
+      [
+       "-ctk",
+       "q4_0",
+       "quantized KV cache"
+      ],
+      [
+       "-ctv",
+       "q4_0",
+       ""
+      ],
+      [
+       "-np",
+       "1",
+       ""
+      ],
+      [
+       "-fa",
+       "on",
+       ""
+      ],
+      [
+       "--load-mode",
+       "none",
+       ""
+      ],
+      [
+       "-b",
+       "2048",
+       ""
+      ],
+      [
+       "-ub",
+       "256",
+       ""
+      ],
+      [
+       "--cache-ram",
+       "2048",
+       "prompt cache in RAM, MiB"
+      ],
+      [
+       "--jinja",
+       "",
+       ""
+      ],
+      [
+       "--temp",
+       "0.7",
+       "Qwen's non-thinking defaults"
+      ],
+      [
+       "--top-p",
+       "0.8",
+       ""
+      ],
+      [
+       "--top-k",
+       "20",
+       ""
+      ],
+      [
+       "--min-p",
+       "0",
+       ""
+      ]
+     ]
+    }
+   ]
   }
  ]
 }
